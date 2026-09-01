@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
-import 'core/theme/app_theme.dart'; // <-- L'importation ajoutée ici
+import 'core/navigation/app_router.dart'; // <-- L'importation du router
+import 'core/theme/app_theme.dart';      // <-- L'importation du thème
 
 void main() {
   runApp(const MecaGoApp());
@@ -11,17 +12,14 @@ class MecaGoApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
+    return MaterialApp.router( // <-- Notez le ".router" ajouté ici
       title: 'MecaGo',
       debugShowCheckedModeBanner: false,
-      theme: AppTheme.light, // <-- Le thème lié ici
-      home: const SplashPage(),
+      theme: AppTheme.light,
+      routerConfig: AppRouter.router, // <-- Le router est branché ici
     );
   }
 }
-
-// ... Tout le reste du code (SplashPage, OnboardingPage) reste exactement le même en dessous !
-
 
 /// =======================
 /// SPLASH SCREEN
@@ -55,13 +53,7 @@ class _SplashPageState extends State<SplashPage>
 
     _controller.forward();
 
-    Timer(const Duration(seconds: 2), () {
-      Navigator.of(context).pushReplacement(
-        MaterialPageRoute(
-          builder: (_) => const OnboardingPage(),
-        ),
-      );
-    });
+    // Note : Plus tard, nous lierons la fin du chrono à une redirection go_router
   }
 
   @override
@@ -147,7 +139,6 @@ class _SplashPageState extends State<SplashPage>
 
               const SizedBox(height: 70),
 
-              // Placeholder voiture (sera remplacé par le rendu 3D)
               Container(
                 width: 310,
                 height: 170,
@@ -201,96 +192,3 @@ class _SplashPageState extends State<SplashPage>
   }
 }
 
-/// =======================
-/// ONBOARDING (Temporaire)
-/// =======================
-
-class OnboardingPage extends StatelessWidget {
-  const OnboardingPage({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      body: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 28),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Spacer(),
-
-            const Text(
-              "Entretenez votre voiture comme un pro",
-              style: TextStyle(
-                fontSize: 34,
-                fontWeight: FontWeight.w800,
-                height: 1.1,
-                color: Color(0xFF111827),
-              ),
-            ),
-
-            const SizedBox(height: 18),
-
-            const Text(
-              "Des tutoriels adaptés à votre véhicule pour économiser du temps et de l'argent.",
-              style: TextStyle(
-                fontSize: 16,
-                color: Color(0xFF64748B),
-                height: 1.5,
-              ),
-            ),
-
-            const SizedBox(height: 40),
-
-            Expanded(
-              child: Center(
-                child: Container(
-                  width: 310,
-                  height: 180,
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(30),
-                    gradient: const LinearGradient(
-                      colors: [
-                        Color(0xFFF7FAFC),
-                        Color(0xFFEAF2FB),
-                      ],
-                    ),
-                  ),
-                  child: const Center(
-                    child: Icon(
-                      Icons.directions_car_filled_rounded,
-                      size: 120,
-                      color: Color(0xFFD1D5DB),
-                    ),
-                  ),
-                ),
-              ),
-            ),
-
-            SizedBox(
-              width: double.infinity,
-              height: 58,
-              child: FilledButton(
-                style: FilledButton.styleFrom(
-                  backgroundColor: const Color(0xFFFF6A00),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(18),
-                  ),
-                ),
-                onPressed: () {},
-                child: const Text(
-                  "Suivant",
-                  style: TextStyle(
-                    fontSize: 17,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-              ),
-            ),
-
-            const SizedBox(height: 36),
-          ],
-        ),
-      ),
-    );
-  }
-}
