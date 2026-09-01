@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'core/theme/app_theme.dart'; // <-- L'importation ajoutée ici
 
 void main() {
   runApp(const MecaGoApp());
@@ -13,18 +14,14 @@ class MecaGoApp extends StatelessWidget {
     return MaterialApp(
       title: 'MecaGo',
       debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        useMaterial3: true,
-        scaffoldBackgroundColor: const Color(0xFFF8FAFC),
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color(0xFFFF6A00),
-        ),
-        fontFamily: 'SF Pro Display',
-      ),
+      theme: AppTheme.light, // <-- Le thème lié ici
       home: const SplashPage(),
     );
   }
 }
+
+// ... Tout le reste du code (SplashPage, OnboardingPage) reste exactement le même en dessous !
+
 
 /// =======================
 /// SPLASH SCREEN
