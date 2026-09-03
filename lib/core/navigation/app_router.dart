@@ -6,17 +6,30 @@ import '../../features/garage/presentation/pages/garage_page.dart';
 import '../../features/plate_scanner/presentation/pages/scanner_page.dart';
 import '../../features/history/presentation/pages/history_page.dart';
 import '../../features/profile/presentation/pages/profile_page.dart';
-import '../../features/vehicle_details/presentation/pages/vehicle_details_page.dart'; // <-- Nouvelle importation
+import '../../features/vehicle_details/presentation/pages/vehicle_details_page.dart';
+import '../../features/onboarding/presentation/pages/onboarding_page.dart';
+import '../../features/maintenance/presentation/pages/tutorial_catalog_page.dart';
+import '../../features/maintenance/presentation/pages/tutorial_page.dart';
 
 class AppRouter {
   static final GoRouter router = GoRouter(
-    initialLocation: '/',
+    // L'application démarre d'abord sur l'Onboarding de bienvenue
+    initialLocation: '/onboarding',
     routes: [
+      // Route de l'Onboarding
+      GoRoute(
+        path: '/onboarding',
+        name: 'onboarding',
+        builder: (context, state) => const OnboardingPage(),
+      ),
+      
+      // Structure des 5 onglets principaux de l'application
       StatefulShellRoute.indexedStack(
         builder: (context, state, navigationShell) {
           return MainNavigationShell(navigationShell: navigationShell);
         },
         branches: [
+          // Onglet 1 : Accueil
           StatefulShellBranch(
             routes: [
               GoRoute(
@@ -26,6 +39,7 @@ class AppRouter {
               ),
             ],
           ),
+          // Onglet 2 : Garage
           StatefulShellBranch(
             routes: [
               GoRoute(
@@ -35,6 +49,7 @@ class AppRouter {
               ),
             ],
           ),
+          // Onglet 3 : Scanner de Plaque
           StatefulShellBranch(
             routes: [
               GoRoute(
@@ -42,16 +57,33 @@ class AppRouter {
                 name: 'scanner',
                 builder: (context, state) => const ScannerPage(),
                 routes: [
-                  // <-- Sous-route ajoutée pour ouvrir la fiche véhicule depuis le scan
+                  // Sous-route : Fiche technique du véhicule détecté
                   GoRoute(
                     path: 'vehicle-details',
                     name: 'vehicle-details',
                     builder: (context, state) => const VehicleDetailsPage(),
+                    routes: [
+                      // Sous-route : Catalogue des tutoriels de la Tesla
+                      GoRoute(
+                        path: 'tutorials',
+                        name: 'tutorials',
+                        builder: (context, state) => const TutorialCatalogPage(),
+                        routes: [
+                          // Sous-route : Un tutoriel interactif étape par étape
+                          GoRoute(
+                            path: 'detail',
+                            name: 'tutorial-detail',
+                            builder: (context, state) => const TutorialPage(),
+                          ),
+                        ],
+                      ),
+                    ],
                   ),
                 ],
               ),
             ],
           ),
+          // Onglet 4 : Historique des économies
           StatefulShellBranch(
             routes: [
               GoRoute(
@@ -61,6 +93,7 @@ class AppRouter {
               ),
             ],
           ),
+          // Onglet 5 : Profil Utilisateur
           StatefulShellBranch(
             routes: [
               GoRoute(
