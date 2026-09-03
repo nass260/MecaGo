@@ -28,7 +28,7 @@ class MaintenanceReminderPage extends StatelessWidget {
         subtitle: 'Contrôle conseillé',
         remaining: 15,
         mileage: 'Remplacement bientôt',
-        color: AppColors.orange,
+        color: Colors.red,
       ),
       const _ReminderItem(
         title: 'Balais d’essuie-glace',
@@ -67,6 +67,7 @@ class MaintenanceReminderPage extends StatelessWidget {
       body: SafeArea(
         child: Column(
           children: [
+            // Section 1 : Carte d'état global du véhicule
             Padding(
               padding: const EdgeInsets.fromLTRB(20, 12, 20, 16),
               child: PremiumCard(
@@ -145,6 +146,7 @@ class MaintenanceReminderPage extends StatelessWidget {
                       decoration: BoxDecoration(
                         color: const Color(0xFFFFF7ED),
                         borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: const Color(0xFFFFEDD5)),
                       ),
                       child: Row(
                         children: const [
@@ -159,6 +161,7 @@ class MaintenanceReminderPage extends StatelessWidget {
                               style: TextStyle(
                                 color: AppColors.navy,
                                 fontWeight: FontWeight.w600,
+                                fontSize: 13,
                               ),
                             ),
                           ),
@@ -169,6 +172,8 @@ class MaintenanceReminderPage extends StatelessWidget {
                 ),
               ),
             ),
+            
+            // Section 2 : Liste défilante des pièces d'usure kilométrique
             Expanded(
               child: ListView.separated(
                 padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
@@ -195,7 +200,7 @@ class MaintenanceReminderPage extends StatelessWidget {
                             ),
                             Container(
                               padding: const EdgeInsets.symmetric(
-                                horizontal: 10,
+                                horizontal: 12,
                                 vertical: 6,
                               ),
                               decoration: BoxDecoration(
@@ -244,14 +249,3 @@ class MaintenanceReminderPage extends StatelessWidget {
                               item.mileage,
                               style: const TextStyle(
                                 color: AppColors.textSecondary,
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  );
-                },
-              ),
-            ),
