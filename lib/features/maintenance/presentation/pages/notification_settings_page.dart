@@ -32,7 +32,8 @@ class _NotificationSettingsPageState extends State<NotificationSettingsPage> {
           'Notifications',
           style: TextStyle(
             color: AppColors.navy,
-            fontWeight: FontWeight.w700,
+            fontWeight: FontWeight.w800,
+            letterSpacing: -0.5,
           ),
         ),
       ),
@@ -65,14 +66,14 @@ class _NotificationSettingsPageState extends State<NotificationSettingsPage> {
                     ),
                     const SizedBox(height: 20),
 
-                    // Section 1 : Télémétrie et alertes d'usures européennes (Huile, Filtres, Courroie, Disques)
+                    // Section 1 : Alertes d'usures (Huile, Filtres, Courroie, Disques...)
                     PremiumCard(
                       child: Column(
                         children: [
                           _buildSwitchRow(
                             icon: Icons.error_outline_rounded,
                             title: 'Usure critique de pièce',
-                            subtitle: 'Alerte immédiate sous les 20% d’efficacité ou de santé',
+                            subtitle: 'Alerte immédiate sous les 20% d’efficacité (Alerte Orange)',
                             value: _wearAlerts,
                             onChanged: (val) => setState(() => _wearAlerts = val),
                           ),
