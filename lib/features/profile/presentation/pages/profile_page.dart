@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
+
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/widgets/premium_card.dart';
 import '../../../../core/widgets/premium_button.dart';
@@ -8,6 +10,9 @@ class ProfilePage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    const int mecaGoScore = 85;
+    const double totalSavings = 125;
+
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
@@ -28,7 +33,7 @@ class ProfilePage extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // 1. BADGE PREMIUM DÉGRADÉ HAUTE COUTURE
+              // Badge Premium Dégradé MecaGo Style
               Container(
                 width: double.infinity,
                 padding: const EdgeInsets.all(22),
@@ -53,9 +58,9 @@ class ProfilePage extends StatelessWidget {
                     color: Colors.white.withOpacity(0.45),
                   ),
                 ),
-                child: Column(
+                child: const Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
-                  children: const [
+                  children: [
                     Row(
                       children: [
                         Icon(
@@ -102,31 +107,31 @@ class ProfilePage extends StatelessWidget {
 
               const SizedBox(height: 14),
 
-              // 2. BLOCS DE STATISTIQUES AUTOMATIQUES
+              // Blocs d'activité de l'utilisateur
               Row(
                 children: [
                   Expanded(
                     child: PremiumCard(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
-                        children: const [
-                          Icon(
+                        children: [
+                          const Icon(
                             Icons.emoji_events_rounded,
-                            color: AppColors.orange,
+                            color: AppColors.orange, 
                             size: 30,
                           ),
-                          SizedBox(height: 14),
-                          Text(
+                          const SizedBox(height: 14),
+                          const Text(
                             'MecaGo Score™',
                             style: TextStyle(
                               color: AppColors.textSecondary,
                               fontWeight: FontWeight.w500,
                             ),
                           ),
-                          SizedBox(height: 6),
+                          const SizedBox(height: 6),
                           Text(
-                            '85',
-                            style: TextStyle(
+                            '$mecaGoScore',
+                            style: const TextStyle(
                               color: AppColors.navy,
                               fontSize: 32,
                               fontWeight: FontWeight.w800,
@@ -141,24 +146,24 @@ class ProfilePage extends StatelessWidget {
                     child: PremiumCard(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
-                        children: const [
-                          Icon(
+                        children: [
+                          const Icon(
                             Icons.savings_rounded,
                             color: AppColors.success,
                             size: 30,
                           ),
-                          SizedBox(height: 14),
-                          Text(
+                          const SizedBox(height: 14),
+                          const Text(
                             'Économies',
                             style: TextStyle(
                               color: AppColors.textSecondary,
                               fontWeight: FontWeight.w500,
                             ),
                           ),
-                          SizedBox(height: 6),
+                          const SizedBox(height: 6),
                           Text(
-                            '125 €',
-                            style: TextStyle(
+                            '${totalSavings.toInt()} €',
+                            style: const TextStyle(
                               color: AppColors.navy,
                               fontSize: 28,
                               fontWeight: FontWeight.w800,
@@ -184,32 +189,37 @@ class ProfilePage extends StatelessWidget {
 
               const SizedBox(height: 14),
 
-              // 3. MENU DES OPTIONS PREMIUM REGROUPÉES
+              // Menu des réglages interactifs
               PremiumCard(
                 child: Column(
                   children: [
-                    const _ProfileTile(
+                    _ProfileTile(
                       icon: Icons.garage_rounded,
                       title: 'Mon Garage',
                       subtitle: 'Gérer vos véhicules',
+                      onTap: () {},
                     ),
                     Divider(
                       height: 24,
                       color: Colors.grey.shade200,
                     ),
-                    const _ProfileTile(
+                    _ProfileTile(
                       icon: Icons.shield_rounded,
                       title: 'Sécurité',
                       subtitle: 'Connexion et confidentialité',
+                      onTap: () {
+                        context.push('/security'); 
+                      },
                     ),
                     Divider(
                       height: 24,
                       color: Colors.grey.shade200,
                     ),
-                    const _ProfileTile(
+                    _ProfileTile(
                       icon: Icons.notifications_rounded,
                       title: 'Notifications',
                       subtitle: 'Rappels de maintenance',
+                      onTap: () {},
                     ),
                   ],
                 ),
@@ -217,7 +227,7 @@ class ProfilePage extends StatelessWidget {
 
               const SizedBox(height: 24),
 
-              // 4. ACTION INTERACTIVE ÉLASTIQUE
+              // Bouton d'action réutilisable
               PremiumButton(
                 text: 'Gérer mon abonnement',
                 onPressed: () {},
@@ -230,53 +240,58 @@ class ProfilePage extends StatelessWidget {
   }
 }
 
-// ==========================================
-// COMPOSANT COMPLÉMENTAIRE DE LIGNE DE MENU
-// ==========================================
+// Widget composant de ligne de menu
 class _ProfileTile extends StatelessWidget {
   final IconData icon;
   final String title;
   final String subtitle;
+  final VoidCallback onTap;
 
   const _ProfileTile({
     required this.icon,
     required this.title,
     required this.subtitle,
+    required this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
     return InkWell(
-      onTap: () {},
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(10),
-            decoration: BoxDecoration(
-              color: AppColors.background,
-              borderRadius: BorderRadius.circular(12),
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(14),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 6),
+        child: Row(
+          children: [
+            Container(
+              width: 44,
+              height: 44,
+              decoration: BoxDecoration(
+                color: AppColors.orange.withOpacity(0.12),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Icon(icon, color: AppColors.orange, size: 22),
             ),
-            child: Icon(icon, color: AppColors.navy, size: 22),
-          ),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: AppColors.navy),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  subtitle,
-                  style: const TextStyle(color: AppColors.textSecondary, fontSize: 12),
-                ),
-              ],
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: const TextStyle(color: AppColors.navy, fontWeight: FontWeight.w700),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    subtitle,
+                    style: const TextStyle(color: AppColors.textSecondary, fontSize: 12),
+                  ),
+                ],
+              ),
             ),
-          ),
-          const Icon(Icons.arrow_forward_ios_rounded, color: AppColors.textSecondary, size: 14),
-        ],
+            const Icon(Icons.chevron_right_rounded, color: AppColors.textSecondary),
+          ],
+        ),
       ),
     );
   }
