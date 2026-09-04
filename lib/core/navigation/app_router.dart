@@ -9,9 +9,10 @@ import '../../features/vehicle_details/presentation/pages/vehicle_details_page.d
 import '../../features/maintenance/presentation/pages/tutorial_catalog_page.dart';
 import '../../features/maintenance/presentation/pages/tutorial_page.dart';
 import '../../features/maintenance/presentation/pages/maintenance_reminder_page.dart';
+import '../../features/maintenance/presentation/pages/notification_settings_page.dart'; // <-- Importation Notifications
 import '../../features/history/presentation/pages/history_page.dart';
 import '../../features/profile/presentation/pages/profile_page.dart';
-import '../../features/authentication/presentation/pages/security_page.dart'; // <-- Importation Sécurité
+import '../../features/authentication/presentation/pages/security_page.dart';
 
 class AppRouter {
   static final GoRouter router = GoRouter(
@@ -101,9 +102,15 @@ class AppRouter {
       ),
 
       GoRoute(
-        path: '/security', // <-- Route Sécurité ajoutée à la racine
+        path: '/security',
         name: 'security',
         builder: (context, state) => const SecurityPage(),
+      ),
+
+      GoRoute(
+        path: '/notifications', // <-- Route Notifications activée à la racine
+        name: 'notifications',
+        builder: (context, state) => const NotificationSettingsPage(),
       ),
     ],
   );
