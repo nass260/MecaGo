@@ -1,16 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart'; // <-- 1. Importation de navigation ajoutée
+import 'package:go_router/go_router.dart';
 
-// ==========================================
-// CHARTE GRAPHIQUE PREMIUM (Style Apple)
-// ==========================================
-class AppColors {
-  static const Color orange = Color(0xFFFF6A00);
-  static const Color navy = Color(0xFF111827);
-  static const Color background = Color(0xFFF3F7FB);
-  static const Color textSecondary = Color(0xFF64748B);
-  static const Color success = Color(0xFF10B981);
-}
+import '../../../../core/theme/app_theme.dart';
+import '../../../../core/widgets/premium_card.dart';
+import '../../../../core/widgets/premium_button.dart';
 
 class HomePage extends StatelessWidget {
   const HomePage({super.key});
@@ -21,134 +14,184 @@ class HomePage extends StatelessWidget {
       backgroundColor: AppColors.background,
       body: SafeArea(
         child: SingleChildScrollView(
-          physics: const BouncingScrollPhysics(), // Effet élastique iPhone
-          padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 20.0),
+          physics: const BouncingScrollPhysics(), // Effet élastique iOS
+          padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 16.0),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               
-              // 1. EN-TÊTE CHIRURGICAL APPPLE STYLE
+              // 1. HEADER UTILISATEUR AVEC AVATAR
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: const [
-                        Text('MECAGO CENTRAL', style: TextStyle(color: AppColors.orange, fontSize: 11, fontWeight: FontWeight.bold, letterSpacing: 1.5)),
-                        SizedBox(height: 4),
-                        Text('Bonjour, Pro 🛠️', style: TextStyle(color: AppColors.navy, fontSize: 26, fontWeight: FontWeight.bold, letterSpacing: -0.5)),
-                      ],
-                    ),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: const [
+                          Text(
+                            'Bonjour Alex',
+                            style: TextStyle(fontSize: 26, fontWeight: FontWeight.w800, color: AppColors.navy, letterSpacing: -0.5),
+                          ),
+                          SizedBox(width: 6),
+                          Text('👋', style: TextStyle(fontSize: 22)),
+                        ],
+                      ),
+                      const SizedBox(height: 4),
+                      const Text(
+                        'Prêt pour entretenir votre Tesla ?',
+                        style: TextStyle(color: AppColors.textSecondary, fontSize: 14, fontWeight: FontWeight.w500),
+                      ),
+                    ],
                   ),
-                  Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(16)),
-                    child: const Icon(Icons.notifications_none_rounded, color: AppColors.navy, size: 22),
+                  // Avatar utilisateur avec couronne Premium
+                  Stack(
+                    alignment: Alignment.topRight,
+                    children: [
+                      const CircleAvatar(
+                        radius: 24,
+                        backgroundImage: NetworkImage('https://unsplash.com'),
+                      ),
+                      Container(
+                        padding: const EdgeInsets.all(4),
+                        decoration: const BoxDecoration(color: AppColors.orange, shape: BoxShape.circle),
+                        child: const Text('👑', style: TextStyle(fontSize: 8)),
+                      ),
+                    ],
                   ),
                 ],
               ),
+              
               const SizedBox(height: 24),
               
-              // 2. CARTE MECA GO SCORE
-              Container(
-                padding: const EdgeInsets.all(20.0),
-                decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(24), border: Border.all(color: Colors.grey.shade100)),
-                child: Row(
-                  children: [
-                    Container(
-                      width: 54,
-                      height: 54,
-                      decoration: const BoxDecoration(color: AppColors.success, shape: BoxShape.circle),
-                      child: const Center(child: Text('85', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white, fontFamily: 'monospace'))),
-                    ),
-                    const SizedBox(width: 16),
-                    const Expanded(
+              // 2. BLOCS DE STATISTIQUES CÔTE À CÔTE
+              Row(
+                children: [
+                  Expanded(
+                    child: PremiumCard(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text('MecaGo Score™', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.navy)),
-                          SizedBox(height: 4),
-                          Text('Santé globale optimale. Prochaine vérification dans 4 500 km.', style: TextStyle(color: AppColors.textSecondary, fontSize: 12, height: 1.4)),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: const [
+                              Text('MecaGo Score™', style: TextStyle(color: AppColors.textSecondary, fontSize: 12, fontWeight: FontWeight.bold)),
+                              Icon(Icons.info_outline_rounded, size: 14, color: AppColors.textSecondary),
+                            ],
+                          ),
+                          const SizedBox(height: 12),
+                          Row(
+                            children: [
+                              Container(
+                                width: 42,
+                                height: 44,
+                                decoration: BoxDecoration(
+                                  border: Border.all(color: AppColors.orange, width: 3),
+                                  shape: BoxShape.circle,
+                                ),
+                                child: const Icon(Icons.shield_rounded, color: AppColors.orange, size: 18),
+                              ),
+                              const SizedBox(width: 12),
+                              Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: const [
+                                  Text('85', style: TextStyle(fontSize: 28, fontWeight: FontWeight.w900, color: AppColors.navy)),
+                                  Text('Très bon ★', style: TextStyle(color: AppColors.orange, fontSize: 11, fontWeight: FontWeight.bold)),
+                                ],
+                              ),
+                            ],
+                          ),
                         ],
                       ),
                     ),
-                  ],
-                ),
+                  ),
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: PremiumCard(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text('Économies réalisées', style: TextStyle(color: AppColors.textSecondary, fontSize: 12, fontWeight: FontWeight.bold)),
+                          const SizedBox(height: 12),
+                          Row(
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.all(10),
+                                decoration: BoxDecoration(color: AppColors.success.withOpacity(0.12), shape: BoxShape.circle),
+                                child: const Icon(Icons.savings_rounded, color: AppColors.success, size: 20),
+                              ),
+                              const SizedBox(width: 12),
+                              Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: const [
+                                  Text('125 €', style: TextStyle(fontSize: 24, fontWeight: FontWeight.w900, color: AppColors.navy)),
+                                  Text('+12 € ce mois-ci', style: TextStyle(color: AppColors.success, fontSize: 11, fontWeight: FontWeight.bold)),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
               ),
-              const SizedBox(height: 28),
-              const Text('Véhicule Actif', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.navy, letterSpacing: -0.3)),
-              const SizedBox(height: 14),
               
-              // 3. LA CARTE TESLA CONCEPT DESIGN
-              Container(
-                padding: const EdgeInsets.all(22.0),
-                decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(26), border: Border.all(color: Colors.grey.shade100)),
+              const SizedBox(height: 24),
+              
+              // 3. LE BLOC VÉHICULE ACTIF EXCLUSIF
+              PremiumCard(
+                padding: EdgeInsets.zero, // Permet à l'image d'épouser les bords supérieurs
                 child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    Stack(
                       children: [
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: const [
-                            Text('Tesla Model 3', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.navy)),
-                            SizedBox(height: 2),
-                            Text('Dual Motor — Électrique', style: TextStyle(color: AppColors.textSecondary, fontSize: 12)),
-                          ],
+                        // Image de la Tesla Blanche du catalogue
+                        ClipRRect(
+                          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+                          child: Image.network(
+                            'https://unsplash.com',
+                            height: 160,
+                            width: double.infinity,
+                            fit: BoxFit.cover,
+                          ),
                         ),
+                        // Bandeau assombrissant pour les textes clairs
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                          decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(8), border: Border.all(color: AppColors.navy, width: 1.5)),
-                          child: const Text('AB-123-CD', style: TextStyle(fontWeight: FontWeight.bold, fontFamily: 'monospace', color: AppColors.navy, fontSize: 12)),
+                          height: 160,
+                          decoration: BoxDecoration(
+                            borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+                            gradient: LinearGradient(
+                              begin: Alignment.topCenter,
+                              end: Alignment.bottomCenter,
+                              colors: [Colors.black.withOpacity(0.4), Colors.transparent],
+                            ),
+                          ),
                         ),
-                      ],
-                    ),
-                    const SizedBox(height: 20),
-                    
-                    // Silhouette vectorielle épurée de la Tesla
-                    Container(
-                      width: double.infinity,
-                      height: 120,
-                      decoration: BoxDecoration(color: AppColors.navy, borderRadius: BorderRadius.circular(20)),
-                      child: const Center(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(Icons.electric_car_rounded, size: 48, color: Colors.white),
-                            SizedBox(height: 8),
-                            Text('SYS. ÉLECTRIQUE SYNC.', style: TextStyle(color: Colors.white60, fontSize: 10, fontWeight: FontWeight.bold, letterSpacing: 1)),
-                          ],
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 20),
-                    
-                    // 2. LE BOUTON CONNECTÉ AU ROUTEUR
-                    InkWell(
-                      onTap: () {
-                        context.push('/reminders'); // Navigue vers l'écran des Rappels Intelligents
-                      },
-                      child: Container(
-                        width: double.infinity,
-                        height: 52,
-                        decoration: BoxDecoration(
-                          gradient: const LinearGradient(colors: [AppColors.orange, Color(0xFFFF8C00)]),
-                          borderRadius: BorderRadius.circular(18),
-                          boxShadow: [BoxShadow(color: AppColors.orange.withOpacity(0.25), blurRadius: 16, offset: const Offset(0, 6))],
-                        ),
-                        child: const Center(
-                          child: Text('Démarrer un entretien', style: TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.bold)),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
+                        Padding(
+                          padding: const EdgeInsets.all(16.0),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                  const Text('Mon véhicule actif', style: TextStyle(color: Colors.white70, fontSize: 12, fontWeight: FontWeight.w600)),
+                                  InkWell(
+                                    onTap: () => context.push('/vehicle-details'),
+                                    child: Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                      decoration: BoxDecoration(color: Colors.black.withOpacity(0.5), borderRadius: BorderRadius.circular(20)),
+                                      child: Row(
+                                        children: const [
+                                          Text('Voir détails', style: TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold)),
+                                          Icon(Icons.chevron_right_rounded, color: Colors.white, size: 14),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 4),
+                              const Text('Tesla Model 3', style: TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold, letterSpacing: -0.5)),
