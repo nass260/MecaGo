@@ -11,6 +11,7 @@ import '../../features/maintenance/presentation/pages/tutorial_page.dart';
 import '../../features/maintenance/presentation/pages/maintenance_reminder_page.dart';
 import '../../features/history/presentation/pages/history_page.dart';
 import '../../features/profile/presentation/pages/profile_page.dart';
+import '../../features/authentication/presentation/pages/security_page.dart'; // <-- Importation Sécurité
 
 class AppRouter {
   static final GoRouter router = GoRouter(
@@ -97,6 +98,12 @@ class AppRouter {
         path: '/reminders',
         name: 'reminders',
         builder: (context, state) => const MaintenanceReminderPage(),
+      ),
+
+      GoRoute(
+        path: '/security', // <-- Route Sécurité ajoutée à la racine
+        name: 'security',
+        builder: (context, state) => const SecurityPage(),
       ),
     ],
   );
