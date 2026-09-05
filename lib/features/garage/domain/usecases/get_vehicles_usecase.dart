@@ -1,24 +1,24 @@
-import '../../../../core/services/database_helper.dart';
+import '../../data/datasources/garage_local_data_source.dart';
 import '../../data/models/vehicle_model.dart';
 
 class GetVehiclesUseCase {
-  const GetVehiclesUseCase();
+  final GarageLocalDataSource _localDataSource;
+
+  // Injection de dépendance de notre source de données locale
+  const GetVehiclesUseCase({
+    GarageLocalDataSource localDataSource = const GarageLocalDataSource(),
+  }) : _localDataSource = localDataSource;
 
   /// Exécute l'action métier de récupération et de conversion des véhicules du garage.
-  /// Transforme les lignes brutes de la table SQLite en objets Flutter typés 'VehicleModel'.
+  /// Consomme de manière isolée la couche Data Source SQLite de production.
   Future<List<VehicleModel>> execute() async {
     try {
-      // 1. Récupération des données brutes de persistance locale SQLite
-      final List<Map<String, dynamic>> rawVehicles = await DatabaseHelper.instance.getAllVehicles();
+      // 1. Récupération via notre source de données locale physique scellée
+      final List<VehicleModel> vehicles = await _localDataSource.fetchSavedVehicles();
 
-      // 2. Conversion et typage algorithmique instantané via le modèle de données du garage
-      final List<VehicleModel> typedVehicles = rawVehicles.map((map) {
-        return VehicleModel.fromMap(map);
-      }).toList();
-
-      return typedVehicles; // Renvoie la liste de véhicules propre et exploitable par l'interface
+      return vehicles; // Renvoie la liste d'objets typés prête pour l'affichage de l'interface
     } catch (e) {
-      // Sécurité anti-crash : renvoie une liste vide en cas d'erreur de lecture
+      // Sécurité anti-crash : renvoie une liste vide de secours
       return const <VehicleModel>[];
     }
   }
