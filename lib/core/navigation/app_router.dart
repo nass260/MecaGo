@@ -9,10 +9,11 @@ import '../../features/vehicle_details/presentation/pages/vehicle_details_page.d
 import '../../features/maintenance/presentation/pages/tutorial_catalog_page.dart';
 import '../../features/maintenance/presentation/pages/tutorial_page.dart';
 import '../../features/maintenance/presentation/pages/maintenance_reminder_page.dart';
-import '../../features/maintenance/presentation/pages/notification_settings_page.dart'; // <-- Importation Notifications
+import '../../features/maintenance/presentation/pages/notification_settings_page.dart';
 import '../../features/history/presentation/pages/history_page.dart';
 import '../../features/profile/presentation/pages/profile_page.dart';
 import '../../features/authentication/presentation/pages/security_page.dart';
+import '../../features/authentication/presentation/pages/settings_page.dart'; // <-- Importation Réglages Généraux
 
 class AppRouter {
   static final GoRouter router = GoRouter(
@@ -108,9 +109,15 @@ class AppRouter {
       ),
 
       GoRoute(
-        path: '/notifications', // <-- Route Notifications activée à la racine
+        path: '/notifications',
         name: 'notifications',
         builder: (context, state) => const NotificationSettingsPage(),
+      ),
+
+      GoRoute(
+        path: '/settings', // <-- Route Réglages Généraux ajoutée à la racine
+        name: 'settings',
+        builder: (context, state) => const SettingsPage(),
       ),
     ],
   );
