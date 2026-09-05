@@ -1,35 +1,26 @@
-import '../../../../core/services/database_helper.dart';
+import '../../data/datasources/maintenance_local_data_source.dart';
 import '../../data/models/reminder_model.dart';
 import '../../data/models/tutorial_model.dart';
 import '../services/autodoc_shop_service.dart';
 
 class MaintenanceRepository {
+  final MaintenanceLocalDataSource _localDataSource;
   final AutodocShopService _shopService;
   
+  // Injection de dépendances complète des sources de données locales et commerciales
   const MaintenanceRepository({
+    MaintenanceLocalDataSource localDataSource = const MaintenanceLocalDataSource(),
     AutodocShopService shopService = const AutodocShopService(),
-  }) : _shopService = shopService;
+  })  : _localDataSource = localDataSource,
+        _shopService = shopService;
 
-  /// Récupère l'intégralité des rappels kilométriques d'un véhicule depuis la base SQLite
+  /// Récupère l'intégralité des rappels kilométriques d'un véhicule depuis la Data Source SQLite
   Future<List<ReminderModel>> getVehicleReminders(int vehicleId) async {
-    // Appel à notre DatabaseHelper global configuré au Sprint 3
-    final List<Map<String, dynamic>> rawRows = await DatabaseHelper.instance.getAllVehicles();
-    
-    // Simulation du filtrage et de la conversion brute SQLite vers nos Objets Typés ReminderModel
-    return rawRows.map((row) {
-      final bool isTesla = (row['brand'] as String).toUpperCase() == 'TESLA';
-      return ReminderModel(
-        id: row['id'] as int,
-        title: isTesla ? "Filtre habitacle HEPA" : "Filtre d'habitacle Habituel",
-        subtitle: "Prochain remplacement estimé constructeur",
-        remaining: isTesla ? 82 : 45,
-        mileage: isTesla ? "58 000 / 72 000 km" : "15 000 / 30 000 km",
-        colorValue: isTesla ? 0xFFFF6A00 : 0xFF22C55E, // Orange ou Vert selon l'urgence
-      );
-    }).toList();
+    // Consomme de manière propre la couche Data Source de production
+    return await _localDataSource.fetchMaintenanceReminders();
   }
 
-  /// Charge un tutoriel pas à pas et y injecte dynamiquement la tarification et la marque n°1 en France
+  /// Charge un tutoriel pas à pas et y injecte la tarification et la marque n°1 en France
   Future<TutorialModel> loadEnrichedTutorial({
     required String vehicleBrand,
     required String tutorialTitle,
