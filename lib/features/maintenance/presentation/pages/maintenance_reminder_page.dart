@@ -1,51 +1,29 @@
 import 'package:flutter/material.dart';
+
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/widgets/premium_card.dart';
 import '../../../../core/widgets/premium_button.dart';
+import '../managers/reminders_notifier.dart'; // <-- Écoute du contrôleur de télémétrie
 
-class MaintenanceReminderPage extends StatelessWidget {
+class MaintenanceReminderPage extends StatefulWidget {
   const MaintenanceReminderPage({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    final reminders = [
-      const _ReminderItem(
-        title: 'Filtre habitacle HEPA',
-        subtitle: 'Prochain remplacement estimé',
-        remaining: 82,
-        mileage: '58 000 / 72 000 km',
-        color: AppColors.success,
-      ),
-      const _ReminderItem(
-        title: 'Rotation des pneus',
-        subtitle: 'Usure homogène recommandée',
-        remaining: 45,
-        mileage: '18 000 / 40 000 km',
-        color: AppColors.orange,
-      ),
-      const _ReminderItem(
-        title: 'Liquide de frein',
-        subtitle: 'Contrôle conseillé',
-        remaining: 15,
-        mileage: 'Remplacement bientôt',
-        color: Colors.red,
-      ),
-      const _ReminderItem(
-        title: 'Balais d’essuie-glace',
-        subtitle: 'Remplacement recommandé',
-        remaining: 63,
-        mileage: '12 mois estimés',
-        color: AppColors.success,
-      ),
-      const _ReminderItem(
-        title: 'Filtre de climatisation',
-        subtitle: 'Entretien conseillé',
-        remaining: 71,
-        mileage: '48 000 / 72 000 km',
-        color: AppColors.success,
-      ),
-    ];
+  State<MaintenanceReminderPage> createState() => _MaintenanceReminderPageState();
+}
 
+class _MaintenanceReminderPageState extends State<MaintenanceReminderPage> {
+  final RemindersNotifier _notifier = RemindersNotifier();
+
+  @override
+  void initState() {
+    super.initState();
+    // Déclenche l'extraction et le calcul de l'usure spécifique du véhicule ID 1 (Tesla ou Clio lue)
+    _notifier.loadVehicleReminders(1);
+  }
+
+  @override
+  Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
@@ -58,194 +36,166 @@ class MaintenanceReminderPage extends StatelessWidget {
         ),
         title: const Text(
           'Rappels intelligents',
-          style: TextStyle(
-            color: AppColors.navy,
-            fontWeight: FontWeight.w700,
-          ),
+          style: TextStyle(color: AppColors.navy, fontWeight: FontWeight.w800, letterSpacing: -0.5),
         ),
       ),
       body: SafeArea(
-        child: Column(
-          children: [
-            // Section 1 : Carte d'état global du véhicule
-            Padding(
-              padding: const EdgeInsets.fromLTRB(20, 12, 20, 16),
-              child: PremiumCard(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: const [
-                        Icon(
-                          Icons.electric_car_rounded,
-                          color: AppColors.orange,
-                          size: 28,
-                        ),
-                        SizedBox(width: 10),
-                        Expanded(
-                          child: Text(
-                            'Tesla Model 3',
-                            style: TextStyle(
-                              fontSize: 20,
-                              fontWeight: FontWeight.w700,
-                              color: AppColors.navy,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 18),
-                    const Text(
-                      'Santé globale de maintenance',
-                      style: TextStyle(
-                        color: AppColors.textSecondary,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.end,
-                      children: const [
-                        Text(
-                          '76',
-                          style: TextStyle(
-                            fontSize: 40,
-                            fontWeight: FontWeight.w800,
-                            color: AppColors.navy,
-                          ),
-                        ),
-                        SizedBox(width: 4),
-                        Padding(
-                          padding: EdgeInsets.only(bottom: 8),
-                          child: Text(
-                            '/100',
-                            style: TextStyle(
-                              color: AppColors.textSecondary,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 12),
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(8),
-                      child: const LinearProgressIndicator(
-                        value: 0.76,
-                        minHeight: 10,
-                        backgroundColor: Color(0xFFE5E7EB),
-                        valueColor: AlwaysStoppedAnimation(AppColors.orange),
-                      ),
-                    ),
-                    const SizedBox(height: 14),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 10,
-                      ),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFFFF7ED),
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: const Color(0xFFFFEDD5)),
-                      ),
-                      child: Row(
-                        children: const [
-                          Icon(
-                            Icons.warning_amber_rounded,
-                            color: AppColors.orange,
-                          ),
-                          SizedBox(width: 10),
-                          Expanded(
-                            child: Text(
-                              'Le liquide de frein nécessite une vérification prochainement.',
-                              style: TextStyle(
-                                color: AppColors.navy,
-                                fontWeight: FontWeight.w600,
-                                fontSize: 13,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
+        child: AnimatedBuilder(
+          animation: _notifier,
+          builder: (context, _) {
+            // Rendu de chargement iOS Style pendant le calcul de dégradation algorithmique
+            if (_notifier.isLoading) {
+              return const Center(
+                child: CircularProgressIndicator(valueColor: AlwaysStoppedAnimation<Color>(AppColors.orange)),
+              );
+            }
+
+            if (_notifier.errorMessage != null || _notifier.reminders.isEmpty) {
+              return Center(
+                child: Text(
+                  _notifier.errorMessage ?? "Aucun rappel configuré pour ce véhicule.",
+                  style: const TextStyle(color: AppColors.textSecondary, fontWeight: FontWeight.w500),
                 ),
-              ),
-            ),
-            
-            // Section 2 : Liste défilante des pièces d'usure kilométrique
-            Expanded(
-              child: ListView.separated(
-                padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
-                itemCount: reminders.length,
-                physics: const BouncingScrollPhysics(),
-                separatorBuilder: (_, __) => const SizedBox(height: 14),
-                itemBuilder: (context, index) {
-                  final item = reminders[index];
-                  return PremiumCard(
+              );
+            }
+
+            final reminders = _notifier.reminders;
+
+            return Column(
+              children: [
+                // 1. CARTE DE SYNTHÈSE CRITIQUE SPÉCIFIQUE
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 12, 20, 16),
+                  child: PremiumCard(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Row(
-                          children: [
+                          children: const [
+                            Icon(Icons.analytics_rounded, color: AppColors.orange, size: 26),
+                            SizedBox(width: 10),
                             Expanded(
                               child: Text(
-                                item.title,
-                                style: const TextStyle(
-                                  fontSize: 17,
-                                  fontWeight: FontWeight.w700,
-                                  color: AppColors.navy,
-                                ),
-                              ),
-                            ),
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 12,
-                                vertical: 6,
-                              ),
-                              decoration: BoxDecoration(
-                                color: item.color.withOpacity(0.12),
-                                borderRadius: BorderRadius.circular(999),
-                              ),
-                              child: Text(
-                                '${item.remaining}% restant',
-                                style: TextStyle(
-                                  color: item.color,
-                                  fontWeight: FontWeight.w700,
-                                  fontSize: 12,
-                                ),
+                                'Analyse de Télémétrie',
+                                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.navy),
                               ),
                             ),
                           ],
                         ),
-                        const SizedBox(height: 6),
-                        Text(
-                          item.subtitle,
-                          style: const TextStyle(
-                            color: AppColors.textSecondary,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
                         const SizedBox(height: 14),
+                        const Text(
+                          'Santé générale de maintenance estimée',
+                          style: TextStyle(color: AppColors.textSecondary, fontWeight: FontWeight.w500, fontSize: 13),
+                        ),
+                        const SizedBox(height: 6),
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.end,
+                          children: const [
+                            Text('76', style: TextStyle(fontSize: 36, fontWeight: FontWeight.w900, color: AppColors.navy, fontFamily: 'monospace')),
+                            SizedBox(width: 2),
+                            Padding(
+                              padding: EdgeInsets.only(bottom: 6),
+                              child: Text('/100', style: TextStyle(color: AppColors.textSecondary, fontWeight: FontWeight.bold, fontSize: 14)),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 10),
                         ClipRRect(
                           borderRadius: BorderRadius.circular(8),
-                          child: LinearProgressIndicator(
-                            value: item.remaining / 100,
-                            minHeight: 10,
-                            backgroundColor: const Color(0xFFE5E7EB),
-                            valueColor: AlwaysStoppedAnimation(item.color),
+                          child: const LinearProgressIndicator(
+                            value: 0.76,
+                            minHeight: 8,
+                            backgroundColor: AppColors.border,
+                            valueColor: AlwaysStoppedAnimation(AppColors.orange),
                           ),
                         ),
-                        const SizedBox(height: 12),
-                        Row(
+                      ],
+                    ),
+                  ),
+                ),
+                
+                // 2. LISTE CHRONOLOGIQUE DES COMPOSANTS ET USURES LIÉS AU MODÈLE
+                Expanded(
+                  child: ListView.separated(
+                    padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
+                    itemCount: reminders.length,
+                    physics: const BouncingScrollPhysics(),
+                    separatorBuilder: (_, __) => const SizedBox(height: 14),
+                    itemBuilder: (context, index) {
+                      final item = reminders[index];
+                      final Color statusColor = Color(item.colorValue);
+
+                      return PremiumCard(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            const Icon(
-                              Icons.speed_rounded,
-                              size: 18,
-                              color: AppColors.textSecondary,
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: Text(
+                                    item.title,
+                                    style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.navy, letterSpacing: -0.3),
+                                  ),
+                                ),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                  decoration: BoxDecoration(
+                                    color: statusColor.withOpacity(0.1),
+                                    borderRadius: BorderRadius.circular(20),
+                                  ),
+                                  child: Text(
+                                    '${item.remaining}% restant',
+                                    style: TextStyle(color: statusColor, fontWeight: FontWeight.extrabold, fontSize: 11),
+                                  ),
+                                ),
+                              ],
                             ),
-                            const SizedBox(width: 6),
+                            const SizedBox(height: 4),
                             Text(
-                              item.mileage,
-                              style: const TextStyle(
-                                color: AppColors.textSecondary,
+                              item.subtitle,
+                              style: const TextStyle(color: AppColors.textSecondary, fontSize: 13, fontWeight: FontWeight.w500),
+                            ),
+                            const SizedBox(height: 12),
+                            ClipRRect(
+                              borderRadius: BorderRadius.circular(6),
+                              child: LinearProgressIndicator(
+                                value: item.remaining / 100,
+                                minHeight: 7,
+                                backgroundColor: AppColors.border,
+                                valueColor: AlwaysStoppedAnimation(statusColor),
+                              ),
+                            ),
+                            const SizedBox(height: 12),
+                            Row(
+                              children: [
+                                const Icon(Icons.speed_rounded, size: 16, color: AppColors.textSecondary),
+                                const SizedBox(width: 6),
+                                Text(
+                                  item.mileage,
+                                  style: const TextStyle(color: AppColors.textSecondary, fontSize: 12, fontWeight: FontWeight.w600),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      );
+                    },
+                  ),
+                ),
+                
+                // 3. BOUTON D'ACTION PROGRAMMÉ
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
+                  child: PremiumButton(
+                    text: 'Synchroniser le kilométrage',
+                    onPressed: () {},
+                  ),
+                ),
+              ],
+            );
+          },
+        ),
+      ),
+    );
+  }
+}
