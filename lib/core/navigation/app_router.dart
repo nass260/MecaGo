@@ -13,7 +13,8 @@ import '../../features/maintenance/presentation/pages/notification_settings_page
 import '../../features/history/presentation/pages/history_page.dart';
 import '../../features/profile/presentation/pages/profile_page.dart';
 import '../../features/authentication/presentation/pages/security_page.dart';
-import '../../features/authentication/presentation/pages/settings_page.dart'; // <-- Importation Réglages Généraux
+import '../../features/authentication/presentation/pages/settings_page.dart';
+import '../../features/diagnostic/presentation/pages/diagnostic_page.dart'; // <-- 1. Importation du Diagnostic ajoutée
 
 class AppRouter {
   static final GoRouter router = GoRouter(
@@ -115,9 +116,15 @@ class AppRouter {
       ),
 
       GoRoute(
-        path: '/settings', // <-- Route Réglages Généraux ajoutée à la racine
+        path: '/settings',
         name: 'settings',
         builder: (context, state) => const SettingsPage(),
+      ),
+
+      GoRoute(
+        path: '/diagnostic', // <-- 2. Route Diagnostic ajoutée à la racine
+        name: 'diagnostic',
+        builder: (context, state) => const DiagnosticPage(),
       ),
     ],
   );
