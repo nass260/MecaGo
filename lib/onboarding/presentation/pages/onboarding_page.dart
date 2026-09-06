@@ -12,47 +12,31 @@ class OnboardingPage extends StatefulWidget {
 }
 
 class _OnboardingPageState extends State<OnboardingPage> {
-  final PageController _controller = PageController();
-  int _index = 0;
+  final PageController _pageController = PageController();
+  int _currentPage = 0;
 
-  // Liste des 3 écrans officiels avec images HD Unsplash (Tesla / Porsche / Atelier)
-  final _pages = const [
-    _OnboardingData(
-      title: "Entretenez votre voiture comme un pro",
-      description:
-          "Des tutoriels adaptés à votre véhicule pour économiser du temps et de l'argent.",
-      image:
-          "https://unsplash.com",
-      icon: Icons.directions_car_filled_rounded,
+  final List<_OnboardingStep> _steps = const [
+    _OnboardingStep(
+      title: "Scannez votre plaque",
+      description: "Approchez-vous du véhicule, scannez sa plaque française et laissez l'IA extraire instantanément la fiche technique d'origine constructeur.",
+      imageUrl: "https://unsplash.com",
     ),
-    _OnboardingData(
-      title: "Scannez votre plaque en quelques secondes",
-      description:
-          "Identification automatique du véhicule grâce à la caméra et à l'OCR.",
-      image:
-          "https://unsplash.com",
-      icon: Icons.document_scanner_rounded,
+    _OnboardingStep(
+      title: "Tutoriels d'Atelier",
+      description: "Accédez à des guides de maintenance illustrés étape par étape avec le bon outillage requis pour réparer vous-même en mode Mains Sales.",
+      imageUrl: "https://unsplash.com",
     ),
-    _OnboardingData(
-      title: "Mode Garage pensé pour les mains sales",
-      description:
-          "Lampe, minuteur, checklist et gros boutons pour intervenir sereinement.",
-      image:
-          "https://unsplash.com",
-      icon: Icons.build_circle_rounded,
+    _OnboardingStep(
+      title: "Optimisez vos dépenses",
+      description: "Suivez l'usure kilométrique prédictive de vos pièces et centralisez l'historique de vos interventions pour économiser des centaines d'euros.",
+      imageUrl: "https://unsplash.com",
     ),
   ];
 
-  void _next() {
-    if (_index == _pages.length - 1) {
-      context.go("/");
-      return;
-    }
-
-    _controller.nextPage(
-      duration: const Duration(milliseconds: 350),
-      curve: Curves.easeOutCubic,
-    );
+  @override
+  void dispose() {
+    _pageController.dispose();
+    super.dispose();
   }
 
   @override
@@ -62,177 +46,153 @@ class _OnboardingPageState extends State<OnboardingPage> {
       body: SafeArea(
         child: Column(
           children: [
-            // Bouton "Passer" style Apple
-            Align(
-              alignment: Alignment.centerRight,
-              child: Padding(
-                padding: const EdgeInsets.only(top: 12, right: 20),
-                child: TextButton(
-                  onPressed: () => context.go("/"),
-                  child: const Text(
-                    "Passer",
-                    style: TextStyle(
-                      color: AppColors.textSecondary,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ),
-              ),
-            ),
-
-            // Carrousel central d'images et textes
             Expanded(
               child: PageView.builder(
-                controller: _controller,
-                itemCount: _pages.length,
-                onPageChanged: (value) => setState(() => _index = value),
-                itemBuilder: (_, i) {
-                  final page = _pages[i];
-
+                controller: _pageController,
+                itemCount: _steps.length,
+                onPageChanged: (int index) {
+                  setState(() {
+                    _currentPage = index;
+                  });
+                },
+                physics: const BouncingScrollPhysics(),
+                itemBuilder: (context, index) {
+                  final step = _steps[index];
                   return Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 28),
+                    padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 12.0),
                     child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        const SizedBox(height: 8),
-
-                        // Image arrondie premium avec double ombre et icône d'action flottante
-                        Expanded(
-                          child: Container(
-                            decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(34),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.black.withOpacity(.08),
-                                  blurRadius: 40,
-                                  offset: const Offset(0, 20),
-                                ),
-                              ],
-                              image: DecorationImage(
-                                image: NetworkImage(page.image),
-                                fit: BoxFit.cover,
-                                alignment: Alignment.center,
-                              ),
+                        Container(
+                          height: MediaQuery.of(context).size.height * 0.35,
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(32),
+                            image: DecorationImage(
+                              image: NetworkImage(step.imageUrl),
+                              fit: BoxFit.cover,
                             ),
-                            child: Container(
-                              decoration: BoxDecoration(
-                                borderRadius: BorderRadius.circular(34),
-                                gradient: LinearGradient(
-                                  begin: Alignment.topCenter,
-                                  end: Alignment.bottomCenter,
-                                  colors: [
-                                    Colors.black.withOpacity(.05),
-                                    Colors.black.withOpacity(.35),
-                                  ],
-                                ),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withOpacity(0.04),
+                                blurRadius: 24,
+                                offset: const Offset(0, 12),
                               ),
-                              child: Align(
-                                alignment: Alignment.topRight,
-                                child: Container(
-                                  margin: const EdgeInsets.all(20),
-                                  width: 56,
-                                  height: 56,
-                                  decoration: BoxDecoration(
-                                    color: Colors.white.withOpacity(.92),
-                                    borderRadius: BorderRadius.circular(18),
-                                  ),
-                                  child: Icon(
-                                    page.icon,
-                                    color: AppColors.orange,
-                                    size: 28,
-                                  ),
-                                ),
-                              ),
-                            ),
+                            ],
                           ),
                         ),
-
-                        const SizedBox(height: 34),
-
-                        // Titre Navy texturé
+                        const SizedBox(height: 40),
                         Text(
-                          page.title,
+                          step.title,
                           textAlign: TextAlign.center,
                           style: const TextStyle(
-                            fontSize: 32,
-                            fontWeight: FontWeight.w800,
                             color: AppColors.navy,
-                            height: 1.08,
-                            letterSpacing: -.8,
+                            fontSize: 28,
+                            fontWeight: FontWeight.w900,
+                            letterSpacing: -0.8,
                           ),
                         ),
-
-                        const SizedBox(height: 18),
-
-                        // Description grise raffinée
+                        const SizedBox(height: 14),
                         Text(
-                          page.description,
+                          step.description,
                           textAlign: TextAlign.center,
                           style: const TextStyle(
-                            fontSize: 16,
                             color: AppColors.textSecondary,
+                            fontSize: 15,
                             height: 1.5,
+                            fontWeight: FontWeight.w500,
                           ),
                         ),
-
-                        const SizedBox(height: 34),
                       ],
                     ),
                   );
                 },
               ),
             ),
-
-            // Pilules de progression animées en bas
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
-              children: List.generate(
-                _pages.length,
-                (i) => AnimatedContainer(
-                  duration: const Duration(milliseconds: 250),
-                  margin: const EdgeInsets.symmetric(horizontal: 4),
-                  width: i == _index ? 26 : 8,
-                  height: 8,
-                  decoration: BoxDecoration(
-                    color: i == _index
-                        ? AppColors.orange
-                        : AppColors.border,
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                ),
-              ),
+              children: List.generate(_steps.length, (index) => _buildDotIndicator(index)),
             ),
-
-            const SizedBox(height: 28),
-
-            // Bouton élastique réutilisable
+            const SizedBox(height: 32),
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 28),
-              child: PremiumButton(
-                text: _index == _pages.length - 1
-                    ? "Commencer"
-                    : "Suivant",
-                onPressed: _next,
-              ),
+              padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
+              child: _currentPage == _steps.length - 1
+                  ? Column(
+                      children: [
+                        PremiumButton(
+                          text: "Créer un compte MecaGo",
+                          onPressed: () => context.go('/register'),
+                        ),
+                        const SizedBox(height: 14),
+                        TextButton(
+                          onPressed: () => context.go('/login'),
+                          child: const Text(
+                            "J'ai déjà un compte, se connecter",
+                            style: TextStyle(
+                              color: AppColors.orange,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 14,
+                            ),
+                          ),
+                        ),
+                      ],
+                    )
+                  : Column(
+                      children: [
+                        PremiumButton(
+                          text: "Suivant",
+                          onPressed: () {
+                            _pageController.nextPage(
+                              duration: const Duration(milliseconds: 400),
+                              curve: Curves.easeInOut,
+                            );
+                          },
+                        ),
+                        const SizedBox(height: 14),
+                        TextButton(
+                          onPressed: () {
+                            _pageController.jumpToPage(_steps.length - 1);
+                          },
+                          child: const Text(
+                            "Passer l'introduction",
+                            style: TextStyle(
+                              color: AppColors.textSecondary,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 14,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
             ),
-
-            const SizedBox(height: 30),
           ],
         ),
       ),
     );
   }
+
+  Widget _buildDotIndicator(int index) {
+    final bool isActive = _currentPage == index;
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 250),
+      margin: const EdgeInsets.symmetric(horizontal: 4),
+      height: 8,
+      width: isActive ? 24 : 8,
+      decoration: BoxDecoration(
+        color: isActive ? AppColors.orange : AppColors.border,
+        borderRadius: BorderRadius.circular(4),
+      ),
+    );
+  }
 }
 
-class _OnboardingData {
-  const _OnboardingData({
-    required this.title,
-    required this.description,
-    required this.image,
-    required this.icon,
-  });
-
+class _OnboardingStep {
   final String title;
   final String description;
-  final String image;
-  final IconData icon;
+  final String imageUrl;
+
+  const _OnboardingStep({
+    required this.title,
+    required this.description,
+    required this.imageUrl,
+  });
 }
