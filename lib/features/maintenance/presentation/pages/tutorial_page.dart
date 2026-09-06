@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/widgets/premium_card.dart';
 import '../../../../core/widgets/premium_button.dart';
+import '../../../history/domain/usecases/log_intervention_usecase.dart'; // <-- 1. Importation du Use Case d'archivage
 import '../../data/models/tutorial_model.dart';
 import '../../infrastructure/repositories/maintenance_repository.dart';
 
@@ -14,6 +15,8 @@ class TutorialPage extends StatefulWidget {
 
 class _TutorialPageState extends State<TutorialPage> {
   final MaintenanceRepository _repository = const MaintenanceRepository();
+  final LogInterventionUseCase _logUseCase = const LogInterventionUseCase(); // <-- Initialisation du Use Case
+  
   TutorialModel? _enrichedTutorial;
   bool _isLoading = true;
   int _activeStepIndex = 0;
@@ -24,7 +27,6 @@ class _TutorialPageState extends State<TutorialPage> {
     _loadTutorialContext();
   }
 
-  /// Charge le tutoriel enrichi avec l'intelligence commerciale nationale (PURFLUX / VALEO)
   Future<void> _loadTutorialContext() async {
     final TutorialModel tutorial = await _repository.loadEnrichedTutorial(
       vehicleBrand: "RENAULT",
@@ -36,6 +38,34 @@ class _TutorialPageState extends State<TutorialPage> {
         _enrichedTutorial = tutorial;
         _isLoading = false;
       });
+    }
+  }
+
+  /// Déclenche l'archivage physique du gain en euros dans la base SQLite à la fin de l'atelier
+  Future<void> _finalizeIntervention() async {
+    if (_enrichedTutorial == null) return;
+
+    setState(() => _isLoading = true);
+
+    // Persiste les 35€ d'économies dans l'historique avec la bonne icône
+    final bool success = await _logUseCase.execute(
+      title: _enrichedTutorial!.title,
+      savingsAmount: _enrichedTutorial!.savings,
+      vehicleMileage: "42 150 km",
+      iconMaterialCodePoint: 0xe056, // Icons.air_rounded
+    );
+
+    if (mounted) {
+      setState(() => _isLoading = false);
+      // Ferme l'écran d'atelier pour revenir au tableau de bord actualisé
+      Navigator.of(context).pop();
+      
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(success ? "Intervention validée ! +35 € ajoutés à vos économies." : "Erreur d'écriture SQLite."),
+          backgroundColor: success ? AppColors.success : Colors.red,
+        ),
+      );
     }
   }
 
@@ -60,7 +90,7 @@ class _TutorialPageState extends State<TutorialPage> {
             ? const Center(child: CircularProgressIndicator(valueColor: AlwaysStoppedAnimation<Color>(AppColors.orange)))
             : Column(
                 children: [
-                  // 1. TIMELINE HORIZONTALE ÉCHELLE DE ETAPES
+                  // TIMELINE HORIZONTALE DE PROGRES
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 8.0),
                     child: Row(
@@ -80,7 +110,7 @@ class _TutorialPageState extends State<TutorialPage> {
                     ),
                   ),
 
-                  // 2. BLOC CENTRAL DE L'ETAPE ACTIVE ILLUSTREE
+                  // BLOC CENTRAL ILLUSTRÉ
                   Expanded(
                     child: SingleChildScrollView(
                       physics: const BouncingScrollPhysics(),
@@ -100,8 +130,6 @@ class _TutorialPageState extends State<TutorialPage> {
                             ),
                           ),
                           const SizedBox(height: 20),
-                          
-                          // Badge Recommandation Partenaire Affilié
                           Container(
                             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                             decoration: BoxDecoration(color: const Color(0xFFFFF7ED), borderRadius: BorderRadius.circular(8)),
@@ -111,7 +139,6 @@ class _TutorialPageState extends State<TutorialPage> {
                             ),
                           ),
                           const SizedBox(height: 16),
-                          
                           Text(
                             _enrichedTutorial!.steps[_activeStepIndex].title,
                             style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w900, color: AppColors.navy, letterSpacing: -0.5),
@@ -122,8 +149,6 @@ class _TutorialPageState extends State<TutorialPage> {
                             style: const TextStyle(color: AppColors.textSecondary, fontSize: 15, height: 1.5, fontWeight: FontWeight.w500),
                           ),
                           const SizedBox(height: 20),
-                          
-                          // Zone Outils requis
                           PremiumCard(
                             padding: const EdgeInsets.all(14),
                             child: Row(
@@ -139,7 +164,6 @@ class _TutorialPageState extends State<TutorialPage> {
                               ],
                             ),
                           ),
-                          
                           if (_enrichedTutorial!.steps[_activeStepIndex].warning != null) ...[
                             const SizedBox(height: 12),
                             Container(
@@ -164,7 +188,7 @@ class _TutorialPageState extends State<TutorialPage> {
                     ),
                   ),
 
-                  // 3. BARRE DE COMMANDE BASSE ÉLASTIQUE
+                  // COMMANDES BASSES CONNECTÉES AU USE CASE D'ARCHIVAGE
                   Padding(
                     padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
                     child: PremiumButton(
@@ -175,8 +199,7 @@ class _TutorialPageState extends State<TutorialPage> {
                             _activeStepIndex++;
                           });
                         } else {
-                          // Clôture de l'atelier et retour au bercail
-                          Navigator.of(context).pop();
+                          _finalizeIntervention(); // Appelle le pipeline de stockage persistant
                         }
                       },
                     ),
