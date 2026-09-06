@@ -1,66 +1,42 @@
 name: mecago
-description: Application premium d'auto-entretien automobile.
-publish_to: "none"
+description: "Application premium d'entretien et diagnostic automobile assisté par IA."
+publish_to: 'none'
 
 version: 1.0.0+1
 
 environment:
-  sdk: ">=3.5.0 <4.0.0"
+  sdk: '>=3.2.0 <4.0.0'
 
 dependencies:
   flutter:
     sdk: flutter
 
-  # UI
-  cupertino_icons: ^1.0.8
-  flutter_svg: ^2.0.10+1
-  google_fonts: ^6.2.1
+  # Navigation & Shell Routing
+  go_router: ^13.2.0
 
-  # Navigation
-  go_router: ^14.2.3
+  # Base de données locale & Persistance des voitures fr
+  sqflite: ^2.3.0
+  path: ^1.8.3
 
-  # State Management
-  flutter_bloc: ^8.1.6
-  equatable: ^2.0.5
+  # Services Cloud Firebase Core & Authentication 
+  firebase_core: ^2.24.0
+  firebase_auth: ^4.15.0
 
-  # Injection de dépendances
-  get_it: ^8.0.2
-  injectable: ^2.5.0
-
-  # Réseau
-  dio: ^5.7.0
-
-  # Caméra & OCR
-  camera: ^0.11.0+2
-  google_mlkit_text_recognition: ^0.13.0
-  image: ^4.3.0
-
-  # Firebase
-  firebase_core: ^3.6.0
-  firebase_auth: ^5.3.1
-  cloud_firestore: ^5.4.4
-  firebase_storage: ^12.3.3
-  firebase_messaging: ^15.1.3
-
-  # Stockage local
-  flutter_secure_storage: ^9.2.2
-  shared_preferences: ^2.3.2
-
-  # Permissions
-  permission_handler: ^11.3.1
+  # Icônes premiums standardisées
+  cupertino_icons: ^1.0.6
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
-
-  flutter_lints: ^5.0.0
-  build_runner: ^2.4.13
-  injectable_generator: ^2.6.2
+  flutter_lints: ^3.0.0
 
 flutter:
   uses-material-design: true
 
-  assets:
-    - assets/images/
-    - assets/icons/
-    - assets/animations/
+  # Déclaration de la police d'écriture d'excellence Apple Style
+  fonts:
+    - family: SF Pro Display
+      fonts:
+        - asset: assets/fonts/SF-Pro-Display-Regular.ttf
+        - asset: assets/fonts/SF-Pro-Display-Bold.ttf
+          weight: 700
