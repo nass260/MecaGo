@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/widgets/premium_card.dart';
 import '../../../../core/widgets/premium_button.dart';
+import '../../../maintenance/presentation/pages/parts_catalog_page.dart'; // <-- Importation du catalogue de vente
 
 class VehicleDetailsPage extends StatelessWidget {
   const VehicleDetailsPage({super.key});
@@ -122,13 +122,16 @@ class VehicleDetailsPage extends StatelessWidget {
               ),
             ),
             
-            // 4. ACTION BASSE DE CONVERSION VERS LES TUTORIELS COMPATIBLES
+            // 4. ACTION BASSE DE CONVERSION DIRECTE VERS LE CATALOGUE MARCHAND PREMIUM
             Padding(
               padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
               child: PremiumButton(
-                text: 'Accéder aux tutoriels compatibles',
+                text: 'Acheter les pièces compatibles', // Modification de l'accroche investisseur
                 onPressed: () {
-                  context.push('/tutorials'); // Navigue vers le catalogue d'entretien
+                  // Redirection native et fluide vers l'écran commercial
+                  Navigator.of(context).push(
+                    MaterialPageRoute(builder: (context) => const PartsCatalogPage()),
+                  );
                 },
               ),
             ),
