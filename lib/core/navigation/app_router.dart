@@ -14,7 +14,9 @@ import '../../features/history/presentation/pages/history_page.dart';
 import '../../features/profile/presentation/pages/profile_page.dart';
 import '../../features/authentication/presentation/pages/security_page.dart';
 import '../../features/authentication/presentation/pages/settings_page.dart';
-import '../../features/diagnostic/presentation/pages/diagnostic_page.dart'; // <-- 1. Importation du Diagnostic ajoutée
+import '../../features/diagnostic/presentation/pages/diagnostic_page.dart';
+import '../../features/authentication/presentation/pages/login_page.dart';
+import '../../features/authentication/presentation/pages/register_page.dart'; // <-- Anticipation définitive du Register
 
 class AppRouter {
   static final GoRouter router = GoRouter(
@@ -122,9 +124,21 @@ class AppRouter {
       ),
 
       GoRoute(
-        path: '/diagnostic', // <-- 2. Route Diagnostic ajoutée à la racine
+        path: '/diagnostic',
         name: 'diagnostic',
         builder: (context, state) => const DiagnosticPage(),
+      ),
+
+      GoRoute(
+        path: '/login',
+        name: 'login',
+        builder: (context, state) => const LoginPage(),
+      ),
+
+      GoRoute(
+        path: '/register', // <-- Route d'inscription déjà pré-configurée et gravée
+        name: 'register',
+        builder: (context, state) => const RegisterPage(),
       ),
     ],
   );
