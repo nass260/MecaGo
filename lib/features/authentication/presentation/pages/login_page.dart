@@ -2,164 +2,148 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../core/theme/app_theme.dart';
+import '../../../../core/widgets/premium_card.dart';
 import '../../../../core/widgets/premium_button.dart';
-import '../widgets/social_login_button.dart';
+import '../managers/auth_notifier.dart';
 
-class LoginPage extends StatelessWidget {
+class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
+
+  @override
+  State<LoginPage> createState() => _LoginPageState();
+}
+
+class _LoginPageState extends State<LoginPage> {
+  final AuthNotifier _authNotifier = AuthNotifier();
+  final TextEditingController _emailController = TextEditingController();
+  final TextEditingController _passwordController = TextEditingController();
+  final _formKey = GlobalKey<FormState>();
+
+  @override
+  void dispose() {
+    _emailController.dispose();
+    _passwordController.dispose();
+    super.dispose();
+  }
+
+  /// Déclenche le pipeline de vérification de session asynchrone auprès de Firebase Auth
+  Future<void> _handleLogin() async {
+    if (!_formKey.currentState!.validate()) return;
+    FocusScope.of(context).unfocus(); // Ferme le clavier virtuel
+
+    final bool success = await _authNotifier.login(
+      email: _emailController.text.trim(),
+      password: _passwordController.text,
+    );
+
+    if (mounted) {
+      if (success) {
+        // Redirection chirurgicale et radicale vers le Tableau de Bord central
+        context.go('/');
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(_authNotifier.errorMessage ?? "Échec d'authentification."),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.background,
+      appBar: AppBar(
+        backgroundColor: AppColors.background,
+        elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_ios_new_rounded, color: AppColors.navy),
+          onPressed: () => context.go('/onboarding'),
+        ),
+      ),
       body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 28),
-          child: Column(
-            children: [
-              const SizedBox(height: 30),
-
-              Align(
-                alignment: Alignment.centerLeft,
-                child: IconButton(
-                  onPressed: () => context.pop(),
-                  icon: const Icon(Icons.arrow_back_ios_new_rounded),
-                ),
-              ),
-
-              const SizedBox(height: 16),
-
-              Container(
-                width: 86,
-                height: 86,
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(24),
-                  boxShadow: [
-                    BoxShadow(
-                      color: AppColors.blue.withOpacity(.12),
-                      blurRadius: 28,
-                      offset: const Offset(0, 12),
-                    ),
-                  ],
-                ),
-                child: const Icon(
-                  Icons.build_rounded,
-                  size: 40,
-                  color: AppColors.orange,
-                ),
-              ),
-
-              const SizedBox(height: 28),
-
-              const Text(
-                "Bienvenue sur MecaGo",
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 32,
-                  fontWeight: FontWeight.w800,
-                  color: AppColors.navy,
-                  height: 1.1,
-                ),
-              ),
-
-              const SizedBox(height: 14),
-
-              const Text(
-                "Connectez-vous pour sauvegarder votre garage, votre historique et vos rappels.",
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 16,
-                  color: AppColors.textSecondary,
-                  height: 1.5,
-                ),
-              ),
-
-              const SizedBox(height: 42),
-
-              SocialLoginButton.apple(
-                onPressed: () {},
-              ),
-
-              const SizedBox(height: 16),
-
-              SocialLoginButton.google(
-                onPressed: () {},
-              ),
-
-              const SizedBox(height: 26),
-
-              Row(
-                children: [
-                  const Expanded(child: Divider()),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 12),
-                    child: Text(
-                      "ou",
-                      style: TextStyle(
-                        color: AppColors.textSecondary.withOpacity(.8),
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ),
-                  const Expanded(child: Divider()),
-                ],
-              ),
-
-              const SizedBox(height: 26),
-
-              TextField(
-                keyboardType: TextInputType.emailAddress,
-                decoration: const InputDecoration(
-                  hintText: "Adresse e-mail",
-                  prefixIcon: Icon(Icons.mail_outline_rounded),
-                ),
-              ),
-
-              const SizedBox(height: 18),
-
-              PremiumButton(
-                text: "Continuer avec l'e-mail", // <-- CORRECTION ICI
-                onPressed: () {},
-              ),
-
-              const Spacer(),
-
-              Text.rich(
-                TextSpan(
-                  style: const TextStyle(
-                    color: AppColors.textSecondary,
-                    fontSize: 13,
-                    height: 1.5,
-                  ),
+        child: AnimatedBuilder(
+          animation: _authNotifier,
+          builder: (context, _) {
+            return SingleChildScrollView(
+              physics: const BouncingScrollPhysics(),
+              padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 12.0),
+              child: Form(
+                key: _formKey,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const TextSpan(
-                      text: "En continuant, vous acceptez les ",
+                    const Text(
+                      'CONNEXION SÉCURISÉE',
+                      style: TextStyle(color: AppColors.orange, fontSize: 11, fontWeight: FontWeight.bold, letterSpacing: 1.5),
                     ),
-                    TextSpan(
-                      text: "Conditions d'utilisation",
-                      style: TextStyle(
-                        color: AppColors.blue,
-                        fontWeight: FontWeight.w700,
+                    const SizedBox(height: 6),
+                    const Text(
+                      'Ravi de vous revoir',
+                      style: TextStyle(fontSize: 28, fontWeight: FontWeight.w900, color: AppColors.navy, letterSpacing: -0.6),
+                    ),
+                    const SizedBox(height: 6),
+                    const Text(
+                      'Connectez-vous pour retrouver votre MecaGo Score™, votre garage et vos rapports d’analyse.',
+                      style: TextStyle(color: AppColors.textSecondary, fontSize: 14, height: 1.45, fontWeight: FontWeight.w500),
+                    ),
+                    const SizedBox(height: 32),
+
+                    // FORMULAIRE DE SAISIE DESIGN APPLE EXCELLENCE
+                    PremiumCard(
+                      padding: const EdgeInsets.all(20),
+                      child: Column(
+                        children: [
+                          // Champ Adresse Email
+                          TextFormField(
+                            controller: _emailController,
+                            keyboardType: TextInputType.emailAddress,
+                            style: const TextStyle(color: AppColors.navy, fontWeight: FontWeight.w600, fontSize: 15),
+                            decoration: const InputDecoration(
+                              labelText: 'Adresse email',
+                              labelStyle: TextStyle(color: AppColors.textSecondary, fontWeight: FontWeight.w500),
+                              prefixIcon: Icon(Icons.email_outlined, color: AppColors.textSecondary),
+                              border: InputBorder.none,
+                            ),
+                            validator: (value) => (value == null || !value.contains('@')) ? 'Veuillez entrer un email valide' : null,
+                          ),
+                          Divider(height: 16, color: AppColors.border.withOpacity(0.5)),
+                          
+                          // Champ Mot de passe sécurisé masqué
+                          TextFormField(
+                            controller: _passwordController,
+                            obscureText: true,
+                            style: const TextStyle(color: AppColors.navy, fontWeight: FontWeight.w600, fontSize: 15),
+                            decoration: const InputDecoration(
+                              labelText: 'Mot de passe',
+                              labelStyle: TextStyle(color: AppColors.textSecondary, fontWeight: FontWeight.w500),
+                              prefixIcon: Icon(Icons.lock_outline_rounded, color: AppColors.textSecondary),
+                              border: InputBorder.none,
+                            ),
+                            validator: (value) => (value == null || value.length < 6) ? 'Mot de passe trop court (min 6 caractères)' : null,
+                          ),
+                        ],
                       ),
                     ),
-                    const TextSpan(text: " et la "),
-                    TextSpan(
-                      text: "Politique de confidentialité",
-                      style: TextStyle(
-                        color: AppColors.blue,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                    const TextSpan(text: "."),
+
+                    const SizedBox(height: 40),
+
+                    // BOUTON DE SOUMISSION AVEC INDICATEUR DE SÉCURITÉ ASYNCHRONE
+                    _authNotifier.isLoading
+                        ? const Center(
+                            child: CircularProgressIndicator(valueColor: AlwaysStoppedAnimation<Color>(AppColors.orange), strokeWidth: 3.5),
+                          )
+                        : PremiumButton(
+                            text: 'Se connecter à l’écosystème',
+                            onPressed: _handleLogin,
+                          ),
                   ],
                 ),
-                textAlign: TextAlign.center,
               ),
-
-              const SizedBox(height: 24),
-            ],
-          ),
+            );
+          },
         ),
       ),
     );
