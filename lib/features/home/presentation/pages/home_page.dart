@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/widgets/premium_card.dart';
-import '../managers/home_notifier.dart'; // <-- 1. Importation du gestionnaire d'état
+import '../managers/home_notifier.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -12,13 +12,11 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
-  // Initialisation du contrôleur connecté du Sprint 4
   final HomeNotifier _notifier = HomeNotifier();
 
   @override
   void initState() {
     super.initState();
-    // Déclenche le chargement global de la base SQLite à l'ouverture de l'application
     _notifier.loadDashboardData();
   }
 
@@ -30,7 +28,6 @@ class _HomePageState extends State<HomePage> {
         child: AnimatedBuilder(
           animation: _notifier,
           builder: (context, _) {
-            // Indicateur de chargement premium iOS Style pendant l'agrégation
             if (_notifier.isLoading) {
               return const Center(
                 child: CircularProgressIndicator(valueColor: AlwaysStoppedAnimation<Color>(AppColors.orange)),
@@ -46,7 +43,7 @@ class _HomePageState extends State<HomePage> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   
-                  // 1. EN-TÊTE UTILISATEUR COMPLET DE LA MAQUETTE
+                  // 1. EN-TÊTE UTILISATEUR COMPLET
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
@@ -70,13 +67,12 @@ class _HomePageState extends State<HomePage> {
                           Container(
                             width: 46,
                             height: 44,
-                            decoration: BoxDecoration(
+                            decoration: const BoxDecoration(
                               shape: BoxShape.circle,
-                              image: const DecorationImage(
+                              image: DecorationImage(
                                 image: NetworkImage('https://unsplash.com'),
                                 fit: BoxFit.cover,
                               ),
-                              border: Border.all(color: Colors.white, width: 2),
                             ),
                           ),
                           const Positioned(
@@ -180,7 +176,7 @@ class _HomePageState extends State<HomePage> {
                   
                   const SizedBox(height: 20),
                   
-                  // 3. LA CARTE TESLA DYNAMIQUE AVEC DONNÉES DU SEEDER
+                  // 3. LA CARTE DU VÉHICULE ACTIF
                   if (vehicle != null) ...[
                     PremiumCard(
                       padding: EdgeInsets.zero,
@@ -200,3 +196,9 @@ class _HomePageState extends State<HomePage> {
                                 ),
                               ),
                               Container(
+                                height: 180,
+                                decoration: BoxDecoration(
+                                  borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+                                  gradient: LinearGradient(
+                                    begin: Alignment.topCenter,
+                                    end: Alignment.bottomCenter,
