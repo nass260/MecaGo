@@ -87,7 +87,7 @@ class _HomePageState extends State<HomePage> {
                   
                   const SizedBox(height: 24),
                   
-                  // 2. DOUBLE COMPTEUR AUTOMATISÉ (SCORE & ÉCONOMIES REELLES)
+                  // 2. DOUBLE COMPTEUR AUTOMATISÉ (SCORE & ÉCONOMIES)
                   Row(
                     children: [
                       Expanded(
@@ -129,6 +129,7 @@ class _HomePageState extends State<HomePage> {
                                       children: [
                                         Text('${_notifier.mecaGoScore}', style: const TextStyle(color: AppColors.navy, fontSize: 24, fontWeight: FontWeight.w900)),
                                         const Text('Très bon ★', style: TextStyle(color: AppColors.orange, fontSize: 11, fontWeight: FontWeight.bold)),
+                                        const Text('Continuez comme ça !', style: TextStyle(color: AppColors.textSecondary, fontSize: 10, fontWeight: FontWeight.w500)),
                                       ],
                                     ),
                                   ),
@@ -162,6 +163,7 @@ class _HomePageState extends State<HomePage> {
                                       children: [
                                         Text('${_notifier.totalSavings} €', style: const TextStyle(color: AppColors.navy, fontSize: 24, fontWeight: FontWeight.w900)),
                                         const Text('+12 € ce mois-ci', style: TextStyle(color: AppColors.success, fontSize: 11, fontWeight: FontWeight.bold)),
+                                        const Text('Bravo !', style: TextStyle(color: AppColors.textSecondary, fontSize: 10, fontWeight: FontWeight.w500)),
                                       ],
                                     ),
                                   ),
@@ -176,7 +178,7 @@ class _HomePageState extends State<HomePage> {
                   
                   const SizedBox(height: 20),
                   
-                  // 3. LA CARTE DU VÉHICULE ACTIF
+                  // 3. LA CARTE DU VÉHICULE ACTIF (STYLE MAQUETTE INITIALE)
                   if (vehicle != null) ...[
                     PremiumCard(
                       padding: EdgeInsets.zero,
@@ -197,8 +199,3 @@ class _HomePageState extends State<HomePage> {
                               ),
                               Container(
                                 height: 180,
-                                decoration: BoxDecoration(
-                                  borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-                                  gradient: LinearGradient(
-                                    begin: Alignment.topCenter,
-                                    end: Alignment.bottomCenter,
