@@ -1,195 +1,106 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../features/onboarding/presentation/pages/onboarding_page.dart';
-import '../../features/home/presentation/pages/home_page.dart';
-import '../../features/garage/presentation/pages/garage_page.dart';
-import '../../features/plate_scanner/presentation/pages/scanner_page.dart';
-import '../../features/vehicle_details/presentation/pages/vehicle_details_page.dart';
-import '../../features/maintenance/presentation/pages/tutorial_catalog_page.dart';
-import '../../features/maintenance/presentation/pages/tutorial_page.dart';
-import '../../features/maintenance/presentation/pages/maintenance_reminder_page.dart';
-import '../../features/maintenance/presentation/pages/notification_settings_page.dart';
-import '../../features/history/presentation/pages/history_page.dart';
-import '../../features/profile/presentation/pages/profile_page.dart';
-import '../../features/authentication/presentation/pages/security_page.dart';
-import '../../features/authentication/presentation/pages/settings_page.dart';
-import '../../features/diagnostic/presentation/pages/diagnostic_page.dart';
-import '../../features/authentication/presentation/pages/login_page.dart';
-import '../../features/authentication/presentation/pages/register_page.dart'; // <-- Anticipation définitive du Register
+// Importations des pages de la Clean Architecture de MecaGo
+import '../../../features/home/presentation/pages/home_page.dart';
+import '../../../features/garage/presentation/pages/garage_page.dart';
+import '../../../features/diagnostic/presentation/pages/diagnostic_page.dart';
+import '../../../features/history/presentation/pages/history_page.dart';
+import '../../../features/profile/presentation/pages/profile_page.dart';
+import '../../../features/authentication/presentation/pages/paywall_page.dart'; 
 
 class AppRouter {
+  const AppRouter();
+
   static final GoRouter router = GoRouter(
-    initialLocation: '/onboarding',
+    initialLocation: '/',
+    debugLogDiagnostics: true,
     routes: [
+      
+      // 1. ROUTE COMMERCIALE SÉCURISÉE DU PAYWALL (FORMULE PREMIUM)
       GoRoute(
-        path: '/onboarding',
-        name: 'onboarding',
-        builder: (context, state) => const OnboardingPage(),
+        path: '/paywall',
+        builder: (BuildContext context, GoRouterState state) => const PaywallPage(),
       ),
 
+      // 2. LA BARRE DE NAVIGATION MAÎTRESSE SOURÉLEVÉE DU BAS (CONFORME À LA MAQUETTE)
       StatefulShellRoute.indexedStack(
         builder: (context, state, navigationShell) {
-          return MainNavigationShell(navigationShell: navigationShell);
+          return Scaffold(
+            body: navigationShell,
+            bottomNavigationBar: Container(
+              padding: const EdgeInsets.symmetric(vertical: 8),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.05),
+                    blurRadius: 10,
+                    offset: const Offset(0, -2),
+                  ),
+                ],
+              ),
+              child: SafeArea(
+                top: false,
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceAround,
+                  children: [
+                    _buildNavItem(icon: Icons.home_rounded, label: 'Accueil', isSelected: navigationShell.currentIndex == 0, onTap: () => navigationShell.goBranch(0)),
+                    _buildNavItem(icon: Icons.garage_rounded, label: 'Garage', isSelected: navigationShell.currentIndex == 1, onTap: () => navigationShell.goBranch(1)),
+                    
+                    // LE GROS BOUTON CENTRAL ORANGE FLOTTANT SURÉLEVÉ POUR LE SCANNER
+                    Transform.translate(
+                      offset: const Offset(0, -16),
+                      child: GestureDetector(
+                        onTap: () => context.push('/scanner'),
+                        child: Container(
+                          width: 56,
+                          height: 58,
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFFF6A00),
+                            shape: BoxShape.circle,
+                            boxShadow: [
+                              BoxShadow(
+                                color: const Color(0xFFFF6A00).withOpacity(0.35),
+                                blurRadius: 12,
+                                offset: const Offset(0, 6),
+                              ),
+                            ],
+                          ),
+                          child: const Icon(Icons.qr_code_scanner_rounded, color: Colors.white, size: 26),
+                        ),
+                      ),
+                    ),
+                    
+                    _buildNavItem(icon: Icons.history_rounded, label: 'Historique', isSelected: navigationShell.currentIndex == 3, onTap: () => navigationShell.goBranch(3)),
+                    _buildNavItem(icon: Icons.person_rounded, label: 'Profil', isSelected: navigationShell.currentIndex == 4, onTap: () => navigationShell.goBranch(4)),
+                  ],
+                ),
+              ),
+            ),
+          );
         },
         branches: [
-          StatefulShellBranch(
-            routes: [
-              GoRoute(
-                path: '/',
-                name: 'home',
-                builder: (context, state) => const HomePage(),
-              ),
-            ],
-          ),
-          StatefulShellBranch(
-            routes: [
-              GoRoute(
-                path: '/garage',
-                name: 'garage',
-                builder: (context, state) => const GaragePage(),
-              ),
-            ],
-          ),
-          StatefulShellBranch(
-            routes: [
-              GoRoute(
-                path: '/scanner',
-                name: 'scanner',
-                builder: (context, state) => const ScannerPage(),
-              ),
-            ],
-          ),
-          StatefulShellBranch(
-            routes: [
-              GoRoute(
-                path: '/history',
-                name: 'history',
-                builder: (context, state) => const HistoryPage(),
-              ),
-            ],
-          ),
-          StatefulShellBranch(
-            routes: [
-              GoRoute(
-                path: '/profile',
-                name: 'profile',
-                builder: (context, state) => const ProfilePage(),
-              ),
-            ],
-          ),
+          StatefulShellBranch(routes: [GoRoute(path: '/', builder: (context, state) => const HomePage())]),
+          StatefulShellBranch(routes: [GoRoute(path: '/garage', builder: (context, state) => const GaragePage())]),
+          StatefulShellBranch(routes: [GoRoute(path: '/scanner', builder: (context, state) => const DiagnosticPage())]),
+          StatefulShellBranch(routes: [GoRoute(path: '/history', builder: (context, state) => const HistoryPage())]),
+          StatefulShellBranch(routes: [GoRoute(path: '/profile', builder: (context, state) => const ProfilePage())]),
         ],
-      ),
-
-      GoRoute(
-        path: '/vehicle-details',
-        name: 'vehicle-details',
-        builder: (context, state) => const VehicleDetailsPage(),
-      ),
-
-      GoRoute(
-        path: '/tutorials',
-        name: 'tutorials',
-        builder: (context, state) => const TutorialCatalogPage(),
-      ),
-
-      GoRoute(
-        path: '/tutorial-detail',
-        name: 'tutorial-detail',
-        builder: (context, state) => const TutorialPage(),
-      ),
-
-      GoRoute(
-        path: '/reminders',
-        name: 'reminders',
-        builder: (context, state) => const MaintenanceReminderPage(),
-      ),
-
-      GoRoute(
-        path: '/security',
-        name: 'security',
-        builder: (context, state) => const SecurityPage(),
-      ),
-
-      GoRoute(
-        path: '/notifications',
-        name: 'notifications',
-        builder: (context, state) => const NotificationSettingsPage(),
-      ),
-
-      GoRoute(
-        path: '/settings',
-        name: 'settings',
-        builder: (context, state) => const SettingsPage(),
-      ),
-
-      GoRoute(
-        path: '/diagnostic',
-        name: 'diagnostic',
-        builder: (context, state) => const DiagnosticPage(),
-      ),
-
-      GoRoute(
-        path: '/login',
-        name: 'login',
-        builder: (context, state) => const LoginPage(),
-      ),
-
-      GoRoute(
-        path: '/register', // <-- Route d'inscription déjà pré-configurée et gravée
-        name: 'register',
-        builder: (context, state) => const RegisterPage(),
       ),
     ],
   );
-}
 
-class MainNavigationShell extends StatelessWidget {
-  final StatefulNavigationShell navigationShell;
-
-  const MainNavigationShell({
-    super.key,
-    required this.navigationShell,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      body: navigationShell,
-      bottomNavigationBar: NavigationBar(
-        selectedIndex: navigationShell.currentIndex,
-        onDestinationSelected: (index) {
-          navigationShell.goBranch(
-            index,
-            initialLocation: index == navigationShell.currentIndex,
-          );
-        },
-        destinations: const [
-          NavigationDestination(
-            icon: Icon(Icons.home_outlined),
-            selectedIcon: Icon(Icons.home),
-            label: 'Accueil',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.garage_outlined),
-            selectedIcon: Icon(Icons.garage),
-            label: 'Garage',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.qr_code_scanner_outlined),
-            selectedIcon: Icon(Icons.qr_code_scanner),
-            label: 'Scanner',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.history_outlined),
-            selectedIcon: Icon(Icons.history),
-            label: 'Historique',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.person_outline),
-            selectedIcon: Icon(Icons.person),
-            label: 'Profil',
-          ),
+  static Widget _buildNavItem({required IconData icon, required String label, required bool isSelected, required VoidCallback onTap}) {
+    final color = isSelected ? const Color(0xFFFF6A00) : const Color(0xFF94A3B8);
+    return GestureDetector(
+      onTap: onTap,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, color: color, size: 24),
+          const SizedBox(height: 4),
+          Text(label, style: TextStyle(color: color, fontSize: 11, fontWeight: FontWeight.w600)),
         ],
       ),
     );
