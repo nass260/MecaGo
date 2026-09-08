@@ -14,13 +14,13 @@ class PaywallPage extends StatefulWidget {
 class _PaywallPageState extends State<PaywallPage> {
   final SubscriptionNotifier _subscriptionNotifier = SubscriptionNotifier();
 
-  /// Déclenche l'achat in-app de l'abonnement mensuel et gère le retour
+  /// Lance le traitement d'achat in-app sécurisé et gère le retour utilisateur
   Future<void> _triggerSubscriptionPurchase() async {
     final bool success = await _subscriptionNotifier.executePremiumPurchase();
     
     if (mounted) {
       if (success) {
-        // Achat validé : on ferme l'écran et on félicite l'utilisateur
+        // Option validée : fermeture du paywall et SnackBar de félicitations
         Navigator.of(context).pop();
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
@@ -29,7 +29,7 @@ class _PaywallPageState extends State<PaywallPage> {
           ),
         );
       } else {
-        // Échec du paiement
+        // Erreur ou annulation de paiement
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(_subscriptionNotifier.billingErrorMessage ?? "Transaction annulée."),
@@ -63,7 +63,7 @@ class _PaywallPageState extends State<PaywallPage> {
                   children: [
                     CircularProgressIndicator(valueColor: AlwaysStoppedAnimation<Color>(AppColors.orange), strokeWidth: 3.5),
                     SizedBox(height: 18),
-                    Text('Communication sécurisée avec l’App Store...', style: TextStyle(color: AppColors.textSecondary, fontWeight: FontWeight.bold, fontSize: 13)),
+                    Text('Connexion sécurisée avec l’App Store...', style: TextStyle(color: AppColors.textSecondary, fontWeight: FontWeight.bold, fontSize: 13)),
                   ],
                 ),
               );
@@ -84,21 +84,21 @@ class _PaywallPageState extends State<PaywallPage> {
                     'Passez à la vitesse supérieure',
                     style: TextStyle(fontSize: 28, fontWeight: FontWeight.w900, color: AppColors.navy, letterSpacing: -0.6),
                   ),
-                  const SizedBox(height: 6),
+                  const SizedBox(height: 8),
                   const Text(
                     'Prenez le contrôle total de l’entretien de vos véhicules et économisez des centaines d’euros chaque année.',
                     style: TextStyle(color: AppColors.textSecondary, fontSize: 14, height: 1.45, fontWeight: FontWeight.w500),
                   ),
                   const SizedBox(height: 28),
 
-                  // LISTE DES ARGUMENTS COMMERCIAUX DE PRESTIGE
+                  // GRILLE DES ARGUMENTS DE CONVERSION PREMIUM
                   _buildFeatureBullet(icon: "🧠", title: "Diagnostic IA illimité", desc: "Identifiez instantanément l’origine de n’importe quelle panne ou sifflement mécanique."),
                   _buildFeatureBullet(icon: "📋", title: "Fiches techniques constructeurs", desc: "Accédez aux couples de serrage, viscosités d’huiles et dimensions d'origine."),
                   _buildFeatureBullet(icon: "🔔", title: "Rappels kilométriques prédictifs", desc: "Anticipez l’usure de vos pièces VALEO ou PURFLUX avant le Contrôle Technique."),
 
                   const SizedBox(height: 24),
 
-                  // CARTE DE TARIFICATION PREMIUM CHIRURGICALE
+                  // GRILLE DE TARIFICATION DE PRESTIGE
                   PremiumCard(
                     padding: const EdgeInsets.all(22),
                     child: Row(
@@ -133,7 +133,7 @@ class _PaywallPageState extends State<PaywallPage> {
 
                   const SizedBox(height: 32),
 
-                  // GRAND BOUTON DE FACTURATION ÉLASTIQUE
+                  // BOUTON ACTION MAÎTRE DU DESIGN SYSTEM
                   PremiumButton(
                     text: 'Activer mon accès Premium',
                     onPressed: _triggerSubscriptionPurchase,
@@ -142,7 +142,7 @@ class _PaywallPageState extends State<PaywallPage> {
                   const SizedBox(height: 18),
                   const Center(
                     child: Text(
-                      'Période d’essai de 7 jours incluse. Prélèvement automatique mensuel via l’App Store. Restauration des achats disponible.',
+                      'Période d’essai de 7 jours incluse. Prélèvement automatique mensuel via votre compte Google Play ou App Store. Restauration des achats disponible.',
                       textAlign: TextAlign.center,
                       style: TextStyle(color: AppColors.textSecondary, fontSize: 11, height: 1.4, fontWeight: FontWeight.w500),
                     ),
