@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../../../features/home/presentation/pages/home_page.dart';
 import '../../../features/home/presentation/pages/vehicle_details_page.dart';
+import '../../../features/home/presentation/pages/maintenance_page.dart';
 import '../../../features/garage/presentation/pages/garage_page.dart';
 import '../../../features/scanner/presentation/pages/scanner_page.dart';
 import '../../../features/history/presentation/pages/history_page.dart';
@@ -21,6 +22,10 @@ class AppRouter {
           final vehicleId = state.pathParameters['vehicleId']!;
           return VehicleDetailsPage(vehicleId: vehicleId);
         },
+      ),
+      GoRoute(
+        path: '/maintenance',
+        builder: (context, state) => const MaintenancePage(),
       ),
       StatefulShellRoute.indexedStack(
         builder: (context, state, navigationShell) {
