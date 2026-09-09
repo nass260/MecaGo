@@ -14,13 +14,18 @@ dependencies:
   # Navigation & Shell Routing
   go_router: ^13.2.0
 
-  # Base de données locale & Persistance des voitures fr
+  # Base de données locale & Persistance des voitures
   sqflite: ^2.3.0
   path: ^1.8.3
+  path_provider: ^2.1.0  # AJOUTÉ - Nécessaire pour trouver le chemin de la base de données
 
-  # Services Cloud Firebase Core & Authentication 
+  # Services Cloud Firebase Core & Authentication
   firebase_core: ^2.24.0
   firebase_auth: ^4.15.0
+
+  # Utilitaires
+  intl: ^0.18.1  # AJOUTÉ - Pour le formatage des dates
+  uuid: ^4.3.3   # AJOUTÉ - Pour générer des IDs uniques
 
   # Icônes premiums standardisées
   cupertino_icons: ^1.0.6
