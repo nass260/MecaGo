@@ -4,7 +4,7 @@ import 'package:go_router/go_router.dart';
 // Importations des pages de la Clean Architecture de MecaGo
 import '../../../features/home/presentation/pages/home_page.dart';
 import '../../../features/garage/presentation/pages/garage_page.dart';
-import '../../../features/diagnostic/presentation/pages/diagnostic_page.dart';
+import '../../../features/scanner/presentation/pages/scanner_page.dart'; // <-- 1. Importation du ScannerPage
 import '../../../features/history/presentation/pages/history_page.dart';
 import '../../../features/profile/presentation/pages/profile_page.dart';
 import '../../../features/authentication/presentation/pages/paywall_page.dart'; 
@@ -17,13 +17,13 @@ class AppRouter {
     debugLogDiagnostics: true,
     routes: [
       
-      // 1. ROUTE COMMERCIALE SÉCURISÉE DU PAYWALL (FORMULE PREMIUM)
+      // ROUTE COMMERCIALE SÉCURISÉE DU PAYWALL
       GoRoute(
         path: '/paywall',
         builder: (BuildContext context, GoRouterState state) => const PaywallPage(),
       ),
 
-      // 2. LA BARRE DE NAVIGATION MAÎTRESSE SOURÉLEVÉE DU BAS (CONFORME À LA MAQUETTE)
+      // LA BARRE DE NAVIGATION MAÎTRESSE SURÉLEVÉE DU BAS (CONFORME À LA MAQUETTE)
       StatefulShellRoute.indexedStack(
         builder: (context, state, navigationShell) {
           return Scaffold(
@@ -83,7 +83,7 @@ class AppRouter {
         branches: [
           StatefulShellBranch(routes: [GoRoute(path: '/', builder: (context, state) => const HomePage())]),
           StatefulShellBranch(routes: [GoRoute(path: '/garage', builder: (context, state) => const GaragePage())]),
-          StatefulShellBranch(routes: [GoRoute(path: '/scanner', builder: (context, state) => const DiagnosticPage())]),
+          StatefulShellBranch(routes: [GoRoute(path: '/scanner', builder: (context, state) => const ScannerPage())]), // <-- 2. Raccordement officiel
           StatefulShellBranch(routes: [GoRoute(path: '/history', builder: (context, state) => const HistoryPage())]),
           StatefulShellBranch(routes: [GoRoute(path: '/profile', builder: (context, state) => const ProfilePage())]),
         ],
