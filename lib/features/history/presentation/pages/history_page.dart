@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/widgets/premium_card.dart';
+import '../../../../core/widgets/premium_button.dart'; // Importation du bouton officiel
+import '../../../../core/services/pdf_export_service.dart'; // Importation du service PDF
 
 class HistoryPage extends StatefulWidget {
   const HistoryPage({super.key});
@@ -10,7 +12,9 @@ class HistoryPage extends StatefulWidget {
 }
 
 class _HistoryPageState extends State<HistoryPage> {
+  final PdfExportService _pdfService = const PdfExportService();
   bool _isLoading = false;
+  bool _isExporting = false; // Indicateur pour le traitement du PDF
 
   // Liste simulée des données d'interventions extraites de la base SQLite
   final List<Map<String, dynamic>> _maintenanceLogs = [
@@ -50,6 +54,30 @@ class _HistoryPageState extends State<HistoryPage> {
     }
   }
 
+  /// Déclenche la compilation et l'exportation du document PDF d'entretien
+  Future<void> _handlePdfExport() async {
+    setState(() => _isExporting = true);
+    
+    // Appel asynchrone de notre service technique de 25 lignes
+    final bool success = await _pdfService.generateMaintenanceReportPdf(
+      vehicleName: "Tesla Model 3",
+      totalSaved: "125 €",
+      logs: _maintenanceLogs,
+    );
+
+    if (!mounted) return;
+    setState(() => _isExporting = false);
+
+    if (success) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text("📄 Carnet d'entretien PDF généré et enregistré !"),
+          backgroundColor: AppColors.success,
+        ),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -70,7 +98,7 @@ class _HistoryPageState extends State<HistoryPage> {
               padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 12.0),
               children: [
                 
-                // 1. CARTE DE SYNTHÈSE DES GAINS CONFORMÉMENT À L'ACCUEIL
+                // 1. CARTE DE SYNTHÈSE DES GAINS
                 PremiumCard(
                   padding: const EdgeInsets.all(18),
                   child: Row(
@@ -95,11 +123,26 @@ class _HistoryPageState extends State<HistoryPage> {
                   ),
                 ),
                 
+                const SizedBox(height: 16),
+
+                // 2. CORRECTION EXCLUSIVE : INTÉGRATION DU BOUTON ACTIONS D'EXPORTATION PDF
+                _isExporting
+                    ? const Center(
+                        child: Padding(
+                          padding: EdgeInsets.symmetric(vertical: 12.0),
+                          child: CircularProgressIndicator(valueColor: AlwaysStoppedAnimation<Color>(AppColors.orange), strokeWidth: 3),
+                        ),
+                      )
+                    : PremiumButton(
+                        text: 'Exporter mon carnet en PDF',
+                        onPressed: _handlePdfExport,
+                      ),
+
                 const SizedBox(height: 24),
                 const Text('Journal de maintenance SIV', style: TextStyle(color: AppColors.navy, fontSize: 15, fontWeight: FontWeight.w900, letterSpacing: -0.2)),
                 const SizedBox(height: 12),
 
-                // 2. BOUCLE DE RENDER DES ENREGISTREMENTS DE L'HISTORIQUE
+                // 3. BOUCLE DE RENDER DES ENREGISTREMENTS DE L'HISTORIQUE
                 ..._maintenanceLogs.map((log) {
                   return Padding(
                     padding: const EdgeInsets.only(bottom: 12.0),
