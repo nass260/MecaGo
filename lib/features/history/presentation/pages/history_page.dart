@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
-
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/widgets/premium_card.dart';
-import '../managers/history_notifier.dart'; // <-- 1. Importation du gestionnaire d'état
 
 class HistoryPage extends StatefulWidget {
   const HistoryPage({super.key});
@@ -12,14 +10,44 @@ class HistoryPage extends StatefulWidget {
 }
 
 class _HistoryPageState extends State<HistoryPage> {
-  // Initialisation locale du contrôleur connecté du Sprint 4
-  final HistoryNotifier _notifier = HistoryNotifier();
+  bool _isLoading = false;
+
+  // Liste simulée des données d'interventions extraites de la base SQLite
+  final List<Map<String, dynamic>> _maintenanceLogs = [
+    {
+      'date': '18 août 2026',
+      'mileage': '42 150 km',
+      'icon': '💨',
+      'title': 'Filtre habitacle HEPA',
+      'brand': 'PURFLUX',
+      'cost': 18.50,
+      'saved': 35.00,
+      'status': 'Validé',
+    },
+    {
+      'date': '02 juin 2026',
+      'mileage': '38 900 km',
+      'icon': '🛑',
+      'title': 'Plaquettes de frein Avant',
+      'brand': 'VALEO Tech',
+      'cost': 34.90,
+      'saved': 90.00,
+      'status': 'Validé',
+    }
+  ];
 
   @override
   void initState() {
     super.initState();
-    // Déclenche l'extraction asynchrone et le calcul des gains dès l'ouverture de l'onglet
-    _notifier.loadMaintenanceHistory();
+    _loadHistoryLogs();
+  }
+
+  Future<void> _loadHistoryLogs() async {
+    setState(() => _isLoading = true);
+    await Future.delayed(const Duration(milliseconds: 400));
+    if (mounted) {
+      setState(() => _isLoading = false);
+    }
   }
 
   @override
@@ -27,183 +55,92 @@ class _HistoryPageState extends State<HistoryPage> {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
+        title: const Text(
+          'Historique',
+          style: TextStyle(color: AppColors.navy, fontWeight: FontWeight.w900, fontSize: 20, letterSpacing: -0.5),
+        ),
         backgroundColor: AppColors.background,
         elevation: 0,
         centerTitle: true,
-        title: const Text(
-          'Historique',
-          style: TextStyle(color: AppColors.navy, fontWeight: FontWeight.w800, letterSpacing: -0.5),
-        ),
       ),
-      // 2. Utilisation d'un AnimatedBuilder pour rafraîchir dynamiquement l'interface
-      body: SafeArea(
-        child: AnimatedBuilder(
-          animation: _notifier,
-          builder: (context, _) {
-            // Affichage d'un indicateur de chargement premium pendant l'agrégation SQLite
-            if (_notifier.isLoading) {
-              return const Center(
-                child: CircularProgressIndicator(valueColor: AlwaysStoppedAnimation<Color>(AppColors.orange)),
-              );
-            }
-
-            // Gestion de l'état d'erreur ou d'historique vide
-            if (_notifier.errorMessage != null || _notifier.historyItems.isEmpty) {
-              return Center(
-                child: Text(
-                  _notifier.errorMessage ?? "Aucune intervention consignée pour le moment.",
-                  style: const TextStyle(color: AppColors.textSecondary, fontWeight: FontWeight.w500),
-                ),
-              );
-            }
-
-            final historyItems = _notifier.historyItems;
-
-            return CustomScrollView(
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator(valueColor: AlwaysStoppedAnimation<Color>(AppColors.orange)))
+          : ListView(
               physics: const BouncingScrollPhysics(),
-              slivers: [
-                // Section 1 : En-tête de synthèse dynamique des gains financiers
-                SliverToBoxAdapter(
-                  child: Padding(
-                    padding: const EdgeInsets.fromLTRB(20, 12, 20, 20),
+              padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 12.0),
+              children: [
+                
+                // 1. CARTE DE SYNTHÈSE DES GAINS CONFORMÉMENT À L'ACCUEIL
+                PremiumCard(
+                  padding: const EdgeInsets.all(18),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceAround,
+                    children: [
+                      Column(
+                        children: const [
+                          Text('125 €', style: TextStyle(color: AppColors.success, fontSize: 22, fontWeight: FontWeight.w900, fontFamily: 'monospace')),
+                          SizedBox(height: 4),
+                          Text('Économisés au total', style: TextStyle(color: AppColors.textSecondary, fontSize: 11, fontWeight: FontWeight.w600)),
+                        ],
+                      ),
+                      Container(width: 1, height: 40, color: AppColors.border),
+                      Column(
+                        children: const [
+                          Text('2', style: TextStyle(color: AppColors.navy, fontSize: 22, fontWeight: FontWeight.w900)),
+                          SizedBox(height: 4),
+                          Text('Interventions faites', style: TextStyle(color: AppColors.textSecondary, fontSize: 11, fontWeight: FontWeight.w600)),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+                
+                const SizedBox(height: 24),
+                const Text('Journal de maintenance SIV', style: TextStyle(color: AppColors.navy, fontSize: 15, fontWeight: FontWeight.w900, letterSpacing: -0.2)),
+                const SizedBox(height: 12),
+
+                // 2. BOUCLE DE RENDER DES ENREGISTREMENTS DE L'HISTORIQUE
+                ..._maintenanceLogs.map((log) {
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: 12.0),
                     child: PremiumCard(
-                      padding: const EdgeInsets.all(22),
+                      padding: const EdgeInsets.all(16),
                       child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          _buildSummaryStat(
-                            label: "Économies", 
-                            value: "${_notifier.totalSavings} €", // Somme calculée en temps réel
-                            color: AppColors.success
+                          Container(
+                            width: 44,
+                            height: 44,
+                            decoration: BoxDecoration(color: AppColors.background, borderRadius: BorderRadius.circular(12)),
+                            child: Center(child: Text(log['icon'] as String, style: const TextStyle(fontSize: 20))),
                           ),
-                          Container(width: 1, height: 44, color: AppColors.border),
-                          _buildSummaryStat(
-                            label: "Interventions", 
-                            value: "${historyItems.length}", 
-                            color: AppColors.navy
+                          const SizedBox(width: 14),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(log['title'] as String, style: const TextStyle(color: AppColors.navy, fontWeight: FontWeight.extrabold, fontSize: 14)),
+                                const SizedBox(height: 2),
+                                Text('${log['brand']} • ${log['mileage']}', style: const TextStyle(color: AppColors.textSecondary, fontSize: 12, fontWeight: FontWeight.w500)),
+                                const SizedBox(height: 4),
+                                Text('📅 ${log['date']}', style: const TextStyle(color: AppColors.textSecondary, fontSize: 11, fontWeight: FontWeight.bold)),
+                              ],
+                            ),
                           ),
-                          Container(width: 1, height: 44, color: AppColors.border),
-                          _buildSummaryStat(
-                            label: "Année", 
-                            value: "2026", 
-                            color: AppColors.orange
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.end,
+                            children: [
+                              Text('+${(log['saved'] as double).round()} €', style: const TextStyle(color: AppColors.success, fontWeight: FontWeight.w900, fontSize: 15, fontFamily: 'monospace')),
+                              const SizedBox(height: 2),
+                              Text('Achat : ${log['cost']} €', style: const TextStyle(color: AppColors.textSecondary, fontSize: 10, fontWeight: FontWeight.bold)),
+                            ],
                           ),
                         ],
                       ),
                     ),
-                  ),
-                ),
-
-                // Titre de section liste
-                SliverToBoxAdapter(
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-                    child: const Text(
-                      'Toutes les interventions',
-                      style: TextStyle(color: AppColors.navy, fontSize: 18, fontWeight: FontWeight.bold, letterSpacing: -0.3),
-                    ),
-                  ),
-                ),
-
-                // Section 2 : Liste chronologique défilante dynamique
-                SliverPadding(
-                  padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
-                  sliver: SliverList.separated(
-                    itemCount: historyItems.length,
-                    separatorBuilder: (_, __) => const SizedBox(height: 14),
-                    itemBuilder: (context, index) {
-                      final item = historyItems[index];
-
-                      return PremiumCard(
-                        padding: const EdgeInsets.all(16),
-                        child: Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            // Conteneur d'icône d'intervention dynamique
-                            Container(
-                              width: 48,
-                              height: 48,
-                              decoration: BoxDecoration(
-                                color: AppColors.orange.withOpacity(0.08),
-                                borderRadius: BorderRadius.circular(14),
-                              ),
-                              child: Icon(
-                                IconData(item.iconCodePoint, fontFamily: 'MaterialIcons'), 
-                                color: AppColors.orange, 
-                                size: 24
-                              ),
-                            ),
-                            const SizedBox(width: 16),
-                            
-                            // Textes descriptifs réels extraits de SQLite
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    item.title,
-                                    style: const TextStyle(color: AppColors.navy, fontSize: 16, fontWeight: FontWeight.bold, height: 1.25),
-                                  ),
-                                  const SizedBox(height: 6),
-                                  Text(
-                                    '${item.date}  •  ${item.mileage}',
-                                    style: const TextStyle(color: AppColors.textSecondary, fontSize: 12, fontWeight: FontWeight.w500),
-                                  ),
-                                ],
-                              ),
-                            ),
-                            const SizedBox(width: 10),
-
-                            // Badge de statut "Validé" et montant d'économie réel
-                            Column(
-                              crossAxisAlignment: CrossAxisAlignment.end,
-                              children: [
-                                Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                                  decoration: BoxDecoration(
-                                    color: AppColors.success.withOpacity(0.12),
-                                    borderRadius: BorderRadius.circular(20),
-                                  ),
-                                  child: const Text(
-                                    "Validé",
-                                    style: TextStyle(color: AppColors.success, fontWeight: FontWeight.bold, fontSize: 11),
-                                  ),
-                                ),
-                                const SizedBox(height: 10),
-                                Text(
-                                  '${item.savings} €',
-                                  style: const TextStyle(color: AppColors.success, fontWeight: FontWeight.w900, fontSize: 17, fontFamily: 'monospace'),
-                                ),
-                              ],
-                            ),
-                          ],
-                        ),
-                      );
-                    },
-                  ),
-                ),
+                  );
+                }).toList(),
               ],
-            );
-          },
-        ),
-      ),
-    );
-  }
-
-  // Widget interne de rendu de synthèse des compteurs
-  static Widget _buildSummaryStat({required String label, required String value, required Color color}) {
-    return Column(
-      children: [
-        Text(
-          value,
-          style: TextStyle(color: color, fontSize: 22, fontWeight: FontWeight.w900, fontFamily: 'monospace'),
-        ),
-        const SizedBox(height: 4),
-        Text(
-          label,
-          style: const TextStyle(color: AppColors.textSecondary, fontSize: 12, fontWeight: FontWeight.w500),
-        ),
-      ],
+            ),
     );
   }
 }
