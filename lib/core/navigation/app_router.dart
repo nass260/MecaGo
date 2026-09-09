@@ -5,6 +5,7 @@ import '../../../features/home/presentation/pages/home_page.dart';
 import '../../../features/home/presentation/pages/vehicle_details_page.dart';
 import '../../../features/home/presentation/pages/maintenance_page.dart';
 import '../../../features/home/presentation/pages/reminders_page.dart';
+import '../../../features/home/presentation/pages/tutorials_page.dart';
 import '../../../features/garage/presentation/pages/garage_page.dart';
 import '../../../features/scanner/presentation/pages/scanner_page.dart';
 import '../../../features/history/presentation/pages/history_page.dart';
@@ -31,6 +32,10 @@ class AppRouter {
       GoRoute(
         path: '/reminders',
         builder: (context, state) => const RemindersPage(),
+      ),
+      GoRoute(
+        path: '/tutorials',
+        builder: (context, state) => const TutorialsPage(),
       ),
       StatefulShellRoute.indexedStack(
         builder: (context, state, navigationShell) {
