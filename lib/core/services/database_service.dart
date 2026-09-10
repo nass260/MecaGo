@@ -2,6 +2,8 @@
 import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
 import '../../features/home/data/models/vehicle_model.dart';
+import '../../features/home/data/models/maintenance_log_model.dart';
+import '../../features/home/data/models/reminder_model.dart';
 
 class DatabaseService {
   static final DatabaseService _instance = DatabaseService._internal();
@@ -157,16 +159,7 @@ class DatabaseService {
   Future<List<Vehicle>> getVehicles() async {
     final db = await database;
     final result = await db.query('vehicles');
-
-    return result.map((map) => Vehicle(
-      id: map['id'] as String,
-      brand: map['brand'] as String,
-      model: map['model'] as String,
-      plate: map['plate'] as String,
-      progress: map['progress'] as double,
-      isAlert: (map['is_alert'] as int) == 1,
-      imageUrl: map['image_url'] as String? ?? '',
-    )).toList();
+    return result.map((map) => Vehicle.fromMap(map)).toList();
   }
 
   Future<Vehicle?> getVehicle(String id) async {
@@ -178,44 +171,19 @@ class DatabaseService {
     );
 
     if (result.isEmpty) return null;
-
-    final map = result.first;
-    return Vehicle(
-      id: map['id'] as String,
-      brand: map['brand'] as String,
-      model: map['model'] as String,
-      plate: map['plate'] as String,
-      progress: map['progress'] as double,
-      isAlert: (map['is_alert'] as int) == 1,
-      imageUrl: map['image_url'] as String? ?? '',
-    );
+    return Vehicle.fromMap(result.first);
   }
 
   Future<void> insertVehicle(Vehicle vehicle) async {
     final db = await database;
-    await db.insert('vehicles', {
-      'id': vehicle.id,
-      'brand': vehicle.brand,
-      'model': vehicle.model,
-      'plate': vehicle.plate,
-      'progress': vehicle.progress,
-      'is_alert': vehicle.isAlert ? 1 : 0,
-      'image_url': vehicle.imageUrl,
-    });
+    await db.insert('vehicles', vehicle.toMap());
   }
 
   Future<void> updateVehicle(Vehicle vehicle) async {
     final db = await database;
     await db.update(
       'vehicles',
-      {
-        'brand': vehicle.brand,
-        'model': vehicle.model,
-        'plate': vehicle.plate,
-        'progress': vehicle.progress,
-        'is_alert': vehicle.isAlert ? 1 : 0,
-        'image_url': vehicle.imageUrl,
-      },
+      vehicle.toMap(),
       where: 'id = ?',
       whereArgs: [vehicle.id],
     );
@@ -230,26 +198,27 @@ class DatabaseService {
   // MÉTHODES ENTRETIENS
   // ============================================
 
-  Future<List<Map<String, dynamic>>> getMaintenanceLogs(String vehicleId) async {
+  Future<List<MaintenanceLog>> getMaintenanceLogs(String vehicleId) async {
     final db = await database;
-    return await db.query(
+    final result = await db.query(
       'maintenance_logs',
       where: 'vehicle_id = ?',
       whereArgs: [vehicleId],
       orderBy: 'date DESC',
     );
+    return result.map((map) => MaintenanceLog.fromMap(map)).toList();
   }
 
-  Future<void> insertMaintenanceLog(Map<String, dynamic> log) async {
+  Future<void> insertMaintenanceLog(MaintenanceLog log) async {
     final db = await database;
-    await db.insert('maintenance_logs', log);
+    await db.insert('maintenance_logs', log.toMap());
   }
 
   // ============================================
   // MÉTHODES RAPPELS
   // ============================================
 
-  Future<List<Map<String, dynamic>>> getReminders({String? vehicleId}) async {
+  Future<List<Reminder>> getReminders({String? vehicleId}) async {
     final db = await database;
     final List<String> where = [];
     final List<dynamic> whereArgs = [];
@@ -261,12 +230,14 @@ class DatabaseService {
 
     where.add('is_done = 0');
 
-    return await db.query(
+    final result = await db.query(
       'reminders',
       where: where.isNotEmpty ? where.join(' AND ') : null,
       whereArgs: whereArgs.isNotEmpty ? whereArgs : null,
       orderBy: 'due_date ASC',
     );
+
+    return result.map((map) => Reminder.fromMap(map)).toList();
   }
 
   Future<void> markReminderDone(String id) async {
