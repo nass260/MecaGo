@@ -24,19 +24,24 @@ class DatabaseService {
 
     return await openDatabase(
       databasePath,
-      version: 1,
+      version: 2, // ⬆️ Version augmentée
       onCreate: _onCreate,
+      onUpgrade: _onUpgrade,
     );
   }
 
   Future<void> _onCreate(Database db, int version) async {
-    // Table des véhicules
+    // Table des véhicules (enrichie)
     await db.execute('''
       CREATE TABLE vehicles (
         id TEXT PRIMARY KEY,
         brand TEXT NOT NULL,
         model TEXT NOT NULL,
         plate TEXT NOT NULL,
+        year INTEGER NOT NULL,
+        mileage INTEGER NOT NULL,
+        fuel_type TEXT NOT NULL,
+        transmission TEXT NOT NULL,
         progress REAL NOT NULL,
         is_alert INTEGER NOT NULL,
         image_url TEXT
@@ -75,17 +80,30 @@ class DatabaseService {
       )
     ''');
 
-    // Insertion des données initiales
     await _insertInitialData(db);
   }
 
+  Future<void> _onUpgrade(Database db, int oldVersion, int newVersion) async {
+    if (oldVersion < 2) {
+      // Migration : ajouter les colonnes manquantes
+      await db.execute('ALTER TABLE vehicles ADD COLUMN year INTEGER DEFAULT 2020');
+      await db.execute('ALTER TABLE vehicles ADD COLUMN mileage INTEGER DEFAULT 0');
+      await db.execute("ALTER TABLE vehicles ADD COLUMN fuel_type TEXT DEFAULT 'essence'");
+      await db.execute("ALTER TABLE vehicles ADD COLUMN transmission TEXT DEFAULT 'manuelle'");
+    }
+  }
+
   Future<void> _insertInitialData(Database db) async {
-    // Véhicules
+    // Véhicules variés (couvre tous les cas)
     await db.insert('vehicles', {
       'id': '1',
       'brand': 'Tesla',
       'model': 'Model 3',
       'plate': 'AB-123-CD',
+      'year': 2022,
+      'mileage': 23450,
+      'fuel_type': 'electrique',
+      'transmission': 'automatique',
       'progress': 0.85,
       'is_alert': 0,
       'image_url': '',
@@ -96,8 +114,26 @@ class DatabaseService {
       'brand': 'Renault',
       'model': 'Clio 5',
       'plate': 'EF-456-GH',
+      'year': 2019,
+      'mileage': 87200,
+      'fuel_type': 'diesel',
+      'transmission': 'manuelle',
       'progress': 0.45,
       'is_alert': 1,
+      'image_url': '',
+    });
+
+    await db.insert('vehicles', {
+      'id': '3',
+      'brand': 'Peugeot',
+      'model': '208',
+      'plate': 'IJ-789-KL',
+      'year': 2021,
+      'mileage': 45000,
+      'fuel_type': 'essence',
+      'transmission': 'manuelle',
+      'progress': 0.72,
+      'is_alert': 0,
       'image_url': '',
     });
 
@@ -116,26 +152,26 @@ class DatabaseService {
 
     await db.insert('maintenance_logs', {
       'id': '2',
-      'vehicle_id': '1',
-      'date': '2026-01-02',
-      'mileage': 12000,
-      'title': 'Filtre habitacle HEPA',
-      'brand': 'Tesla',
-      'cost': 34.50,
-      'saved': 20.00,
+      'vehicle_id': '2',
+      'date': '2026-02-10',
+      'mileage': 85000,
+      'title': 'Filtre à gasoil',
+      'brand': 'Renault',
+      'cost': 65.00,
+      'saved': 55.00,
       'icon': 'filter_alt_rounded',
     });
 
     // Rappels
     await db.insert('reminders', {
       'id': '1',
-      'vehicle_id': '1',
-      'title': 'Vidange moteur',
-      'description': 'Huile moteur + filtre',
-      'due_date': '2026-04-15',
-      'remaining_km': 1200,
-      'priority': 'Élevée',
-      'icon': 'opacity_rounded',
+      'vehicle_id': '2',
+      'title': 'Courroie de distribution',
+      'description': 'À remplacer avant 100 000 km',
+      'due_date': '2026-06-15',
+      'remaining_km': 12800,
+      'priority': 'Critique',
+      'icon': 'settings_rounded',
       'is_done': 0,
     });
 
@@ -169,7 +205,6 @@ class DatabaseService {
       where: 'id = ?',
       whereArgs: [id],
     );
-
     if (result.isEmpty) return null;
     return Vehicle.fromMap(result.first);
   }
