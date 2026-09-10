@@ -17,15 +17,18 @@ dependencies:
   # Base de données locale & Persistance des voitures
   sqflite: ^2.3.0
   path: ^1.8.3
-  path_provider: ^2.1.0  # AJOUTÉ - Nécessaire pour trouver le chemin de la base de données
+  path_provider: ^2.1.0
 
   # Services Cloud Firebase Core & Authentication
   firebase_core: ^2.24.0
   firebase_auth: ^4.15.0
 
+  # Notifications push locales
+  flutter_local_notifications: ^16.3.2
+
   # Utilitaires
-  intl: ^0.18.1  # AJOUTÉ - Pour le formatage des dates
-  uuid: ^4.3.3   # AJOUTÉ - Pour générer des IDs uniques
+  intl: ^0.18.1
+  uuid: ^4.3.3
 
   # Icônes premiums standardisées
   cupertino_icons: ^1.0.6
