@@ -1,8 +1,7 @@
+// lib/features/authentication/presentation/pages/paywall_page.dart
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import '../../../../core/theme/app_theme.dart';
-import '../../../../core/widgets/premium_card.dart';
-import '../../../../core/widgets/premium_button.dart';
-import '../managers/subscription_notifier.dart';
 
 class PaywallPage extends StatefulWidget {
   const PaywallPage({super.key});
@@ -12,169 +11,581 @@ class PaywallPage extends StatefulWidget {
 }
 
 class _PaywallPageState extends State<PaywallPage> {
-  final SubscriptionNotifier _subscriptionNotifier = SubscriptionNotifier();
+  String _selectedPlan = 'monthly';
 
-  /// Lance le traitement d'achat in-app sécurisé et gère le retour utilisateur
-  Future<void> _triggerSubscriptionPurchase() async {
-    final bool success = await _subscriptionNotifier.executePremiumPurchase();
-    
-    if (mounted) {
-      if (success) {
-        // Option validée : fermeture du paywall et SnackBar de félicitations
-        Navigator.of(context).pop();
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text("👑 Félicitations ! Votre accès MecaGo Premium est activé."),
-            backgroundColor: AppColors.success,
-          ),
-        );
-      } else {
-        // Erreur ou annulation de paiement
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(_subscriptionNotifier.billingErrorMessage ?? "Transaction annulée."),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-    }
-  }
+  final List<Map<String, dynamic>> _features = [
+    {
+      'icon': Icons.directions_car_rounded,
+      'title': 'Garage illimité',
+      'description': 'Ajoutez autant de véhicules que vous voulez',
+    },
+    {
+      'icon': Icons.camera_alt_rounded,
+      'title': 'Scan IA illimité',
+      'description': 'Analysez pneus, freins et pièces sans limite',
+    },
+    {
+      'icon': Icons.picture_as_pdf_rounded,
+      'title': 'Export PDF premium',
+      'description': 'Carnet d\'entretien certifié pour la revente',
+    },
+    {
+      'icon': Icons.notifications_active_rounded,
+      'title': 'Alertes prédictives',
+      'description': 'Notifications push avant chaque échéance',
+    },
+    {
+      'icon': Icons.cloud_off_rounded,
+      'title': 'Mode hors-ligne',
+      'description': 'Fonctionne en sous-sol et parking',
+    },
+    {
+      'icon': Icons.support_agent_rounded,
+      'title': 'Support prioritaire',
+      'description': 'Réponse en moins de 24h',
+    },
+  ];
+
+  final List<Map<String, dynamic>> _plans = [
+    {
+      'id': 'monthly',
+      'label': 'Mensuel',
+      'price': '4,99 €',
+      'period': '/mois',
+      'savings': null,
+      'popular': false,
+    },
+    {
+      'id': 'yearly',
+      'label': 'Annuel',
+      'price': '39,99 €',
+      'period': '/an',
+      'savings': 'Économisez 33%',
+      'popular': true,
+    },
+  ];
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.background,
-      appBar: AppBar(
-        backgroundColor: AppColors.background,
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.close_rounded, color: AppColors.navy, size: 28),
-          onPressed: () => Navigator.of(context).pop(),
-        ),
-      ),
       body: SafeArea(
-        child: AnimatedBuilder(
-          animation: _subscriptionNotifier,
-          builder: (context, _) {
-            if (_subscriptionNotifier.isProcessing) {
-              return const Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    CircularProgressIndicator(valueColor: AlwaysStoppedAnimation<Color>(AppColors.orange), strokeWidth: 3.5),
-                    SizedBox(height: 18),
-                    Text('Connexion sécurisée avec l’App Store...', style: TextStyle(color: AppColors.textSecondary, fontWeight: FontWeight.bold, fontSize: 13)),
-                  ],
-                ),
-              );
-            }
-
-            return SingleChildScrollView(
-              physics: const BouncingScrollPhysics(),
-              padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 12.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+        child: Column(
+          children: [
+            // Barre de fermeture
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: Row(
                 children: [
-                  const Text(
-                    'ACCÈS ILLIMITÉ D’EXCELLENCE',
-                    style: TextStyle(color: AppColors.orange, fontSize: 11, fontWeight: FontWeight.bold, letterSpacing: 1.5),
-                  ),
-                  const SizedBox(height: 6),
-                  const Text(
-                    'Passez à la vitesse supérieure',
-                    style: TextStyle(fontSize: 28, fontWeight: FontWeight.w900, color: AppColors.navy, letterSpacing: -0.6),
-                  ),
-                  const SizedBox(height: 8),
-                  const Text(
-                    'Prenez le contrôle total de l’entretien de vos véhicules et économisez des centaines d’euros chaque année.',
-                    style: TextStyle(color: AppColors.textSecondary, fontSize: 14, height: 1.45, fontWeight: FontWeight.w500),
-                  ),
-                  const SizedBox(height: 28),
-
-                  // GRILLE DES ARGUMENTS DE CONVERSION PREMIUM
-                  _buildFeatureBullet(icon: "🧠", title: "Diagnostic IA illimité", desc: "Identifiez instantanément l’origine de n’importe quelle panne ou sifflement mécanique."),
-                  _buildFeatureBullet(icon: "📋", title: "Fiches techniques constructeurs", desc: "Accédez aux couples de serrage, viscosités d’huiles et dimensions d'origine."),
-                  _buildFeatureBullet(icon: "🔔", title: "Rappels kilométriques prédictifs", desc: "Anticipez l’usure de vos pièces VALEO ou PURFLUX avant le Contrôle Technique."),
-
-                  const SizedBox(height: 24),
-
-                  // GRILLE DE TARIFICATION DE PRESTIGE
-                  PremiumCard(
-                    padding: const EdgeInsets.all(22),
-                    child: Row(
-                      children: [
-                        Container(
-                          width: 48,
-                          height: 48,
-                          decoration: BoxDecoration(color: const Color(0xFFFFF7ED), borderRadius: BorderRadius.circular(16)),
-                          child: const Center(child: Text("👑", style: TextStyle(fontSize: 22))),
-                        ),
-                        const SizedBox(width: 16),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: const [
-                              Text('Formule Mensuelle', style: TextStyle(fontWeight: FontWeight.extrabold, fontSize: 17, color: AppColors.navy)),
-                              SizedBox(height: 2),
-                              Text('Sans engagement — Annulable en 1 clic', style: TextStyle(color: AppColors.textSecondary, fontSize: 12, fontWeight: FontWeight.w500)),
-                            ],
+                  GestureDetector(
+                    onTap: () => context.pop(),
+                    child: Container(
+                      width: 40,
+                      height: 40,
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        shape: BoxShape.circle,
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.05),
+                            blurRadius: 8,
                           ),
-                        ),
-                        const Column(
-                          crossAxisAlignment: CrossAxisAlignment.end,
-                          children: [
-                            Text('4,99 €', style: TextStyle(color: AppColors.navy, fontSize: 24, fontWeight: FontWeight.w900, fontFamily: 'monospace')),
-                            Text('/mois', style: TextStyle(color: AppColors.textSecondary, fontSize: 11, fontWeight: FontWeight.bold)),
-                          ],
-                        ),
-                      ],
+                        ],
+                      ),
+                      child: const Icon(
+                        Icons.close_rounded,
+                        color: AppColors.navy,
+                        size: 20,
+                      ),
                     ),
                   ),
-
-                  const SizedBox(height: 32),
-
-                  // BOUTON ACTION MAÎTRE DU DESIGN SYSTEM
-                  PremiumButton(
-                    text: 'Activer mon accès Premium',
-                    onPressed: _triggerSubscriptionPurchase,
-                  ),
-
-                  const SizedBox(height: 18),
-                  const Center(
-                    child: Text(
-                      'Période d’essai de 7 jours incluse. Prélèvement automatique mensuel via votre compte Google Play ou App Store. Restauration des achats disponible.',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(color: AppColors.textSecondary, fontSize: 11, height: 1.4, fontWeight: FontWeight.w500),
+                  const Spacer(),
+                  TextButton(
+                    onPressed: () => context.pop(),
+                    child: const Text(
+                      'Plus tard',
+                      style: TextStyle(
+                        color: AppColors.textSecondary,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
                   ),
                 ],
               ),
-            );
-          },
+            ),
+
+            // Contenu scrollable
+            Expanded(
+              child: SingleChildScrollView(
+                physics: const BouncingScrollPhysics(),
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                child: Column(
+                  children: [
+                    // Badge Premium
+                    _buildPremiumBadge(),
+                    const SizedBox(height: 20),
+
+                    // Titre
+                    const Text(
+                      'Passez à Premium',
+                      style: TextStyle(
+                        color: AppColors.navy,
+                        fontSize: 32,
+                        fontWeight: FontWeight.w900,
+                        letterSpacing: -1,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 8),
+                    const Text(
+                      'Débloquez toutes les fonctionnalités\net économisez plus sur votre entretien',
+                      style: TextStyle(
+                        color: AppColors.textSecondary,
+                        fontSize: 15,
+                        fontWeight: FontWeight.w500,
+                        height: 1.4,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 32),
+
+                    // Fonctionnalités
+                    ..._features.map((f) => _buildFeatureTile(f)),
+
+                    const SizedBox(height: 32),
+
+                    // Plans
+                    const Text(
+                      'Choisissez votre plan',
+                      style: TextStyle(
+                        color: AppColors.navy,
+                        fontSize: 18,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    ..._plans.map((p) => _buildPlanCard(p)),
+
+                    const SizedBox(height: 24),
+
+                    // Bouton souscrire
+                    _buildSubscribeButton(),
+
+                    const SizedBox(height: 16),
+
+                    // Mentions légales
+                    _buildLegalText(),
+
+                    const SizedBox(height: 24),
+                  ],
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );
   }
 
-  static Widget _buildFeatureBullet({required String icon, required String title, required String desc}) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 18.0),
+  // ============================================
+  // WIDGETS
+  // ============================================
+
+  Widget _buildPremiumBadge() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          colors: [Color(0xFFFFD700), Color(0xFFFFA500)],
+        ),
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFFFFD700).withOpacity(0.4),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
       child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
         children: [
-          Text(icon, style: const TextStyle(fontSize: 22)),
+          const Text('👑', style: TextStyle(fontSize: 18)),
+          const SizedBox(width: 8),
+          const Text(
+            'MECAGO PREMIUM',
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 12,
+              fontWeight: FontWeight.w900,
+              letterSpacing: 1,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFeatureTile(Map<String, dynamic> feature) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16),
+      child: Row(
+        children: [
+          Container(
+            width: 44,
+            height: 44,
+            decoration: BoxDecoration(
+              color: AppColors.orange.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(14),
+            ),
+            child: Icon(
+              feature['icon'],
+              color: AppColors.orange,
+              size: 22,
+            ),
+          ),
           const SizedBox(width: 14),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: AppColors.navy)),
-                const SizedBox(height: 3),
-                Text(desc, style: const TextStyle(color: AppColors.textSecondary, fontSize: 13, height: 1.4, fontWeight: FontWeight.w500)),
+                Text(
+                  feature['title'],
+                  style: const TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.navy,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  feature['description'],
+                  style: const TextStyle(
+                    fontSize: 13,
+                    color: AppColors.textSecondary,
+                  ),
+                ),
               ],
             ),
           ),
+          Container(
+            width: 22,
+            height: 22,
+            decoration: const BoxDecoration(
+              color: AppColors.success,
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(
+              Icons.check_rounded,
+              color: Colors.white,
+              size: 14,
+            ),
+          ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildPlanCard(Map<String, dynamic> plan) {
+    final isSelected = _selectedPlan == plan['id'];
+    final isPopular = plan['popular'] == true;
+
+    return GestureDetector(
+      onTap: () => setState(() => _selectedPlan = plan['id']),
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 12),
+        padding: const EdgeInsets.all(18),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: isSelected ? AppColors.orange : AppColors.border,
+            width: isSelected ? 2 : 1,
+          ),
+          boxShadow: isSelected
+              ? [
+                  BoxShadow(
+                    color: AppColors.orange.withOpacity(0.15),
+                    blurRadius: 16,
+                    offset: const Offset(0, 4),
+                  ),
+                ]
+              : [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.02),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+        ),
+        child: Stack(
+          clipBehavior: Clip.none,
+          children: [
+            // Badge "Populaire"
+            if (isPopular)
+              Positioned(
+                top: -28,
+                right: 12,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 4,
+                  ),
+                  decoration: BoxDecoration(
+                    gradient: const LinearGradient(
+                      colors: [AppColors.orange, Color(0xFFFF8C00)],
+                    ),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: const Text(
+                    '⭐ POPULAIRE',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 9,
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: 0.5,
+                    ),
+                  ),
+                ),
+              ),
+            Row(
+              children: [
+                // Radio
+                Container(
+                  width: 22,
+                  height: 22,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: isSelected ? AppColors.orange : AppColors.border,
+                      width: 2,
+                    ),
+                  ),
+                  child: isSelected
+                      ? Center(
+                          child: Container(
+                            width: 12,
+                            height: 12,
+                            decoration: const BoxDecoration(
+                              color: AppColors.orange,
+                              shape: BoxShape.circle,
+                            ),
+                          ),
+                        )
+                      : null,
+                ),
+                const SizedBox(width: 14),
+                // Infos
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Text(
+                            plan['label'],
+                            style: const TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w800,
+                              color: AppColors.navy,
+                            ),
+                          ),
+                          if (plan['savings'] != null) ...[
+                            const SizedBox(width: 8),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 6,
+                                vertical: 2,
+                              ),
+                              decoration: BoxDecoration(
+                                color: AppColors.success.withOpacity(0.1),
+                                borderRadius: BorderRadius.circular(6),
+                              ),
+                              child: Text(
+                                plan['savings'],
+                                style: const TextStyle(
+                                  fontSize: 9,
+                                  fontWeight: FontWeight.w800,
+                                  color: AppColors.success,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+                // Prix
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Text(
+                      plan['price'],
+                      style: const TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.w900,
+                        color: AppColors.orange,
+                      ),
+                    ),
+                    Text(
+                      plan['period'],
+                      style: const TextStyle(
+                        fontSize: 11,
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSubscribeButton() {
+    final plan = _plans.firstWhere((p) => p['id'] == _selectedPlan);
+    return GestureDetector(
+      onTap: _subscribe,
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(vertical: 18),
+        decoration: BoxDecoration(
+          gradient: const LinearGradient(
+            colors: [AppColors.orange, Color(0xFFFF8C00)],
+          ),
+          borderRadius: BorderRadius.circular(18),
+          boxShadow: [
+            BoxShadow(
+              color: AppColors.orange.withOpacity(0.4),
+              blurRadius: 16,
+              offset: const Offset(0, 6),
+            ),
+          ],
+        ),
+        child: Column(
+          children: [
+            Text(
+              'S\'abonner · ${plan['price']}${plan['period']}',
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 16,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+            const SizedBox(height: 2),
+            Text(
+              'Annulable à tout moment',
+              style: TextStyle(
+                color: Colors.white.withOpacity(0.8),
+                fontSize: 11,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildLegalText() {
+    return const Text(
+      'En vous abonnant, vous acceptez nos Conditions Générales d\'Utilisation '
+      'et notre Politique de Confidentialité. L\'abonnement est renouvelé '
+      'automatiquement sauf annulation 24h avant la fin de la période.',
+      style: TextStyle(
+        fontSize: 10,
+        color: AppColors.textSecondary,
+        height: 1.4,
+      ),
+      textAlign: TextAlign.center,
+    );
+  }
+
+  // ============================================
+  // ACTIONS
+  // ============================================
+
+  void _subscribe() {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(24),
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 80,
+              height: 80,
+              decoration: BoxDecoration(
+                gradient: const LinearGradient(
+                  colors: [Color(0xFFFFD700), Color(0xFFFFA500)],
+                ),
+                shape: BoxShape.circle,
+                boxShadow: [
+                  BoxShadow(
+                    color: const Color(0xFFFFD700).withOpacity(0.4),
+                    blurRadius: 20,
+                  ),
+                ],
+              ),
+              child: const Center(
+                child: Text('👑', style: TextStyle(fontSize: 40)),
+              ),
+            ),
+            const SizedBox(height: 20),
+            const Text(
+              'Bienvenue dans MecaGo Premium !',
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.w900,
+                color: AppColors.navy,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 8),
+            const Text(
+              'Toutes les fonctionnalités sont maintenant débloquées.',
+              style: TextStyle(
+                fontSize: 14,
+                color: AppColors.textSecondary,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 24),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: () {
+                  Navigator.pop(context);
+                  context.go('/');
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.orange,
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                  elevation: 0,
+                ),
+                child: const Text(
+                  'Commencer',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 15,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
