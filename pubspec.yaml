@@ -11,36 +11,19 @@ dependencies:
   flutter:
     sdk: flutter
 
-  # Navigation & Shell Routing
   go_router: ^13.2.0
-
-  # Base de données locale & Persistance des voitures
   sqflite: ^2.3.0
+  sqflite_common_ffi_web: ^0.4.2
   path: ^1.8.3
   path_provider: ^2.1.0
-
-  # Services Cloud Firebase Core & Authentication
-  firebase_core: ^2.24.0
-  firebase_auth: ^4.15.0
-
-  # Notifications push locales
   flutter_local_notifications: ^16.3.2
-
-  # Export PDF premium
   pdf: ^3.10.7
   printing: ^5.12.0
-
-  # Affiliation & liens externes
   url_launcher: ^6.2.4
-
-  # Détection réseau
   connectivity_plus: ^5.0.2
-
-  # Utilitaires
+  http: ^1.1.0
   intl: ^0.18.1
   uuid: ^4.3.3
-
-  # Icônes premiums standardisées
   cupertino_icons: ^1.0.6
 
 dev_dependencies:
@@ -50,11 +33,6 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
-
-  # Déclaration de la police d'écriture d'excellence Apple Style
-  fonts:
-    - family: SF Pro Display
-      fonts:
-        - asset: assets/fonts/SF-Pro-Display-Regular.ttf
-        - asset: assets/fonts/SF-Pro-Display-Bold.ttf
-          weight: 700
+  assets:
+    - assets/
+    - assets/images/

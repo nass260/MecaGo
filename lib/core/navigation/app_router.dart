@@ -7,6 +7,11 @@ import '../../../features/home/presentation/pages/maintenance_page.dart';
 import '../../../features/home/presentation/pages/reminders_page.dart';
 import '../../../features/home/presentation/pages/tutorials_page.dart';
 import '../../../features/garage/presentation/pages/garage_page.dart';
+import '../../../features/garage/presentation/pages/add_vehicle_page.dart';
+import '../../../features/garage/presentation/pages/cascade_search_page.dart';
+import '../../../features/garage/presentation/pages/plate_scanner_page.dart';
+import '../../../features/garage/presentation/pages/vin_input_page.dart';
+import '../../../features/garage/presentation/pages/vehicle_result_page.dart';
 import '../../../features/scanner/presentation/pages/scanner_page.dart';
 import '../../../features/history/presentation/pages/history_page.dart';
 import '../../../features/profile/presentation/pages/profile_page.dart';
@@ -17,7 +22,42 @@ class AppRouter {
   static final GoRouter router = GoRouter(
     initialLocation: '/',
     routes: [
-      GoRoute(path: '/paywall', builder: (context, state) => const PaywallPage()),
+      GoRoute(
+        path: '/paywall',
+        builder: (context, state) => const PaywallPage(),
+      ),
+      GoRoute(
+        path: '/add-vehicle',
+        builder: (context, state) => const AddVehiclePage(),
+      ),
+      GoRoute(
+        path: '/plate-scanner',
+        builder: (context, state) => const PlateScannerPage(),
+      ),
+      GoRoute(
+        path: '/vin-input',
+        builder: (context, state) => const VinInputPage(),
+      ),
+      GoRoute(
+        path: '/cascade-search',
+        builder: (context, state) => const CascadeSearchPage(),
+      ),
+      GoRoute(
+        path: '/vehicle-result',
+        builder: (context, state) {
+          final brand = state.uri.queryParameters['brand'] ?? '';
+          final model = state.uri.queryParameters['model'] ?? '';
+          final engine = state.uri.queryParameters['engine'] ?? '';
+          final year =
+              int.tryParse(state.uri.queryParameters['year'] ?? '') ?? 2020;
+          return VehicleResultPage(
+            brand: brand,
+            model: model,
+            engine: engine,
+            year: year,
+          );
+        },
+      ),
       GoRoute(
         path: '/vehicle-details/:vehicleId',
         builder: (context, state) {
@@ -65,7 +105,7 @@ class AppRouter {
                       () => navigationShell.goBranch(0),
                     ),
                     _buildItem(
-                      Icons.garage_rounded,
+                      Icons.home_repair_service_rounded,
                       'Garage',
                       navigationShell.currentIndex == 1,
                       () => navigationShell.goBranch(1),
@@ -76,13 +116,14 @@ class AppRouter {
                         onTap: () => context.push('/scanner'),
                         child: Container(
                           width: 56,
-                          height: 58,
+                          height: 56,
                           decoration: BoxDecoration(
                             color: const Color(0xFFFF6A00),
                             shape: BoxShape.circle,
                             boxShadow: [
                               BoxShadow(
-                                color: const Color(0xFFFF6A00).withOpacity(0.35),
+                                color: const Color(0xFFFF6A00)
+                                    .withOpacity(0.35),
                                 blurRadius: 12,
                                 offset: const Offset(0, 6),
                               )
@@ -166,7 +207,8 @@ class AppRouter {
     bool isSelected,
     VoidCallback onTap,
   ) {
-    final color = isSelected ? const Color(0xFFFF6A00) : const Color(0xFF94A3B8);
+    final color =
+        isSelected ? const Color(0xFFFF6A00) : const Color(0xFF94A3B8);
     return GestureDetector(
       onTap: onTap,
       child: Column(

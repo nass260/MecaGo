@@ -1,136 +1,187 @@
 // lib/features/home/presentation/managers/home_notifier.dart
 import 'package:flutter/material.dart';
-import '../../../../core/services/database_service.dart';
 import '../../data/models/vehicle_model.dart';
 
 class HomeNotifier with ChangeNotifier {
-  final DatabaseService _databaseService = DatabaseService();
-
   bool _isLoading = false;
   int _mecaGoScore = 85;
-  double _totalSavings = 0.0;
+  double _totalSavings = 125.0;
   Vehicle? _activeVehicle;
   List<Vehicle> _vehicles = [];
 
-  // Getters
   bool get isLoading => _isLoading;
   int get mecaGoScore => _mecaGoScore;
   double get totalSavings => _totalSavings;
   Vehicle? get activeVehicle => _activeVehicle;
   List<Vehicle> get vehicles => _vehicles;
 
-  /// Charge toutes les données du dashboard depuis SQLite
   Future<void> loadDashboardData() async {
     _isLoading = true;
     notifyListeners();
 
-    try {
-      // 1. Charger les véhicules
-      _vehicles = await _databaseService.getVehicles();
+    await Future.delayed(const Duration(milliseconds: 500));
 
-      // 2. Définir le véhicule actif (premier par défaut)
-      if (_vehicles.isNotEmpty) {
-        _activeVehicle = _vehicles.first;
-      }
+    _vehicles = [
+      const Vehicle(
+        id: '1',
+        brand: 'Tesla',
+        model: 'Model 3',
+        plate: 'AB-123-CD',
+        year: 2024,
+        mileage: 23450,
+        fuelType: FuelType.electrique,
+        transmission: TransmissionType.automatique,
+        progress: 0.85,
+        isAlert: false,
+        imageUrl: 'assets/images/tesla_model_3.jpg',
+      ),
+      const Vehicle(
+        id: '2',
+        brand: 'Renault',
+        model: 'Clio 5',
+        plate: 'EF-456-GH',
+        year: 2019,
+        mileage: 87200,
+        fuelType: FuelType.diesel,
+        transmission: TransmissionType.manuelle,
+        progress: 0.45,
+        isAlert: true,
+        imageUrl: '',
+      ),
+      const Vehicle(
+        id: '3',
+        brand: 'Peugeot',
+        model: '208',
+        plate: 'IJ-789-KL',
+        year: 2021,
+        mileage: 45000,
+        fuelType: FuelType.essence,
+        transmission: TransmissionType.manuelle,
+        progress: 0.72,
+        isAlert: false,
+        imageUrl: '',
+      ),
+      const Vehicle(
+        id: '4',
+        brand: 'Peugeot',
+        model: 'Boxer',
+        plate: 'MN-012-OP',
+        year: 2010,
+        mileage: 185000,
+        fuelType: FuelType.diesel,
+        transmission: TransmissionType.manuelle,
+        progress: 0.55,
+        isAlert: false,
+        imageUrl: '',
+      ),
+    ];
 
-      // 3. Calculer les économies totales
-      await _calculateTotalSavings();
-
-      // 4. Calculer le score MecaGo
-      _calculateMecaGoScore();
-
-      _isLoading = false;
-      notifyListeners();
-    } catch (e) {
-      debugPrint('❌ Erreur lors du chargement : $e');
-      _isLoading = false;
-      notifyListeners();
-    }
+    _activeVehicle = _vehicles.first;
+    _isLoading = false;
+    notifyListeners();
   }
 
-  /// Calcule les économies totales depuis l'historique
-  Future<void> _calculateTotalSavings() async {
-    double total = 0.0;
-    for (final vehicle in _vehicles) {
-      final logs = await _databaseService.getMaintenanceLogs(vehicle.id);
-      for (final log in logs) {
-        total += log.saved;
-      }
-    }
-    _totalSavings = total;
-  }
-
-  /// Calcule le score MecaGo en fonction de la santé des véhicules
-  void _calculateMecaGoScore() {
-    if (_vehicles.isEmpty) {
-      _mecaGoScore = 0;
-      return;
-    }
-
-    double totalProgress = 0.0;
-    for (final vehicle in _vehicles) {
-      totalProgress += vehicle.progress;
-    }
-
-    _mecaGoScore = ((totalProgress / _vehicles.length) * 100).round();
-  }
-
-  /// Change le véhicule actif
   void selectVehicle(String vehicleId) {
-    final vehicle = _vehicles.firstWhere(
-      (v) => v.id == vehicleId,
-      orElse: () => throw Exception('Véhicule non trouvé'),
-    );
+    final vehicle = _vehicles.firstWhere((v) => v.id == vehicleId);
     _activeVehicle = vehicle;
     notifyListeners();
   }
 
-  /// Ajoute un nouveau véhicule
   Future<void> addVehicle(Vehicle vehicle) async {
-    try {
-      await _databaseService.insertVehicle(vehicle);
-      _vehicles.add(vehicle);
-      if (_activeVehicle == null) {
-        _activeVehicle = vehicle;
-      }
-      notifyListeners();
-    } catch (e) {
-      debugPrint('❌ Erreur ajout véhicule : $e');
+    _vehicles.add(vehicle);
+    if (_activeVehicle == null) {
+      _activeVehicle = vehicle;
     }
+    notifyListeners();
   }
 
-  /// Met à jour un véhicule
+  Future<void> addVehicleFromMvdb({
+    required String brand,
+    required String model,
+    required String engine,
+    required int year,
+  }) async {
+    final fuelType = _getFuelType(engine);
+    final transmission = _getTransmission(engine);
+
+    final newVehicle = Vehicle(
+      id: DateTime.now().millisecondsSinceEpoch.toString(),
+      brand: brand,
+      model: model,
+      plate: 'À DÉFINIR',
+      year: year,
+      mileage: 0,
+      fuelType: fuelType,
+      transmission: transmission,
+      progress: 1.0,
+      isAlert: false,
+      imageUrl: '',
+    );
+
+    _vehicles.add(newVehicle);
+    if (_activeVehicle == null) {
+      _activeVehicle = newVehicle;
+    }
+    notifyListeners();
+  }
+
+  FuelType _getFuelType(String engine) {
+    final lower = engine.toLowerCase();
+    if (lower.contains('électrique') || lower.contains('electric')) {
+      return FuelType.electrique;
+    }
+    if (lower.contains('hybride')) {
+      return FuelType.hybride;
+    }
+    if (lower.contains('diesel') ||
+        lower.contains('dci') ||
+        lower.contains('hdi') ||
+        lower.contains('tdi') ||
+        lower.contains('bluehdi') ||
+        lower.contains('ecoblue')) {
+      return FuelType.diesel;
+    }
+    if (lower.contains('gpl')) {
+      return FuelType.gpl;
+    }
+    if (lower.contains('e85')) {
+      return FuelType.e85;
+    }
+    return FuelType.essence;
+  }
+
+  TransmissionType _getTransmission(String engine) {
+    final lower = engine.toLowerCase();
+    if (lower.contains('automatique') ||
+        lower.contains('auto') ||
+        lower.contains('eat')) {
+      return TransmissionType.automatique;
+    }
+    if (lower.contains('semi')) {
+      return TransmissionType.semiAutomatique;
+    }
+    return TransmissionType.manuelle;
+  }
+
   Future<void> updateVehicle(Vehicle updatedVehicle) async {
-    try {
-      await _databaseService.updateVehicle(updatedVehicle);
-      final index = _vehicles.indexWhere((v) => v.id == updatedVehicle.id);
-      if (index != -1) {
-        _vehicles[index] = updatedVehicle;
-        if (_activeVehicle?.id == updatedVehicle.id) {
-          _activeVehicle = updatedVehicle;
-        }
-        notifyListeners();
-      }
-    } catch (e) {
-      debugPrint('❌ Erreur mise à jour véhicule : $e');
-    }
-  }
-
-  /// Supprime un véhicule
-  Future<void> deleteVehicle(String id) async {
-    try {
-      await _databaseService.deleteVehicle(id);
-      _vehicles.removeWhere((v) => v.id == id);
-      if (_activeVehicle?.id == id) {
-        _activeVehicle = _vehicles.isNotEmpty ? _vehicles.first : null;
+    final index = _vehicles.indexWhere((v) => v.id == updatedVehicle.id);
+    if (index != -1) {
+      _vehicles[index] = updatedVehicle;
+      if (_activeVehicle?.id == updatedVehicle.id) {
+        _activeVehicle = updatedVehicle;
       }
       notifyListeners();
-    } catch (e) {
-      debugPrint('❌ Erreur suppression véhicule : $e');
     }
   }
 
-  /// Rafraîchit toutes les données
+  Future<void> deleteVehicle(String id) async {
+    _vehicles.removeWhere((v) => v.id == id);
+    if (_activeVehicle?.id == id) {
+      _activeVehicle = _vehicles.isNotEmpty ? _vehicles.first : null;
+    }
+    notifyListeners();
+  }
+
   Future<void> refresh() async {
     await loadDashboardData();
   }

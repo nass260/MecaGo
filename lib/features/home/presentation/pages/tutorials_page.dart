@@ -40,7 +40,7 @@ class TutorialsPage extends StatelessWidget {
       'title': 'Diagnostiquer un voyant moteur',
       'duration': '15 min',
       'level': 'Avancé',
-      'icon': Icons.diagnosis_rounded,
+      'icon': Icons.build_circle_rounded,
       'views': '3.8K',
       'color': Colors.red,
     },
