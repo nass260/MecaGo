@@ -91,19 +91,9 @@ class _ProfilePageState extends State<ProfilePage> {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [AppColors.navy, Color(0xFF1E293B)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
+        gradient: AppGradients.navy,
         borderRadius: BorderRadius.circular(24),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.navy.withOpacity(0.3),
-            blurRadius: 20,
-            offset: const Offset(0, 8),
-          ),
-        ],
+        boxShadow: AppShadows.hero,
       ),
       child: Column(
         children: [
@@ -250,7 +240,8 @@ class _ProfilePageState extends State<ProfilePage> {
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: const [
-                    Icon(Icons.workspace_premium_rounded, color: Colors.white, size: 20),
+                    Icon(Icons.workspace_premium_rounded,
+                        color: Colors.white, size: 20),
                     SizedBox(width: 8),
                     Text(
                       'Passer à Premium',
@@ -314,35 +305,38 @@ class _ProfilePageState extends State<ProfilePage> {
   // ============================================
 
   Widget _buildStats() {
-    return Row(
-      children: [
-        Expanded(
-          child: _buildStatCard(
-            icon: Icons.directions_car_rounded,
-            value: '2',
-            label: 'Véhicules',
-            color: AppColors.orange,
+    return IntrinsicHeight(
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Expanded(
+            child: _buildStatCard(
+              icon: Icons.directions_car_rounded,
+              value: '2',
+              label: 'Véhicules',
+              color: AppColors.orange,
+            ),
           ),
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: _buildStatCard(
-            icon: Icons.build_rounded,
-            value: '12',
-            label: 'Entretiens',
-            color: AppColors.navy,
+          const SizedBox(width: 10),
+          Expanded(
+            child: _buildStatCard(
+              icon: Icons.build_rounded,
+              value: '12',
+              label: 'Entretiens',
+              color: AppColors.navy,
+            ),
           ),
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: _buildStatCard(
-            icon: Icons.savings_rounded,
-            value: '125 €',
-            label: 'Économisés',
-            color: AppColors.success,
+          const SizedBox(width: 10),
+          Expanded(
+            child: _buildStatCard(
+              icon: Icons.savings_rounded,
+              value: '125 €',
+              label: 'Économisés',
+              color: AppColors.success,
+            ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 
@@ -357,14 +351,7 @@ class _ProfilePageState extends State<ProfilePage> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.border.withOpacity(0.4)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.02),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
+        boxShadow: AppShadows.card,
       ),
       child: Column(
         children: [
@@ -416,14 +403,7 @@ class _ProfilePageState extends State<ProfilePage> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: AppColors.border.withOpacity(0.4)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.02),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
+        boxShadow: AppShadows.card,
       ),
       child: Column(
         children: [
@@ -535,14 +515,7 @@ class _ProfilePageState extends State<ProfilePage> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: AppColors.border.withOpacity(0.4)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.02),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
+        boxShadow: AppShadows.card,
       ),
       child: Column(
         children: [
@@ -653,7 +626,7 @@ class _ProfilePageState extends State<ProfilePage> {
         onPressed: _confirmLogout,
         style: OutlinedButton.styleFrom(
           padding: const EdgeInsets.symmetric(vertical: 16),
-          side: const BorderSide(color: Colors.red, width: 1.5),
+          side: const BorderSide(color: AppColors.danger, width: 1.5),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16),
           ),
@@ -661,12 +634,12 @@ class _ProfilePageState extends State<ProfilePage> {
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: const [
-            Icon(Icons.logout_rounded, color: Colors.red, size: 20),
+            Icon(Icons.logout_rounded, color: AppColors.danger, size: 20),
             SizedBox(width: 8),
             Text(
               'Se déconnecter',
               style: TextStyle(
-                color: Colors.red,
+                color: AppColors.danger,
                 fontSize: 14,
                 fontWeight: FontWeight.w700,
               ),
@@ -777,7 +750,8 @@ class _ProfilePageState extends State<ProfilePage> {
       builder: (context) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         title: const Text('Se déconnecter ?'),
-        content: const Text('Vous devrez vous reconnecter pour accéder à vos données.'),
+        content:
+            const Text('Vous devrez vous reconnecter pour accéder à vos données.'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
@@ -785,7 +759,7 @@ class _ProfilePageState extends State<ProfilePage> {
           ),
           TextButton(
             onPressed: () => Navigator.pop(context),
-            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            style: TextButton.styleFrom(foregroundColor: AppColors.danger),
             child: const Text('Se déconnecter'),
           ),
         ],

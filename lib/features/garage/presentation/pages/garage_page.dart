@@ -31,7 +31,7 @@ class _GaragePageState extends State<GaragePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F7FA),
+      backgroundColor: AppColors.background,
       body: SafeArea(
         child: AnimatedBuilder(
           animation: _notifier,
@@ -83,17 +83,9 @@ class _GaragePageState extends State<GaragePage> {
                             width: 46,
                             height: 46,
                             decoration: BoxDecoration(
-                              gradient: const LinearGradient(
-                                colors: [AppColors.orange, Color(0xFFFF8C00)],
-                              ),
+                              gradient: AppGradients.orange,
                               shape: BoxShape.circle,
-                              boxShadow: [
-                                BoxShadow(
-                                  color: AppColors.orange.withOpacity(0.3),
-                                  blurRadius: 12,
-                                  offset: const Offset(0, 4),
-                                ),
-                              ],
+                              boxShadow: AppShadows.orangeButton,
                             ),
                             child: const Icon(
                               Icons.add_rounded,
@@ -122,13 +114,13 @@ class _GaragePageState extends State<GaragePage> {
                   )
                 else
                   SliverPadding(
-                    padding: const EdgeInsets.fromLTRB(20, 24, 20, 100),
+                    padding: const EdgeInsets.fromLTRB(20, 20, 20, 100),
                     sliver: SliverList(
                       delegate: SliverChildBuilderDelegate(
                         (context, index) {
                           final vehicle = _notifier.vehicles[index];
                           return Padding(
-                            padding: const EdgeInsets.only(bottom: 12),
+                            padding: const EdgeInsets.only(bottom: 14),
                             child: _buildVehicleCard(context, vehicle),
                           );
                         },
@@ -144,6 +136,10 @@ class _GaragePageState extends State<GaragePage> {
     );
   }
 
+  // ============================================
+  // STATS
+  // ============================================
+
   Widget _buildStats() {
     final totalVehicles = _notifier.vehicles.length;
     final alertCount = _notifier.vehicles.where((v) => v.isAlert).length;
@@ -152,35 +148,38 @@ class _GaragePageState extends State<GaragePage> {
             totalVehicles
         : 0.0;
 
-    return Row(
-      children: [
-        Expanded(
-          child: _buildStatCard(
-            icon: Icons.directions_car_rounded,
-            label: 'Véhicules',
-            value: '$totalVehicles',
-            color: AppColors.orange,
+    return IntrinsicHeight(
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Expanded(
+            child: _buildStatCard(
+              icon: Icons.directions_car_rounded,
+              label: 'Véhicules',
+              value: '$totalVehicles',
+              color: AppColors.orange,
+            ),
           ),
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: _buildStatCard(
-            icon: Icons.warning_rounded,
-            label: 'Alertes',
-            value: '$alertCount',
-            color: alertCount > 0 ? Colors.red : AppColors.success,
+          const SizedBox(width: 10),
+          Expanded(
+            child: _buildStatCard(
+              icon: Icons.warning_rounded,
+              label: 'Alertes',
+              value: '$alertCount',
+              color: alertCount > 0 ? AppColors.danger : AppColors.success,
+            ),
           ),
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: _buildStatCard(
-            icon: Icons.favorite_rounded,
-            label: 'Santé moy.',
-            value: '${(avgHealth * 100).toInt()}%',
-            color: _getHealthColor(avgHealth),
+          const SizedBox(width: 10),
+          Expanded(
+            child: _buildStatCard(
+              icon: Icons.favorite_rounded,
+              label: 'Santé moy.',
+              value: '${(avgHealth * 100).toInt()}%',
+              color: _getHealthColor(avgHealth),
+            ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 
@@ -195,13 +194,7 @@ class _GaragePageState extends State<GaragePage> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.04),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
+        boxShadow: AppShadows.card,
       ),
       child: Column(
         children: [
@@ -229,6 +222,10 @@ class _GaragePageState extends State<GaragePage> {
     );
   }
 
+  // ============================================
+  // VEHICLE CARD (avec photo)
+  // ============================================
+
   Widget _buildVehicleCard(BuildContext context, Vehicle vehicle) {
     return GestureDetector(
       onTap: () => context.push('/vehicle-details/${vehicle.id}'),
@@ -236,16 +233,11 @@ class _GaragePageState extends State<GaragePage> {
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(20),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.04),
-              blurRadius: 12,
-              offset: const Offset(0, 4),
-            ),
-          ],
+          boxShadow: AppShadows.card,
         ),
         child: Column(
           children: [
+            // PHOTO DU VÉHICULE
             ClipRRect(
               borderRadius: const BorderRadius.vertical(
                 top: Radius.circular(20),
@@ -253,17 +245,16 @@ class _GaragePageState extends State<GaragePage> {
               child: Stack(
                 children: [
                   Container(
-                    height: 140,
+                    height: 160,
                     width: double.infinity,
                     decoration: const BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: [Color(0xFF0F172A), Color(0xFF1E293B)],
-                      ),
+                      gradient: AppGradients.navy,
                     ),
                     child: vehicle.imageUrl.isNotEmpty
-                        ? Image.network(
+                        ? Image.asset(
                             vehicle.imageUrl,
                             fit: BoxFit.cover,
+                            alignment: Alignment.center,
                             errorBuilder: (_, __, ___) => const Center(
                               child: Icon(
                                 Icons.directions_car_rounded,
@@ -280,6 +271,7 @@ class _GaragePageState extends State<GaragePage> {
                             ),
                           ),
                   ),
+                  // Badge santé
                   Positioned(
                     top: 12,
                     right: 12,
@@ -303,40 +295,109 @@ class _GaragePageState extends State<GaragePage> {
                       ),
                     ),
                   ),
-                ],
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.all(14),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                  // Badge alerte
+                  if (vehicle.isAlert)
+                    Positioned(
+                      top: 12,
+                      left: 12,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 6,
+                        ),
+                        decoration: BoxDecoration(
+                          color: AppColors.danger,
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: const Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(Icons.warning_rounded,
+                                color: Colors.white, size: 12),
+                            SizedBox(width: 4),
+                            Text(
+                              'Alerte',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 10,
+                                fontWeight: FontWeight.w800,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  // Infos véhicule
+                  Positioned(
+                    bottom: 12,
+                    left: 12,
+                    right: 12,
+                    child: Row(
                       children: [
-                        Text(
-                          '${vehicle.brand} ${vehicle.model}',
-                          style: const TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w800,
-                            color: AppColors.navy,
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                '${vehicle.brand} ${vehicle.model}',
+                                style: const TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.w900,
+                                  color: Colors.white,
+                                  letterSpacing: -0.5,
+                                ),
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                '${vehicle.plate} · ${vehicle.year}',
+                                style: TextStyle(
+                                  color: Colors.white.withOpacity(0.9),
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ],
                           ),
                         ),
-                        const SizedBox(height: 2),
-                        Text(
-                          '${vehicle.plate} · ${vehicle.year} · ${vehicle.mileage} km',
-                          style: const TextStyle(
-                            fontSize: 12,
-                            color: AppColors.textSecondary,
+                        Container(
+                          padding: const EdgeInsets.all(6),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withOpacity(0.2),
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Icon(
+                            Icons.chevron_right_rounded,
+                            color: Colors.white,
+                            size: 18,
                           ),
                         ),
                       ],
                     ),
                   ),
-                  const Icon(
-                    Icons.chevron_right_rounded,
-                    color: AppColors.textSecondary,
-                    size: 22,
+                ],
+              ),
+            ),
+            // Barre de santé
+            Padding(
+              padding: const EdgeInsets.all(14),
+              child: Row(
+                children: [
+                  const Text(
+                    'Santé générale',
+                    style: TextStyle(
+                      fontSize: 11,
+                      color: AppColors.textSecondary,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const Spacer(),
+                  Text(
+                    '${(vehicle.progress * 100).toInt()}%',
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w900,
+                      color: _getHealthColor(vehicle.progress),
+                    ),
                   ),
                 ],
               ),
@@ -346,6 +407,10 @@ class _GaragePageState extends State<GaragePage> {
       ),
     );
   }
+
+  // ============================================
+  // EMPTY STATE
+  // ============================================
 
   Widget _buildEmptyState(BuildContext context) {
     return Center(
@@ -396,9 +461,13 @@ class _GaragePageState extends State<GaragePage> {
     );
   }
 
+  // ============================================
+  // HELPERS
+  // ============================================
+
   Color _getHealthColor(double progress) {
     if (progress > 0.6) return AppColors.success;
     if (progress > 0.3) return AppColors.orange;
-    return Colors.red;
+    return AppColors.danger;
   }
 }
