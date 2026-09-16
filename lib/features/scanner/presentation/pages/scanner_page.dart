@@ -2,7 +2,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/theme/app_theme.dart';
-import '../../../../core/widgets/premium_button.dart';
 
 enum ScanMode {
   qrCode('QR Code', Icons.qr_code_scanner_rounded, 'Scannez le QR code du véhicule'),
@@ -35,56 +34,31 @@ class _ScannerPageState extends State<ScannerPage> {
       body: SafeArea(
         child: Stack(
           children: [
-            // ============================================
-            // 1. VISEUR (fond)
-            // ============================================
-            Positioned.fill(
-              child: _buildScannerView(),
-            ),
-
-            // ============================================
-            // 2. BARRE SUPÉRIEURE
-            // ============================================
+            Positioned.fill(child: _buildScannerView()),
             Positioned(
               top: 0,
               left: 0,
               right: 0,
               child: _buildTopBar(context),
             ),
-
-            // ============================================
-            // 3. SÉLECTEUR DE MODE
-            // ============================================
             Positioned(
               top: 100,
               left: 0,
               right: 0,
               child: _buildModeSelector(),
             ),
-
-            // ============================================
-            // 4. INSTRUCTIONS
-            // ============================================
             Positioned(
               bottom: 220,
               left: 0,
               right: 0,
               child: _buildInstructions(),
             ),
-
-            // ============================================
-            // 5. BARRE INFÉRIEURE
-            // ============================================
             Positioned(
               bottom: 0,
               left: 0,
               right: 0,
               child: _buildBottomBar(context),
             ),
-
-            // ============================================
-            // 6. RÉSULTAT (overlay)
-            // ============================================
             if (_showResult && _scanResult != null)
               Positioned.fill(
                 child: _buildResultOverlay(context),
@@ -104,7 +78,6 @@ class _ScannerPageState extends State<ScannerPage> {
       color: Colors.black,
       child: Stack(
         children: [
-          // Fond simulé de la caméra
           Container(
             decoration: BoxDecoration(
               gradient: RadialGradient(
@@ -115,28 +88,20 @@ class _ScannerPageState extends State<ScannerPage> {
               ),
             ),
           ),
-
-          // Cadre de scan
           Center(
             child: Container(
               width: 260,
               height: 260,
               decoration: BoxDecoration(
-                border: Border.all(
-                  color: AppColors.orange,
-                  width: 3,
-                ),
+                border: Border.all(color: AppColors.orange, width: 3),
                 borderRadius: BorderRadius.circular(24),
               ),
               child: Stack(
                 children: [
-                  // Coins
                   _buildCorner(Alignment.topLeft),
                   _buildCorner(Alignment.topRight),
                   _buildCorner(Alignment.bottomLeft),
                   _buildCorner(Alignment.bottomRight),
-
-                  // Ligne de scan animée
                   if (_isScanning)
                     Positioned.fill(
                       child: TweenAnimationBuilder(
@@ -147,7 +112,8 @@ class _ScannerPageState extends State<ScannerPage> {
                             alignment: Alignment(0, value * 2 - 1),
                             child: Container(
                               height: 2,
-                              margin: const EdgeInsets.symmetric(horizontal: 8),
+                              margin:
+                                  const EdgeInsets.symmetric(horizontal: 8),
                               decoration: BoxDecoration(
                                 gradient: LinearGradient(
                                   colors: [
@@ -385,7 +351,6 @@ class _ScannerPageState extends State<ScannerPage> {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          // Bouton de capture
           GestureDetector(
             onTap: _startScan,
             child: Container(
@@ -411,9 +376,8 @@ class _ScannerPageState extends State<ScannerPage> {
                     ? const Padding(
                         padding: EdgeInsets.all(20),
                         child: CircularProgressIndicator(
-                          valueColor: AlwaysStoppedAnimation<Color>(
-                            Colors.white,
-                          ),
+                          valueColor:
+                              AlwaysStoppedAnimation<Color>(Colors.white),
                           strokeWidth: 3,
                         ),
                       )
@@ -440,7 +404,7 @@ class _ScannerPageState extends State<ScannerPage> {
   }
 
   // ============================================
-  // OVERLAY RÉSULTAT
+  // RÉSULTAT
   // ============================================
 
   Widget _buildResultOverlay(BuildContext context) {
@@ -468,7 +432,7 @@ class _ScannerPageState extends State<ScannerPage> {
                       decoration: BoxDecoration(
                         color: (result['success'] == true
                                 ? AppColors.success
-                                : Colors.red)
+                                : AppColors.danger)
                             .withOpacity(0.1),
                         shape: BoxShape.circle,
                       ),
@@ -478,7 +442,7 @@ class _ScannerPageState extends State<ScannerPage> {
                             : Icons.error_rounded,
                         color: result['success'] == true
                             ? AppColors.success
-                            : Colors.red,
+                            : AppColors.danger,
                         size: 36,
                       ),
                     ),
@@ -507,14 +471,32 @@ class _ScannerPageState extends State<ScannerPage> {
                           .map((e) => _buildResultRow(e.key, e.value))),
                     ],
                     const SizedBox(height: 24),
-                    PremiumButton(
-                      text: 'Terminer',
-                      onPressed: () {
-                        setState(() {
-                          _showResult = false;
-                          _scanResult = null;
-                        });
-                      },
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton(
+                        onPressed: () {
+                          setState(() {
+                            _showResult = false;
+                            _scanResult = null;
+                          });
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.orange,
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                          elevation: 0,
+                        ),
+                        child: const Text(
+                          'Terminer',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 15,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ),
                     ),
                   ],
                 ),
@@ -560,7 +542,6 @@ class _ScannerPageState extends State<ScannerPage> {
   void _startScan() async {
     setState(() => _isScanning = true);
 
-    // Simulation d'analyse (à remplacer par la vraie logique)
     await Future.delayed(const Duration(seconds: 2));
 
     if (!mounted) return;
@@ -569,7 +550,6 @@ class _ScannerPageState extends State<ScannerPage> {
       _isScanning = false;
       _showResult = true;
 
-      // Résultats simulés selon le mode
       switch (_selectedMode) {
         case ScanMode.qrCode:
           _scanResult = {

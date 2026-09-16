@@ -85,12 +85,7 @@ class _PaywallPageState extends State<PaywallPage> {
                       decoration: BoxDecoration(
                         color: Colors.white,
                         shape: BoxShape.circle,
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withOpacity(0.05),
-                            blurRadius: 8,
-                          ),
-                        ],
+                        boxShadow: AppShadows.card,
                       ),
                       child: const Icon(
                         Icons.close_rounded,
@@ -115,7 +110,6 @@ class _PaywallPageState extends State<PaywallPage> {
               ),
             ),
 
-            // Contenu scrollable
             Expanded(
               child: SingleChildScrollView(
                 physics: const BouncingScrollPhysics(),
@@ -123,10 +117,44 @@ class _PaywallPageState extends State<PaywallPage> {
                 child: Column(
                   children: [
                     // Badge Premium
-                    _buildPremiumBadge(),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 8,
+                      ),
+                      decoration: BoxDecoration(
+                        gradient: const LinearGradient(
+                          colors: [Color(0xFFFFD700), Color(0xFFFFA500)],
+                        ),
+                        borderRadius: BorderRadius.circular(20),
+                        boxShadow: [
+                          BoxShadow(
+                            color:
+                                const Color(0xFFFFD700).withOpacity(0.4),
+                            blurRadius: 12,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: const [
+                          Text('👑', style: TextStyle(fontSize: 18)),
+                          SizedBox(width: 8),
+                          Text(
+                            'MECAGO PREMIUM',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 12,
+                              fontWeight: FontWeight.w900,
+                              letterSpacing: 1,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
                     const SizedBox(height: 20),
 
-                    // Titre
                     const Text(
                       'Passez à Premium',
                       style: TextStyle(
@@ -173,10 +201,7 @@ class _PaywallPageState extends State<PaywallPage> {
                     _buildSubscribeButton(),
 
                     const SizedBox(height: 16),
-
-                    // Mentions légales
                     _buildLegalText(),
-
                     const SizedBox(height: 24),
                   ],
                 ),
@@ -184,45 +209,6 @@ class _PaywallPageState extends State<PaywallPage> {
             ),
           ],
         ),
-      ),
-    );
-  }
-
-  // ============================================
-  // WIDGETS
-  // ============================================
-
-  Widget _buildPremiumBadge() {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [Color(0xFFFFD700), Color(0xFFFFA500)],
-        ),
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: const Color(0xFFFFD700).withOpacity(0.4),
-            blurRadius: 12,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const Text('👑', style: TextStyle(fontSize: 18)),
-          const SizedBox(width: 8),
-          const Text(
-            'MECAGO PREMIUM',
-            style: TextStyle(
-              color: Colors.white,
-              fontSize: 12,
-              fontWeight: FontWeight.w900,
-              letterSpacing: 1,
-            ),
-          ),
-        ],
       ),
     );
   }
@@ -240,7 +226,7 @@ class _PaywallPageState extends State<PaywallPage> {
               borderRadius: BorderRadius.circular(14),
             ),
             child: Icon(
-              feature['icon'],
+              feature['icon'] as IconData,
               color: AppColors.orange,
               size: 22,
             ),
@@ -251,7 +237,7 @@ class _PaywallPageState extends State<PaywallPage> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  feature['title'],
+                  feature['title'] as String,
                   style: const TextStyle(
                     fontSize: 15,
                     fontWeight: FontWeight.w700,
@@ -260,7 +246,7 @@ class _PaywallPageState extends State<PaywallPage> {
                 ),
                 const SizedBox(height: 2),
                 Text(
-                  feature['description'],
+                  feature['description'] as String,
                   style: const TextStyle(
                     fontSize: 13,
                     color: AppColors.textSecondary,
@@ -294,7 +280,7 @@ class _PaywallPageState extends State<PaywallPage> {
     return GestureDetector(
       onTap: () => setState(() => _selectedPlan = plan['id']),
       child: Container(
-        margin: const EdgeInsets.only(bottom: 12),
+        margin: const EdgeInsets.only(bottom: 12, top: 8),
         padding: const EdgeInsets.all(18),
         decoration: BoxDecoration(
           color: Colors.white,
@@ -303,29 +289,14 @@ class _PaywallPageState extends State<PaywallPage> {
             color: isSelected ? AppColors.orange : AppColors.border,
             width: isSelected ? 2 : 1,
           ),
-          boxShadow: isSelected
-              ? [
-                  BoxShadow(
-                    color: AppColors.orange.withOpacity(0.15),
-                    blurRadius: 16,
-                    offset: const Offset(0, 4),
-                  ),
-                ]
-              : [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.02),
-                    blurRadius: 8,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
+          boxShadow: isSelected ? AppShadows.orangeButton : AppShadows.card,
         ),
         child: Stack(
           clipBehavior: Clip.none,
           children: [
-            // Badge "Populaire"
             if (isPopular)
               Positioned(
-                top: -28,
+                top: -30,
                 right: 12,
                 child: Container(
                   padding: const EdgeInsets.symmetric(
@@ -333,9 +304,7 @@ class _PaywallPageState extends State<PaywallPage> {
                     vertical: 4,
                   ),
                   decoration: BoxDecoration(
-                    gradient: const LinearGradient(
-                      colors: [AppColors.orange, Color(0xFFFF8C00)],
-                    ),
+                    gradient: AppGradients.orange,
                     borderRadius: BorderRadius.circular(10),
                   ),
                   child: const Text(
@@ -351,14 +320,14 @@ class _PaywallPageState extends State<PaywallPage> {
               ),
             Row(
               children: [
-                // Radio
                 Container(
                   width: 22,
                   height: 22,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
                     border: Border.all(
-                      color: isSelected ? AppColors.orange : AppColors.border,
+                      color:
+                          isSelected ? AppColors.orange : AppColors.border,
                       width: 2,
                     ),
                   ),
@@ -376,7 +345,6 @@ class _PaywallPageState extends State<PaywallPage> {
                       : null,
                 ),
                 const SizedBox(width: 14),
-                // Infos
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -384,7 +352,7 @@ class _PaywallPageState extends State<PaywallPage> {
                       Row(
                         children: [
                           Text(
-                            plan['label'],
+                            plan['label'] as String,
                             style: const TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.w800,
@@ -399,11 +367,11 @@ class _PaywallPageState extends State<PaywallPage> {
                                 vertical: 2,
                               ),
                               decoration: BoxDecoration(
-                                color: AppColors.success.withOpacity(0.1),
+                                color: AppColors.successLight,
                                 borderRadius: BorderRadius.circular(6),
                               ),
                               child: Text(
-                                plan['savings'],
+                                plan['savings'] as String,
                                 style: const TextStyle(
                                   fontSize: 9,
                                   fontWeight: FontWeight.w800,
@@ -417,12 +385,11 @@ class _PaywallPageState extends State<PaywallPage> {
                     ],
                   ),
                 ),
-                // Prix
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
                     Text(
-                      plan['price'],
+                      plan['price'] as String,
                       style: const TextStyle(
                         fontSize: 20,
                         fontWeight: FontWeight.w900,
@@ -430,7 +397,7 @@ class _PaywallPageState extends State<PaywallPage> {
                       ),
                     ),
                     Text(
-                      plan['period'],
+                      plan['period'] as String,
                       style: const TextStyle(
                         fontSize: 11,
                         color: AppColors.textSecondary,
@@ -454,17 +421,9 @@ class _PaywallPageState extends State<PaywallPage> {
         width: double.infinity,
         padding: const EdgeInsets.symmetric(vertical: 18),
         decoration: BoxDecoration(
-          gradient: const LinearGradient(
-            colors: [AppColors.orange, Color(0xFFFF8C00)],
-          ),
+          gradient: AppGradients.orange,
           borderRadius: BorderRadius.circular(18),
-          boxShadow: [
-            BoxShadow(
-              color: AppColors.orange.withOpacity(0.4),
-              blurRadius: 16,
-              offset: const Offset(0, 6),
-            ),
-          ],
+          boxShadow: AppShadows.orangeButton,
         ),
         child: Column(
           children: [
@@ -504,10 +463,6 @@ class _PaywallPageState extends State<PaywallPage> {
       textAlign: TextAlign.center,
     );
   }
-
-  // ============================================
-  // ACTIONS
-  // ============================================
 
   void _subscribe() {
     showDialog(

@@ -9,118 +9,121 @@ class AddVehiclePage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F7FA),
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_rounded, color: AppColors.navy),
-          onPressed: () => context.pop(),
-        ),
-        title: const Text(
-          'Ajouter un véhicule',
-          style: TextStyle(
-            color: AppColors.navy,
-            fontSize: 18,
-            fontWeight: FontWeight.w800,
-          ),
-        ),
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(20),
+      backgroundColor: AppColors.navy,
+      body: SafeArea(
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // HEADER
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: Row(
+                children: [
+                  GestureDetector(
+                    onTap: () => context.pop(),
+                    child: Container(
+                      width: 44,
+                      height: 44,
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.1),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(
+                        Icons.arrow_back_rounded,
+                        color: Colors.white,
+                        size: 22,
+                      ),
+                    ),
+                  ),
+                  const Spacer(),
+                  const Text(
+                    'Ajouter un véhicule',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 18,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                  const Spacer(),
+                  const SizedBox(width: 44),
+                ],
+              ),
+            ),
+            const SizedBox(height: 8),
             const Text(
               'Comment souhaitez-vous ajouter votre véhicule ?',
               style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w700,
-                color: AppColors.navy,
+                color: Colors.white70,
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
               ),
-            ),
-            const SizedBox(height: 20),
-
-            // Méthode 1 : Scanner la plaque
-            _buildMethodCard(
-              icon: Icons.qr_code_scanner_rounded,
-              iconColor: AppColors.orange,
-              title: 'Scanner la plaque',
-              subtitle: 'Reconnaissance automatique de votre plaque',
-              onTap: () => context.push('/plate-scanner'),
-            ),
-            const SizedBox(height: 12),
-
-            // Méthode 2 : Saisir le VIN
-            _buildMethodCard(
-              icon: Icons.vpn_key_rounded,
-              iconColor: AppColors.navy,
-              title: 'Saisir le VIN',
-              subtitle: '17 caractères',
-              onTap: () => context.push('/vin-input'),
-            ),
-            const SizedBox(height: 12),
-
-            // Méthode 3 : Recherche en cascade
-            _buildMethodCard(
-              icon: Icons.directions_car_rounded,
-              iconColor: Colors.purple,
-              title: 'Rechercher par véhicule',
-              subtitle: 'Marque, modèle, motorisation, année',
-              onTap: () => context.push('/cascade-search'),
+              textAlign: TextAlign.center,
             ),
             const SizedBox(height: 24),
 
-            // Bandeau info
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: AppColors.orange.withOpacity(0.08),
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(
-                  color: AppColors.orange.withOpacity(0.2),
+            // 3 MÉTHODES
+            Expanded(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                child: Column(
+                  children: [
+                    _buildMethodCard(
+                      context: context,
+                      icon: Icons.qr_code_scanner_rounded,
+                      iconColor: AppColors.orange,
+                      title: 'Scanner la plaque',
+                      subtitle: 'Reconnaissance automatique de votre plaque',
+                      onTap: () => context.push('/plate-scanner'),
+                    ),
+                    const SizedBox(height: 14),
+                    _buildMethodCard(
+                      context: context,
+                      icon: Icons.vpn_key_rounded,
+                      iconColor: Colors.white,
+                      title: 'Saisir le VIN',
+                      subtitle: '17 caractères',
+                      onTap: () => context.push('/vin-input'),
+                    ),
+                    const SizedBox(height: 14),
+                    _buildMethodCard(
+                      context: context,
+                      icon: Icons.directions_car_rounded,
+                      iconColor: Colors.white,
+                      title: 'Rechercher par véhicule',
+                      subtitle: 'Marque, modèle, motorisation, année',
+                      onTap: () => context.push('/cascade-search'),
+                    ),
+                    const SizedBox(height: 30),
+
+                    // PHOTO TESLA
+                    Container(
+                      height: 160,
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(20),
+                        image: const DecorationImage(
+                          image: AssetImage('assets/images/tesla_model_3.jpg'),
+                          fit: BoxFit.cover,
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.3),
+                            blurRadius: 20,
+                            offset: const Offset(0, 10),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      'Plus de 80 marques · Jusqu\'en 2026',
+                      style: TextStyle(
+                        color: Colors.white.withOpacity(0.6),
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+                  ],
                 ),
-              ),
-              child: Row(
-                children: [
-                  Container(
-                    width: 44,
-                    height: 44,
-                    decoration: BoxDecoration(
-                      color: AppColors.orange.withOpacity(0.15),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: const Icon(
-                      Icons.info_rounded,
-                      color: AppColors.orange,
-                      size: 22,
-                    ),
-                  ),
-                  const SizedBox(width: 14),
-                  const Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Base de données MecaGo',
-                          style: TextStyle(
-                            fontSize: 13,
-                            fontWeight: FontWeight.w800,
-                            color: AppColors.navy,
-                          ),
-                        ),
-                        SizedBox(height: 2),
-                        Text(
-                          '80+ marques · 8 000+ modèles · 2005 → 2026',
-                          style: TextStyle(
-                            fontSize: 11,
-                            color: AppColors.textSecondary,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
               ),
             ),
           ],
@@ -130,6 +133,7 @@ class AddVehiclePage extends StatelessWidget {
   }
 
   Widget _buildMethodCard({
+    required BuildContext context,
     required IconData icon,
     required Color iconColor,
     required String title,
@@ -145,7 +149,7 @@ class AddVehiclePage extends StatelessWidget {
           borderRadius: BorderRadius.circular(20),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.04),
+              color: Colors.black.withOpacity(0.15),
               blurRadius: 12,
               offset: const Offset(0, 4),
             ),
@@ -157,7 +161,7 @@ class AddVehiclePage extends StatelessWidget {
               width: 52,
               height: 52,
               decoration: BoxDecoration(
-                color: iconColor.withOpacity(0.1),
+                color: iconColor.withOpacity(0.15),
                 borderRadius: BorderRadius.circular(14),
               ),
               child: Icon(icon, color: iconColor, size: 26),

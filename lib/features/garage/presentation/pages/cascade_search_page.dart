@@ -26,7 +26,6 @@ class _CascadeSearchPageState extends State<CascadeSearchPage> {
   bool _loadingBrands = true;
   bool _loadingModels = false;
   bool _loadingEngines = false;
-  bool _loadingYears = false;
 
   @override
   void initState() {
@@ -70,7 +69,6 @@ class _CascadeSearchPageState extends State<CascadeSearchPage> {
       _engines = [];
       _years = [];
       _loadingEngines = true;
-      _loadingYears = true;
     });
 
     final engines = await MvdbService.getEngines(_brand!, model);
@@ -80,7 +78,6 @@ class _CascadeSearchPageState extends State<CascadeSearchPage> {
       _engines = engines;
       _years = years;
       _loadingEngines = false;
-      _loadingYears = false;
     });
   }
 
@@ -105,7 +102,7 @@ class _CascadeSearchPageState extends State<CascadeSearchPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F7FA),
+      backgroundColor: AppColors.background,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
@@ -171,7 +168,7 @@ class _CascadeSearchPageState extends State<CascadeSearchPage> {
             ),
             const SizedBox(height: 20),
 
-            // Année (frise)
+            // Année
             if (_years.isNotEmpty) ...[
               const Text(
                 'Année',
@@ -242,23 +239,34 @@ class _CascadeSearchPageState extends State<CascadeSearchPage> {
       decoration: BoxDecoration(
         color: enabled ? Colors.white : const Color(0xFFE8ECF1),
         borderRadius: BorderRadius.circular(16),
-        boxShadow: enabled
-            ? [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.04),
-                  blurRadius: 10,
-                  offset: const Offset(0, 4),
-                ),
-              ]
-            : null,
+        boxShadow: enabled ? AppShadows.card : null,
       ),
       child: Row(
         children: [
-          Icon(
-            icon,
-            color: enabled ? AppColors.orange : AppColors.textSecondary,
-            size: 22,
-          ),
+          // Logo de la marque si sélectionnée
+          if (label == 'Marque' && value != null)
+            Container(
+              width: 32,
+              height: 32,
+              margin: const EdgeInsets.only(right: 10),
+              decoration: BoxDecoration(
+                color: AppColors.orange.withOpacity(0.15),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: const Center(
+                child: Icon(
+                  Icons.business_rounded,
+                  color: AppColors.orange,
+                  size: 18,
+                ),
+              ),
+            )
+          else
+            Icon(
+              icon,
+              color: enabled ? AppColors.orange : AppColors.textSecondary,
+              size: 22,
+            ),
           const SizedBox(width: 14),
           Expanded(
             child: Column(

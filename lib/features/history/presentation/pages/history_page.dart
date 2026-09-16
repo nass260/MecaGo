@@ -2,9 +2,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/theme/app_theme.dart';
-import '../../../../core/widgets/premium_button.dart';
-import '../../../home/data/models/maintenance_log_model.dart';
-import '../../../home/presentation/managers/home_notifier.dart';
 
 class HistoryPage extends StatefulWidget {
   const HistoryPage({super.key});
@@ -14,192 +11,179 @@ class HistoryPage extends StatefulWidget {
 }
 
 class _HistoryPageState extends State<HistoryPage> {
-  final HomeNotifier _notifier = HomeNotifier();
-
-  List<MaintenanceLog> _allLogs = [];
-  String? _selectedVehicleId;
   String _selectedPeriod = 'Tout';
+  String? _selectedVehicleId;
 
   final List<String> _periods = ['Tout', '3 mois', '6 mois', '1 an'];
 
-  @override
-  void initState() {
-    super.initState();
-    _loadHistory();
-  }
+  // Données de test
+  final List<Map<String, dynamic>> _allLogs = [
+    {
+      'id': '1',
+      'title': 'Remplacement HEPA',
+      'brand': 'Tesla',
+      'model': 'Model 3',
+      'date': '15 Mars 2025',
+      'mileage': 8500,
+      'cost': 34.50,
+      'saved': 20.00,
+      'icon': Icons.filter_alt_rounded,
+    },
+    {
+      'id': '2',
+      'title': 'Vidange moteur',
+      'brand': 'Tesla',
+      'model': 'Model 3',
+      'date': '02 Janvier 2025',
+      'mileage': 7200,
+      'cost': 89.00,
+      'saved': 45.00,
+      'icon': Icons.opacity_rounded,
+    },
+    {
+      'id': '3',
+      'title': 'Plaquettes de frein',
+      'brand': 'Renault',
+      'model': 'Clio 5',
+      'date': '20 Octobre 2024',
+      'mileage': 5000,
+      'cost': 120.00,
+      'saved': 60.00,
+      'icon': Icons.car_repair_rounded,
+    },
+    {
+      'id': '4',
+      'title': 'Liquide lave-glace',
+      'brand': 'Tesla',
+      'model': 'Model 3',
+      'date': '28 Février 2025',
+      'mileage': 7200,
+      'cost': 12.50,
+      'saved': 5.00,
+      'icon': Icons.water_drop_rounded,
+    },
+  ];
 
-  @override
-  void dispose() {
-    _notifier.dispose();
-    super.dispose();
-  }
-
-  Future<void> _loadHistory() async {
-    await _notifier.loadDashboardData();
-    // Les logs seront chargés par véhicule
-    _allLogs = [];
-    for (final vehicle in _notifier.vehicles) {
-      // À adapter selon ta méthode DatabaseService
-    }
-    setState(() {});
-  }
+  // Véhicules disponibles
+  final List<Map<String, String>> _vehicles = [
+    {'id': '1', 'name': 'Tesla Model 3'},
+    {'id': '2', 'name': 'Renault Clio 5'},
+  ];
 
   @override
   Widget build(BuildContext context) {
+    final totalCost =
+        _allLogs.fold<double>(0, (sum, log) => sum + (log['cost'] as double));
+    final totalSaved =
+        _allLogs.fold<double>(0, (sum, log) => sum + (log['saved'] as double));
+
     return Scaffold(
       backgroundColor: AppColors.background,
       body: SafeArea(
-        child: AnimatedBuilder(
-          animation: _notifier,
-          builder: (context, _) {
-            if (_notifier.isLoading) {
-              return const Center(
-                child: CircularProgressIndicator(
-                  valueColor: AlwaysStoppedAnimation<Color>(AppColors.orange),
-                ),
-              );
-            }
-
-            return CustomScrollView(
-              physics: const BouncingScrollPhysics(),
-              slivers: [
-                // ============================================
-                // EN-TÊTE
-                // ============================================
-                SliverToBoxAdapter(
-                  child: Padding(
-                    padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        child: CustomScrollView(
+          physics: const BouncingScrollPhysics(),
+          slivers: [
+            // EN-TÊTE
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Text(
-                              'Historique',
-                              style: TextStyle(
-                                color: AppColors.navy,
-                                fontSize: 26,
-                                fontWeight: FontWeight.w900,
-                                letterSpacing: -0.6,
-                              ),
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              '${_allLogs.length} intervention${_allLogs.length > 1 ? 's' : ''} enregistrée${_allLogs.length > 1 ? 's' : ''}',
-                              style: const TextStyle(
-                                color: AppColors.textSecondary,
-                                fontSize: 14,
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                          ],
+                        const Text(
+                          'Historique',
+                          style: TextStyle(
+                            color: AppColors.navy,
+                            fontSize: 26,
+                            fontWeight: FontWeight.w900,
+                            letterSpacing: -0.6,
+                          ),
                         ),
-                        GestureDetector(
-                          onTap: _exportPDF,
-                          child: Container(
-                            width: 46,
-                            height: 46,
-                            decoration: BoxDecoration(
-                              gradient: const LinearGradient(
-                                colors: [AppColors.orange, Color(0xFFFF8C00)],
-                              ),
-                              shape: BoxShape.circle,
-                              boxShadow: [
-                                BoxShadow(
-                                  color: AppColors.orange.withOpacity(0.3),
-                                  blurRadius: 12,
-                                  offset: const Offset(0, 4),
-                                ),
-                              ],
-                            ),
-                            child: const Icon(
-                              Icons.picture_as_pdf_rounded,
-                              color: Colors.white,
-                              size: 22,
-                            ),
+                        const SizedBox(height: 4),
+                        Text(
+                          '${_allLogs.length} intervention${_allLogs.length > 1 ? 's' : ''}',
+                          style: const TextStyle(
+                            color: AppColors.textSecondary,
+                            fontSize: 14,
+                            fontWeight: FontWeight.w500,
                           ),
                         ),
                       ],
                     ),
-                  ),
-                ),
-
-                // ============================================
-                // CARTE ÉCONOMIES
-                // ============================================
-                SliverToBoxAdapter(
-                  child: Padding(
-                    padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
-                    child: _buildSavingsCard(),
-                  ),
-                ),
-
-                // ============================================
-                // FILTRES
-                // ============================================
-                SliverToBoxAdapter(
-                  child: Padding(
-                    padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
-                    child: _buildFilters(),
-                  ),
-                ),
-
-                // ============================================
-                // LISTE
-                // ============================================
-                if (_allLogs.isEmpty)
-                  SliverFillRemaining(
-                    child: _buildEmptyState(),
-                  )
-                else
-                  SliverPadding(
-                    padding: const EdgeInsets.fromLTRB(20, 20, 20, 100),
-                    sliver: SliverList(
-                      delegate: SliverChildBuilderDelegate(
-                        (context, index) {
-                          final log = _allLogs[index];
-                          return Padding(
-                            padding: const EdgeInsets.only(bottom: 10),
-                            child: _buildLogCard(log),
-                          );
-                        },
-                        childCount: _allLogs.length,
+                    GestureDetector(
+                      onTap: _exportPDF,
+                      child: Container(
+                        width: 46,
+                        height: 46,
+                        decoration: BoxDecoration(
+                          gradient: AppGradients.orange,
+                          shape: BoxShape.circle,
+                          boxShadow: AppShadows.orangeButton,
+                        ),
+                        child: const Icon(
+                          Icons.picture_as_pdf_rounded,
+                          color: Colors.white,
+                          size: 22,
+                        ),
                       ),
                     ),
-                  ),
-              ],
-            );
-          },
+                  ],
+                ),
+              ),
+            ),
+
+            // CARTE ÉCONOMIES
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
+                child: _buildSavingsCard(totalCost, totalSaved),
+              ),
+            ),
+
+            // FILTRES
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
+                child: _buildFilters(),
+              ),
+            ),
+
+            // LISTE
+            SliverPadding(
+              padding: const EdgeInsets.fromLTRB(20, 16, 20, 100),
+              sliver: SliverList(
+                delegate: SliverChildBuilderDelegate(
+                  (context, index) {
+                    final log = _allLogs[index];
+                    return Padding(
+                      padding: const EdgeInsets.only(bottom: 10),
+                      child: _buildLogCard(log),
+                    );
+                  },
+                  childCount: _allLogs.length,
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );
   }
 
   // ============================================
-  // WIDGETS
+  // CARTE ÉCONOMIES
   // ============================================
 
-  Widget _buildSavingsCard() {
-    final totalCost = _allLogs.fold<double>(0, (sum, log) => sum + log.cost);
-    final totalSaved = _allLogs.fold<double>(0, (sum, log) => sum + log.saved);
-
+  Widget _buildSavingsCard(double totalCost, double totalSaved) {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [AppColors.navy, Color(0xFF1E293B)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
+        gradient: AppGradients.navy,
         borderRadius: BorderRadius.circular(24),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.navy.withOpacity(0.3),
-            blurRadius: 20,
-            offset: const Offset(0, 8),
-          ),
-        ],
+        boxShadow: AppShadows.hero,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -321,6 +305,10 @@ class _HistoryPageState extends State<HistoryPage> {
     );
   }
 
+  // ============================================
+  // FILTRES
+  // ============================================
+
   Widget _buildFilters() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -336,11 +324,11 @@ class _HistoryPageState extends State<HistoryPage> {
                 _selectedVehicleId == null,
                 () => setState(() => _selectedVehicleId = null),
               ),
-              ..._notifier.vehicles.map((vehicle) {
+              ..._vehicles.map((vehicle) {
                 return _buildFilterChip(
-                  '${vehicle.brand} ${vehicle.model}',
-                  _selectedVehicleId == vehicle.id,
-                  () => setState(() => _selectedVehicleId = vehicle.id),
+                  vehicle['name']!,
+                  _selectedVehicleId == vehicle['id'],
+                  () => setState(() => _selectedVehicleId = vehicle['id']),
                 );
               }).toList(),
             ],
@@ -378,15 +366,7 @@ class _HistoryPageState extends State<HistoryPage> {
           border: Border.all(
             color: isSelected ? AppColors.orange : AppColors.border,
           ),
-          boxShadow: isSelected
-              ? [
-                  BoxShadow(
-                    color: AppColors.orange.withOpacity(0.3),
-                    blurRadius: 8,
-                    offset: const Offset(0, 2),
-                  ),
-                ]
-              : null,
+          boxShadow: isSelected ? AppShadows.orangeButton : null,
         ),
         child: Text(
           label,
@@ -407,9 +387,7 @@ class _HistoryPageState extends State<HistoryPage> {
         margin: const EdgeInsets.only(right: 8),
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
         decoration: BoxDecoration(
-          color: isSelected
-              ? AppColors.navy
-              : AppColors.border.withOpacity(0.3),
+          color: isSelected ? AppColors.navy : AppColors.border.withOpacity(0.3),
           borderRadius: BorderRadius.circular(16),
         ),
         child: Text(
@@ -424,20 +402,17 @@ class _HistoryPageState extends State<HistoryPage> {
     );
   }
 
-  Widget _buildLogCard(MaintenanceLog log) {
+  // ============================================
+  // LOG CARD
+  // ============================================
+
+  Widget _buildLogCard(Map<String, dynamic> log) {
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.border.withOpacity(0.4)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.02),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
+        boxShadow: AppShadows.card,
       ),
       child: Row(
         children: [
@@ -449,7 +424,7 @@ class _HistoryPageState extends State<HistoryPage> {
               borderRadius: BorderRadius.circular(12),
             ),
             child: Icon(
-              _getIconForLog(log.icon),
+              log['icon'] as IconData,
               color: AppColors.orange,
               size: 22,
             ),
@@ -460,7 +435,7 @@ class _HistoryPageState extends State<HistoryPage> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  log.title,
+                  log['title'] as String,
                   style: const TextStyle(
                     fontSize: 15,
                     fontWeight: FontWeight.w700,
@@ -469,18 +444,18 @@ class _HistoryPageState extends State<HistoryPage> {
                 ),
                 const SizedBox(height: 2),
                 Text(
-                  '${log.brand} · ${log.mileage} km',
+                  '${log['brand']} ${log['model']} · ${log['mileage']} km',
                   style: const TextStyle(
-                    fontSize: 12,
+                    fontSize: 11,
                     color: AppColors.textSecondary,
                   ),
                 ),
                 const SizedBox(height: 2),
                 Text(
-                  _formatDate(log.date),
+                  log['date'] as String,
                   style: const TextStyle(
-                    fontSize: 11,
-                    color: AppColors.textSecondary,
+                    fontSize: 10,
+                    color: AppColors.textLight,
                     fontWeight: FontWeight.w500,
                   ),
                 ),
@@ -491,7 +466,7 @@ class _HistoryPageState extends State<HistoryPage> {
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
               Text(
-                '${log.cost.toStringAsFixed(2)} €',
+                '${(log['cost'] as double).toStringAsFixed(2)} €',
                 style: const TextStyle(
                   fontSize: 15,
                   fontWeight: FontWeight.w800,
@@ -502,11 +477,11 @@ class _HistoryPageState extends State<HistoryPage> {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                 decoration: BoxDecoration(
-                  color: AppColors.success.withOpacity(0.1),
+                  color: AppColors.successLight,
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Text(
-                  '−${log.saved.toStringAsFixed(0)} €',
+                  '−${(log['saved'] as double).toStringAsFixed(0)} €',
                   style: const TextStyle(
                     fontSize: 11,
                     fontWeight: FontWeight.w700,
@@ -521,81 +496,9 @@ class _HistoryPageState extends State<HistoryPage> {
     );
   }
 
-  Widget _buildEmptyState() {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(40),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Container(
-              width: 100,
-              height: 100,
-              decoration: BoxDecoration(
-                color: AppColors.orange.withOpacity(0.1),
-                shape: BoxShape.circle,
-              ),
-              child: const Icon(
-                Icons.history_rounded,
-                size: 48,
-                color: AppColors.orange,
-              ),
-            ),
-            const SizedBox(height: 24),
-            const Text(
-              'Aucun historique',
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.w800,
-                color: AppColors.navy,
-              ),
-            ),
-            const SizedBox(height: 8),
-            const Text(
-              'Vos interventions apparaîtront ici\naprès votre premier entretien',
-              style: TextStyle(
-                fontSize: 14,
-                color: AppColors.textSecondary,
-              ),
-              textAlign: TextAlign.center,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
   // ============================================
-  // HELPERS
+  // EXPORT PDF
   // ============================================
-
-  IconData _getIconForLog(String iconName) {
-    switch (iconName) {
-      case 'opacity_rounded':
-        return Icons.opacity_rounded;
-      case 'filter_alt_rounded':
-        return Icons.filter_alt_rounded;
-      case 'car_repair_rounded':
-        return Icons.car_repair_rounded;
-      case 'settings_rounded':
-        return Icons.settings_rounded;
-      default:
-        return Icons.build_rounded;
-    }
-  }
-
-  String _formatDate(String date) {
-    try {
-      final dt = DateTime.parse(date);
-      final months = [
-        'Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin',
-        'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'
-      ];
-      return '${dt.day} ${months[dt.month - 1]} ${dt.year}';
-    } catch (e) {
-      return date;
-    }
-  }
 
   void _exportPDF() {
     showDialog(

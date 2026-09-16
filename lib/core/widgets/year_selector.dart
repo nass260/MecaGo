@@ -2,7 +2,6 @@
 import 'package:flutter/material.dart';
 import '../theme/app_theme.dart';
 
-/// Frise horizontale d'années 2005-2026
 class YearSelector extends StatefulWidget {
   final List<int> years;
   final int? selectedYear;
@@ -41,7 +40,9 @@ class _YearSelectorState extends State<YearSelector> {
     if (widget.selectedYear == null) return;
     final index = widget.years.indexOf(widget.selectedYear!);
     if (index >= 0) {
-      final offset = (index * 80.0) - (MediaQuery.of(context).size.width / 2) + 40;
+      final offset = (index * 80.0) -
+          (MediaQuery.of(context).size.width / 2) +
+          40;
       _scrollController.animateTo(
         offset.clamp(0.0, _scrollController.position.maxScrollExtent),
         duration: const Duration(milliseconds: 400),
