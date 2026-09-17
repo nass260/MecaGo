@@ -3,7 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/services/mvdb_service.dart';
-import '../../../home/presentation/managers/home_notifier.dart';
+import '../../../../core/services/global_notifier.dart';
+import '../../../home/data/models/vehicle_model.dart';
 
 class VehicleResultPage extends StatefulWidget {
   final String brand;
@@ -24,7 +25,7 @@ class VehicleResultPage extends StatefulWidget {
 }
 
 class _VehicleResultPageState extends State<VehicleResultPage> {
-  final HomeNotifier _notifier = HomeNotifier();
+  final notifier = GlobalNotifier.instance;
   Map<String, dynamic>? _details;
   bool _isLoading = true;
   bool _isAdding = false;
@@ -34,12 +35,6 @@ class _VehicleResultPageState extends State<VehicleResultPage> {
   void initState() {
     super.initState();
     _loadDetails();
-  }
-
-  @override
-  void dispose() {
-    _notifier.dispose();
-    super.dispose();
   }
 
   Future<void> _loadDetails() async {
@@ -63,46 +58,113 @@ class _VehicleResultPageState extends State<VehicleResultPage> {
     return images[key] ?? '';
   }
 
+  /// ✅ AJOUTE LE VÉHICULE VIA LE NOTIFIER GLOBAL
   Future<void> _addVehicle() async {
     setState(() => _isAdding = true);
 
-    await _notifier.addVehicleFromMvdb(
-      brand: widget.brand,
-      model: widget.model,
-      engine: widget.engine,
-      year: widget.year,
-    );
+    try {
+      final newVehicle = Vehicle(
+        id: DateTime.now().millisecondsSinceEpoch.toString(),
+        brand: widget.brand,
+        model: widget.model,
+        plate: 'À DÉFINIR',
+        year: widget.year,
+        mileage: 0,
+        fuelType: _getFuelType(widget.engine),
+        transmission: _getTransmission(widget.engine),
+        progress: 1.0,
+        isAlert: false,
+        imageUrl: _getVehicleImage(),
+      );
 
-    if (!mounted) return;
+      // ✅ Ajout via le notifier global (qui sauvegarde + notifie)
+      await notifier.addVehicle(newVehicle);
 
-    setState(() => _isAdding = false);
+      debugPrint(
+          '✅ Véhicule ajouté via notifier : ${newVehicle.brand} ${newVehicle.model}');
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Row(
-          children: [
-            const Icon(Icons.check_circle_rounded, color: Colors.white),
-            const SizedBox(width: 10),
-            Expanded(
-              child: Text(
-                '${widget.brand} ${widget.model} ajouté au garage !',
-                style: const TextStyle(fontWeight: FontWeight.w600),
+      if (!mounted) return;
+
+      setState(() => _isAdding = false);
+
+      // Message de succès
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Row(
+            children: [
+              const Icon(Icons.check_circle_rounded, color: Colors.white),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  '${widget.brand} ${widget.model} ajouté au garage !',
+                  style: const TextStyle(fontWeight: FontWeight.w600),
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
+          backgroundColor: AppColors.success,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
         ),
-        backgroundColor: AppColors.success,
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
-      ),
-    );
+      );
 
-    await Future.delayed(const Duration(milliseconds: 800));
-    if (mounted) {
-      context.go('/garage');
+      // Retour au garage
+      await Future.delayed(const Duration(milliseconds: 800));
+      if (mounted) {
+        context.go('/garage');
+      }
+    } catch (e) {
+      debugPrint('❌ Erreur ajout véhicule : $e');
+      setState(() => _isAdding = false);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('❌ Erreur : $e'),
+            backgroundColor: AppColors.danger,
+          ),
+        );
+      }
     }
+  }
+
+  FuelType _getFuelType(String engine) {
+    final lower = engine.toLowerCase();
+    if (lower.contains('électrique') || lower.contains('electric')) {
+      return FuelType.electrique;
+    }
+    if (lower.contains('hybride')) {
+      return FuelType.hybride;
+    }
+    if (lower.contains('diesel') ||
+        lower.contains('dci') ||
+        lower.contains('hdi') ||
+        lower.contains('tdi') ||
+        lower.contains('bluehdi') ||
+        lower.contains('ecoblue')) {
+      return FuelType.diesel;
+    }
+    if (lower.contains('gpl')) {
+      return FuelType.gpl;
+    }
+    if (lower.contains('e85')) {
+      return FuelType.e85;
+    }
+    return FuelType.essence;
+  }
+
+  TransmissionType _getTransmission(String engine) {
+    final lower = engine.toLowerCase();
+    if (lower.contains('automatique') ||
+        lower.contains('auto') ||
+        lower.contains('eat')) {
+      return TransmissionType.automatique;
+    }
+    if (lower.contains('semi')) {
+      return TransmissionType.semiAutomatique;
+    }
+    return TransmissionType.manuelle;
   }
 
   @override
@@ -150,7 +212,6 @@ class _VehicleResultPageState extends State<VehicleResultPage> {
                                   ),
                                 ),
                         ),
-                        // Dégradé sombre
                         Positioned.fill(
                           child: Container(
                             decoration: BoxDecoration(
@@ -167,7 +228,6 @@ class _VehicleResultPageState extends State<VehicleResultPage> {
                             ),
                           ),
                         ),
-                        // Bouton retour
                         Positioned(
                           top: 16,
                           left: 16,
@@ -188,7 +248,6 @@ class _VehicleResultPageState extends State<VehicleResultPage> {
                             ),
                           ),
                         ),
-                        // Titre
                         const Positioned(
                           top: 24,
                           left: 0,
@@ -207,13 +266,11 @@ class _VehicleResultPageState extends State<VehicleResultPage> {
                       ],
                     ),
                     const SizedBox(height: 20),
-
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 20),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          // Nom du véhicule
                           Text(
                             '${widget.brand} ${widget.model}',
                             style: const TextStyle(
@@ -232,35 +289,15 @@ class _VehicleResultPageState extends State<VehicleResultPage> {
                             ),
                           ),
                           const SizedBox(height: 24),
-
-                          // DÉTAILS
                           if (_details != null) ...[
                             _buildDetailRow('Année', '${widget.year}'),
-                            _buildDetailRow(
-                              'Motorisation',
-                              _details!['engine'] ?? '-',
-                            ),
-                            _buildDetailRow(
-                              'Énergie',
-                              _details!['fuel'] ?? '-',
-                            ),
-                            _buildDetailRow(
-                              'Puissance',
-                              '${_details!['power_hp']} ch',
-                            ),
-                            _buildDetailRow(
-                              'Transmission',
-                              _details!['transmission'] ?? '-',
-                            ),
-                            _buildDetailRow(
-                              'Carrosserie',
-                              _details!['body'] ?? '-',
-                            ),
+                            _buildDetailRow('Motorisation', widget.engine),
+                            _buildDetailRow('Énergie',
+                                _getFuelType(widget.engine).label),
+                            _buildDetailRow('Transmission',
+                                _getTransmission(widget.engine).label),
                           ],
-
                           const SizedBox(height: 20),
-
-                          // SWITCH
                           Container(
                             padding: const EdgeInsets.all(16),
                             decoration: BoxDecoration(
@@ -303,10 +340,7 @@ class _VehicleResultPageState extends State<VehicleResultPage> {
                               ],
                             ),
                           ),
-
                           const SizedBox(height: 20),
-
-                          // BOUTON AJOUTER
                           SizedBox(
                             width: double.infinity,
                             child: ElevatedButton(

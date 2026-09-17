@@ -49,4 +49,28 @@ class MaintenanceLog {
       icon: map['icon'] as String,
     );
   }
+
+  MaintenanceLog copyWith({
+    String? id,
+    String? vehicleId,
+    String? date,
+    int? mileage,
+    String? title,
+    String? brand,
+    double? cost,
+    double? saved,
+    String? icon,
+  }) {
+    return MaintenanceLog(
+      id: id ?? this.id,
+      vehicleId: vehicleId ?? this.vehicleId,
+      date: date ?? this.date,
+      mileage: mileage ?? this.mileage,
+      title: title ?? this.title,
+      brand: brand ?? this.brand,
+      cost: cost ?? this.cost,
+      saved: saved ?? this.saved,
+      icon: icon ?? this.icon,
+    );
+  }
 }

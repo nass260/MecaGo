@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/services/mvdb_service.dart';
+import '../../../../core/services/engine_database.dart';
 import '../../../../core/widgets/year_selector.dart';
 
 class CascadeSearchPage extends StatefulWidget {
@@ -71,8 +72,11 @@ class _CascadeSearchPageState extends State<CascadeSearchPage> {
       _loadingEngines = true;
     });
 
-    final engines = await MvdbService.getEngines(_brand!, model);
-    final years = await MvdbService.getYears(_brand!, model);
+    // ✅ UTILISE LA BASE LOCALE (INSTANTANÉ)
+    final engines = EngineDatabase.getEngines(_brand!, model);
+
+    // Années : 2005 à 2026
+    final years = List.generate(22, (i) => 2005 + i);
 
     setState(() {
       _engines = engines;
@@ -133,7 +137,6 @@ class _CascadeSearchPageState extends State<CascadeSearchPage> {
             ),
             const SizedBox(height: 20),
 
-            // Marque
             _buildDropdownCard(
               icon: Icons.business_rounded,
               label: 'Marque',
@@ -144,7 +147,6 @@ class _CascadeSearchPageState extends State<CascadeSearchPage> {
             ),
             const SizedBox(height: 12),
 
-            // Modèle
             _buildDropdownCard(
               icon: Icons.directions_car_rounded,
               label: 'Modèle',
@@ -156,7 +158,6 @@ class _CascadeSearchPageState extends State<CascadeSearchPage> {
             ),
             const SizedBox(height: 12),
 
-            // Motorisation
             _buildDropdownCard(
               icon: Icons.settings_rounded,
               label: 'Motorisation',
@@ -168,7 +169,6 @@ class _CascadeSearchPageState extends State<CascadeSearchPage> {
             ),
             const SizedBox(height: 20),
 
-            // Année
             if (_years.isNotEmpty) ...[
               const Text(
                 'Année',
@@ -195,7 +195,6 @@ class _CascadeSearchPageState extends State<CascadeSearchPage> {
 
             const SizedBox(height: 24),
 
-            // Bouton
             SizedBox(
               width: double.infinity,
               child: ElevatedButton(
@@ -243,30 +242,11 @@ class _CascadeSearchPageState extends State<CascadeSearchPage> {
       ),
       child: Row(
         children: [
-          // Logo de la marque si sélectionnée
-          if (label == 'Marque' && value != null)
-            Container(
-              width: 32,
-              height: 32,
-              margin: const EdgeInsets.only(right: 10),
-              decoration: BoxDecoration(
-                color: AppColors.orange.withOpacity(0.15),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: const Center(
-                child: Icon(
-                  Icons.business_rounded,
-                  color: AppColors.orange,
-                  size: 18,
-                ),
-              ),
-            )
-          else
-            Icon(
-              icon,
-              color: enabled ? AppColors.orange : AppColors.textSecondary,
-              size: 22,
-            ),
+          Icon(
+            icon,
+            color: enabled ? AppColors.orange : AppColors.textSecondary,
+            size: 22,
+          ),
           const SizedBox(width: 14),
           Expanded(
             child: Column(
@@ -283,15 +263,27 @@ class _CascadeSearchPageState extends State<CascadeSearchPage> {
                 isLoading
                     ? const Padding(
                         padding: EdgeInsets.symmetric(vertical: 8),
-                        child: SizedBox(
-                          height: 14,
-                          width: 14,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            valueColor: AlwaysStoppedAnimation<Color>(
-                              AppColors.orange,
+                        child: Row(
+                          children: [
+                            SizedBox(
+                              height: 14,
+                              width: 14,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                valueColor: AlwaysStoppedAnimation<Color>(
+                                  AppColors.orange,
+                                ),
+                              ),
                             ),
-                          ),
+                            SizedBox(width: 10),
+                            Text(
+                              'Chargement...',
+                              style: TextStyle(
+                                fontSize: 13,
+                                color: AppColors.textSecondary,
+                              ),
+                            ),
+                          ],
                         ),
                       )
                     : DropdownButtonHideUnderline(

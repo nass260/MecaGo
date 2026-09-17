@@ -1,11 +1,14 @@
 // lib/features/home/presentation/managers/home_notifier.dart
 import 'package:flutter/material.dart';
+import '../../../../core/services/database_service.dart';
 import '../../data/models/vehicle_model.dart';
 
 class HomeNotifier with ChangeNotifier {
+  final DatabaseService _databaseService = DatabaseService();
+
   bool _isLoading = false;
   int _mecaGoScore = 85;
-  double _totalSavings = 125.0;
+  double _totalSavings = 0.0;
   Vehicle? _activeVehicle;
   List<Vehicle> _vehicles = [];
 
@@ -19,9 +22,47 @@ class HomeNotifier with ChangeNotifier {
     _isLoading = true;
     notifyListeners();
 
-    await Future.delayed(const Duration(milliseconds: 500));
+    try {
+      _vehicles = await _databaseService.getVehicles();
 
-    _vehicles = [
+      if (_vehicles.isEmpty) {
+        await _insertDemoVehicles();
+        _vehicles = await _databaseService.getVehicles();
+      }
+
+      if (_vehicles.isNotEmpty) {
+        _activeVehicle = _vehicles.first;
+      }
+
+      _totalSavings = 125.0;
+      _calculateMecaGoScore();
+
+      _isLoading = false;
+      notifyListeners();
+    } catch (e) {
+      debugPrint('❌ Erreur chargement : $e');
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  /// 🔄 Force le rechargement (appelé après ajout)
+  Future<void> reloadVehicles() async {
+    try {
+      _vehicles = await _databaseService.getVehicles();
+      if (_vehicles.isNotEmpty && _activeVehicle == null) {
+        _activeVehicle = _vehicles.first;
+      }
+      _calculateMecaGoScore();
+      notifyListeners();
+      debugPrint('🔄 Véhicules rechargés : ${_vehicles.length}');
+    } catch (e) {
+      debugPrint('❌ Erreur reload : $e');
+    }
+  }
+
+  Future<void> _insertDemoVehicles() async {
+    final demoVehicles = [
       const Vehicle(
         id: '1',
         brand: 'Tesla',
@@ -76,9 +117,22 @@ class HomeNotifier with ChangeNotifier {
       ),
     ];
 
-    _activeVehicle = _vehicles.first;
-    _isLoading = false;
-    notifyListeners();
+    for (final vehicle in demoVehicles) {
+      await _databaseService.insertVehicle(vehicle);
+    }
+    debugPrint('✅ 4 véhicules de démo insérés');
+  }
+
+  void _calculateMecaGoScore() {
+    if (_vehicles.isEmpty) {
+      _mecaGoScore = 0;
+      return;
+    }
+    double totalProgress = 0.0;
+    for (final vehicle in _vehicles) {
+      totalProgress += vehicle.progress;
+    }
+    _mecaGoScore = ((totalProgress / _vehicles.length) * 100).round();
   }
 
   void selectVehicle(String vehicleId) {
@@ -88,11 +142,18 @@ class HomeNotifier with ChangeNotifier {
   }
 
   Future<void> addVehicle(Vehicle vehicle) async {
-    _vehicles.add(vehicle);
-    if (_activeVehicle == null) {
-      _activeVehicle = vehicle;
+    try {
+      await _databaseService.insertVehicle(vehicle);
+      _vehicles.add(vehicle);
+      if (_activeVehicle == null) {
+        _activeVehicle = vehicle;
+      }
+      notifyListeners();
+      debugPrint(
+          '✅ Véhicule ajouté au notifier : ${vehicle.brand} ${vehicle.model}');
+    } catch (e) {
+      debugPrint('❌ Erreur ajout véhicule : $e');
     }
-    notifyListeners();
   }
 
   Future<void> addVehicleFromMvdb({
@@ -115,14 +176,10 @@ class HomeNotifier with ChangeNotifier {
       transmission: transmission,
       progress: 1.0,
       isAlert: false,
-      imageUrl: '',
+      imageUrl: _getVehicleImage(brand, model),
     );
 
-    _vehicles.add(newVehicle);
-    if (_activeVehicle == null) {
-      _activeVehicle = newVehicle;
-    }
-    notifyListeners();
+    await addVehicle(newVehicle);
   }
 
   FuelType _getFuelType(String engine) {
@@ -163,23 +220,41 @@ class HomeNotifier with ChangeNotifier {
     return TransmissionType.manuelle;
   }
 
+  String _getVehicleImage(String brand, String model) {
+    final key = '${brand.toLowerCase()}_${model.toLowerCase()}';
+    final images = <String, String>{
+      'tesla_model 3': 'assets/images/tesla_model_3.jpg',
+    };
+    return images[key] ?? '';
+  }
+
   Future<void> updateVehicle(Vehicle updatedVehicle) async {
-    final index = _vehicles.indexWhere((v) => v.id == updatedVehicle.id);
-    if (index != -1) {
-      _vehicles[index] = updatedVehicle;
-      if (_activeVehicle?.id == updatedVehicle.id) {
-        _activeVehicle = updatedVehicle;
+    try {
+      await _databaseService.updateVehicle(updatedVehicle);
+      final index = _vehicles.indexWhere((v) => v.id == updatedVehicle.id);
+      if (index != -1) {
+        _vehicles[index] = updatedVehicle;
+        if (_activeVehicle?.id == updatedVehicle.id) {
+          _activeVehicle = updatedVehicle;
+        }
+        notifyListeners();
       }
-      notifyListeners();
+    } catch (e) {
+      debugPrint('❌ Erreur mise à jour : $e');
     }
   }
 
   Future<void> deleteVehicle(String id) async {
-    _vehicles.removeWhere((v) => v.id == id);
-    if (_activeVehicle?.id == id) {
-      _activeVehicle = _vehicles.isNotEmpty ? _vehicles.first : null;
+    try {
+      await _databaseService.deleteVehicle(id);
+      _vehicles.removeWhere((v) => v.id == id);
+      if (_activeVehicle?.id == id) {
+        _activeVehicle = _vehicles.isNotEmpty ? _vehicles.first : null;
+      }
+      notifyListeners();
+    } catch (e) {
+      debugPrint('❌ Erreur suppression : $e');
     }
-    notifyListeners();
   }
 
   Future<void> refresh() async {

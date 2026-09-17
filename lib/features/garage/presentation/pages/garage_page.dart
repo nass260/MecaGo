@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/widgets/premium_button.dart';
+import '../../../../core/services/global_notifier.dart';
 import '../../../home/data/models/vehicle_model.dart';
 import '../../../home/presentation/managers/home_notifier.dart';
 
@@ -14,18 +15,23 @@ class GaragePage extends StatefulWidget {
 }
 
 class _GaragePageState extends State<GaragePage> {
-  final HomeNotifier _notifier = HomeNotifier();
+  final HomeNotifier _notifier = GlobalNotifier.instance;
 
   @override
   void initState() {
     super.initState();
     _notifier.loadDashboardData();
+    _notifier.addListener(_onNotifierChanged);
   }
 
   @override
   void dispose() {
-    _notifier.dispose();
+    _notifier.removeListener(_onNotifierChanged);
     super.dispose();
+  }
+
+  void _onNotifierChanged() {
+    if (mounted) setState(() {});
   }
 
   @override
@@ -47,7 +53,6 @@ class _GaragePageState extends State<GaragePage> {
             return CustomScrollView(
               physics: const BouncingScrollPhysics(),
               slivers: [
-                // EN-TÊTE
                 SliverToBoxAdapter(
                   child: Padding(
                     padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
@@ -78,7 +83,10 @@ class _GaragePageState extends State<GaragePage> {
                           ],
                         ),
                         GestureDetector(
-                          onTap: () => context.push('/add-vehicle'),
+                          onTap: () async {
+                            await context.push('/add-vehicle');
+                            await _notifier.reloadVehicles();
+                          },
                           child: Container(
                             width: 46,
                             height: 46,
@@ -98,16 +106,12 @@ class _GaragePageState extends State<GaragePage> {
                     ),
                   ),
                 ),
-
-                // STATISTIQUES
                 SliverToBoxAdapter(
                   child: Padding(
                     padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
                     child: _buildStats(),
                   ),
                 ),
-
-                // LISTE
                 if (_notifier.vehicles.isEmpty)
                   SliverFillRemaining(
                     child: _buildEmptyState(context),
@@ -136,15 +140,12 @@ class _GaragePageState extends State<GaragePage> {
     );
   }
 
-  // ============================================
-  // STATS
-  // ============================================
-
   Widget _buildStats() {
-    final totalVehicles = _notifier.vehicles.length;
-    final alertCount = _notifier.vehicles.where((v) => v.isAlert).length;
-    final avgHealth = totalVehicles > 0
-        ? _notifier.vehicles.fold<double>(0, (sum, v) => sum + v.progress) /
+    final List<Vehicle> vehicles = _notifier.vehicles;
+    final int totalVehicles = vehicles.length;
+    final int alertCount = vehicles.where((v) => v.isAlert).length;
+    final double avgHealth = totalVehicles > 0
+        ? vehicles.fold<double>(0, (sum, v) => sum + v.progress) /
             totalVehicles
         : 0.0;
 
@@ -222,10 +223,6 @@ class _GaragePageState extends State<GaragePage> {
     );
   }
 
-  // ============================================
-  // VEHICLE CARD (avec photo)
-  // ============================================
-
   Widget _buildVehicleCard(BuildContext context, Vehicle vehicle) {
     return GestureDetector(
       onTap: () => context.push('/vehicle-details/${vehicle.id}'),
@@ -237,7 +234,6 @@ class _GaragePageState extends State<GaragePage> {
         ),
         child: Column(
           children: [
-            // PHOTO DU VÉHICULE
             ClipRRect(
               borderRadius: const BorderRadius.vertical(
                 top: Radius.circular(20),
@@ -271,7 +267,6 @@ class _GaragePageState extends State<GaragePage> {
                             ),
                           ),
                   ),
-                  // Badge santé
                   Positioned(
                     top: 12,
                     right: 12,
@@ -295,7 +290,6 @@ class _GaragePageState extends State<GaragePage> {
                       ),
                     ),
                   ),
-                  // Badge alerte
                   if (vehicle.isAlert)
                     Positioned(
                       top: 12,
@@ -327,7 +321,6 @@ class _GaragePageState extends State<GaragePage> {
                         ),
                       ),
                     ),
-                  // Infos véhicule
                   Positioned(
                     bottom: 12,
                     left: 12,
@@ -377,7 +370,6 @@ class _GaragePageState extends State<GaragePage> {
                 ],
               ),
             ),
-            // Barre de santé
             Padding(
               padding: const EdgeInsets.all(14),
               child: Row(
@@ -407,10 +399,6 @@ class _GaragePageState extends State<GaragePage> {
       ),
     );
   }
-
-  // ============================================
-  // EMPTY STATE
-  // ============================================
 
   Widget _buildEmptyState(BuildContext context) {
     return Center(
@@ -460,10 +448,6 @@ class _GaragePageState extends State<GaragePage> {
       ),
     );
   }
-
-  // ============================================
-  // HELPERS
-  // ============================================
 
   Color _getHealthColor(double progress) {
     if (progress > 0.6) return AppColors.success;

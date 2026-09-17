@@ -12,8 +12,8 @@ dependencies:
     sdk: flutter
 
   go_router: ^13.2.0
-  sqflite: ^2.3.0
-  sqflite_common_ffi_web: ^0.4.2
+  hive: ^2.2.3
+  hive_flutter: ^1.1.0
   path: ^1.8.3
   path_provider: ^2.1.0
   flutter_local_notifications: ^16.3.2
