@@ -11,6 +11,7 @@ class StatisticsPage extends StatelessWidget {
       backgroundColor: AppColors.background,
       body: SafeArea(
         child: SingleChildScrollView(
+          physics: const BouncingScrollPhysics(),
           padding: const EdgeInsets.all(24.0),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -18,7 +19,7 @@ class StatisticsPage extends StatelessWidget {
               
               // 1. EN-TÊTE ÉPURÉ (Style Apple)
               Row(
-                mainAxisAlignment: MainAxisAlignment.between,
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -48,10 +49,10 @@ class StatisticsPage extends StatelessWidget {
 
               const SizedBox(height: 28),
 
-              // 2. LE CHIFFRE CLÉ : LE GRAND COMPTEUR D'ÉCONOMIES
+              // 2. LE CHIFFRE CLÉ : LE GRAND COMPTEUR D'ÉCONOMIES CORRIGÉ VIA SIZEDBOX
               PremiumCard(
-                child: Width(
-                  double.infinity,
+                child: SizedBox(
+                  width: double.infinity,
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -67,7 +68,7 @@ class StatisticsPage extends StatelessWidget {
                       const Text(
                         '485,00 €',
                         style: TextStyle(
-                          color: AppColors.success, // Vert MecaGo bon état / gain
+                          color: AppColors.success,
                           fontSize: 42,
                           fontWeight: FontWeight.extrabold,
                           letterSpacing: -1,
@@ -77,7 +78,7 @@ class StatisticsPage extends StatelessWidget {
                       Row(
                         children: [
                           Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, py: 4),
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                             decoration: BoxDecoration(
                               color: AppColors.success.withOpacity(0.1),
                               borderRadius: BorderRadius.circular(6),
@@ -129,17 +130,16 @@ class StatisticsPage extends StatelessWidget {
 
               const SizedBox(height: 20),
 
-              // 4. MESSAGE MOTIVANT : L'IMPACT CO2
+              // 4. MESSAGE MOTIVANT : L'IMPACT CO2 NETTOYÉ DE SON EFFET DE FLOU
               PremiumCard(
-                blur: 5.0,
-                child: const Row(
+                child: Row(
                   children: [
-                    Text('🌱', style: TextStyle(fontSize: 24)),
-                    SizedBox(width: 16),
+                    const Text('🌱', style: TextStyle(fontSize: 24)),
+                    const SizedBox(width: 16),
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
+                        children: const [
                           Text(
                             'Éco-Entretien',
                             style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: AppColors.navy),
@@ -162,7 +162,6 @@ class StatisticsPage extends StatelessWidget {
     );
   }
 
-  // Barre de progression visuelle premium pour chaque poste d'économie
   Widget _buildStatItem({
     required String category,
     required String savedAmount,
@@ -176,7 +175,7 @@ class StatisticsPage extends StatelessWidget {
         child: Column(
           children: [
             Row(
-              mainAxisAlignment: MainAxisAlignment.between,
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Row(
                   children: [
@@ -189,7 +188,6 @@ class StatisticsPage extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 12),
-            // Barre de progression fluide style iOS
             Stack(
               children: [
                 Container(

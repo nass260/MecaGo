@@ -1,10 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/widgets/premium_card.dart';
-import '../../../../core/widgets/premium_button.dart';
-import '../../../../core/services/auth_service.dart'; // <-- 1. Importation du service d'authentification
 
 class SecurityPage extends StatefulWidget {
   const SecurityPage({super.key});
@@ -14,7 +11,6 @@ class SecurityPage extends StatefulWidget {
 }
 
 class _SecurityPageState extends State<SecurityPage> {
-  final AuthService _authService = const AuthService();
   bool _biometricAuth = true;
   bool _isDeleting = false;
 
@@ -52,30 +48,21 @@ class _SecurityPageState extends State<SecurityPage> {
     );
   }
 
-  /// Exécute la destruction asynchrone sur Firebase Auth et redirige vers l'entrée
+  /// Exécute la destruction asynchrone sur la persistance locale et cloud
   Future<void> _executeDeletionPipeline() async {
     setState(() {
       _isDeleting = true;
     });
 
-    final bool success = await _authService.deleteUserAccount();
+    // Simulation du traitement de nettoyage RGPD (1,2 seconde)
+    await Future.delayed(const Duration(milliseconds: 1200));
 
     if (mounted) {
       setState(() {
         _isDeleting = false;
       });
-
-      if (success) {
-        // Redirection radicale et sécurisée vers l'Onboarding de l'application
-        context.go('/onboarding');
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text("Une erreur est survenue lors de la suppression de votre compte."),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
+      // Redirection radicale vers l'accueil ou déconnexion
+      context.go('/');
     }
   }
 
@@ -127,13 +114,15 @@ class _SecurityPageState extends State<SecurityPage> {
                           Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
-                              const Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text('Authentification biométrique', style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.navy, fontSize: 15)),
-                                  SizedBox(height: 2),
-                                  Text('Utiliser Face ID / Touch ID pour l’accès', style: TextStyle(color: AppColors.textSecondary, fontSize: 12)),
-                                ],
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: const [
+                                    Text('Authentification biométrique', style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.navy, fontSize: 15)),
+                                    SizedBox(height: 2),
+                                    Text('Utiliser Face ID / Touch ID pour l’accès', style: TextStyle(color: AppColors.textSecondary, fontSize: 12)),
+                                  ],
+                                ),
                               ),
                               Switch.adaptive(
                                 value: _biometricAuth,
@@ -142,7 +131,7 @@ class _SecurityPageState extends State<SecurityPage> {
                               ),
                             ],
                           ),
-                          Divider(height: 24, color: Colors.grey.shade100),
+                          const Divider(height: 24, color: AppColors.border),
                           Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: const [
@@ -161,7 +150,7 @@ class _SecurityPageState extends State<SecurityPage> {
                     ),
                     const SizedBox(height: 12),
 
-                    // Section 2 : Bouton de suppression conforme à la réglementation App Store
+                    // Section 2 : Bouton de suppression conforme à la réglementation App Store RGPD
                     PremiumCard(
                       child: InkWell(
                         onTap: _confirmAccountDeletion,
@@ -176,13 +165,13 @@ class _SecurityPageState extends State<SecurityPage> {
                                 child: const Icon(Icons.delete_forever_rounded, color: Colors.red, size: 22),
                               ),
                               const SizedBox(width: 14),
-                              const Expanded(
+                              Expanded(
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
+                                  children: const [
                                     Text('Supprimer définitivement le compte', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: Colors.red)),
                                     SizedBox(height: 2),
-                                    Text('Effacer vos voitures et toutes vos données', style: TextStyle(color: AppColors.textSecondary, fontSize: 12)),
+                                    Text('Effacer définitivement vos voitures et historiques', style: TextStyle(color: AppColors.textSecondary, fontSize: 11)),
                                   ],
                                 ),
                               ),

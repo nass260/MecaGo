@@ -3,9 +3,9 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/widgets/premium_card.dart';
-import '../../../../core/widgets/animated_score_circle.dart';
+import '../../../../core/widgets/premium_button.dart';
+import '../../../../core/services/global_notifier.dart';
 import '../../data/models/vehicle_model.dart';
-import '../managers/home_notifier.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -15,29 +15,34 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
-  final HomeNotifier _notifier = HomeNotifier();
-
   @override
   void initState() {
     super.initState();
-    _notifier.loadDashboardData();
+    GlobalNotifier.instance.loadDashboardData();
+    GlobalNotifier.instance.addListener(_onNotifierChanged);
   }
 
   @override
   void dispose() {
-    _notifier.dispose();
+    GlobalNotifier.instance.removeListener(_onNotifierChanged);
     super.dispose();
+  }
+
+  void _onNotifierChanged() {
+    if (mounted) setState(() {});
   }
 
   @override
   Widget build(BuildContext context) {
+    final notifier = GlobalNotifier.instance;
+
     return Scaffold(
       backgroundColor: AppColors.background,
       body: SafeArea(
         child: AnimatedBuilder(
-          animation: _notifier,
+          animation: notifier,
           builder: (context, _) {
-            if (_notifier.isLoading) {
+            if (notifier.isLoading) {
               return const Center(
                 child: CircularProgressIndicator(
                   valueColor: AlwaysStoppedAnimation<Color>(AppColors.orange),
@@ -45,25 +50,24 @@ class _HomePageState extends State<HomePage> {
               );
             }
 
-            final vehicle = _notifier.activeVehicle;
+            final vehicle = notifier.activeVehicle;
 
             return RefreshIndicator(
-              onRefresh: () => _notifier.refresh(),
+              onRefresh: () => notifier.refresh(),
               color: AppColors.orange,
               child: SingleChildScrollView(
                 physics: const AlwaysScrollableScrollPhysics(
                   parent: BouncingScrollPhysics(),
                 ),
-                padding: const EdgeInsets.fromLTRB(20, 12, 20, 70),
+                padding: const EdgeInsets.fromLTRB(20, 12, 20, 90),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     _buildHeader(context),
                     const SizedBox(height: 12),
-                    if (vehicle != null) ...[
-                      _buildVehicleHero(context, vehicle),
-                      const SizedBox(height: 14),
-                    ],
+                    // ✅ PHOTO TESLA FIXE (toujours affichée)
+                    _buildTeslaHero(context),
+                    const SizedBox(height: 14),
                     _buildScoreRow(vehicle),
                     const SizedBox(height: 14),
                     _buildQuickActions(context),
@@ -88,6 +92,8 @@ class _HomePageState extends State<HomePage> {
   // ============================================
 
   Widget _buildHeader(BuildContext context) {
+    final notifier = GlobalNotifier.instance;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -227,9 +233,9 @@ class _HomePageState extends State<HomePage> {
         ),
         const SizedBox(height: 2),
         Text(
-          _notifier.activeVehicle != null
-              ? 'Prêt pour entretenir votre ${_notifier.activeVehicle!.brand} ?'
-              : 'Ajoutez votre premier véhicule',
+          notifier.activeVehicle != null
+              ? 'Prêt pour entretenir votre ${notifier.activeVehicle!.brand} ?'
+              : 'Prêt pour entretenir votre Tesla ?',
           style: const TextStyle(
             color: AppColors.textSecondary,
             fontSize: 12,
@@ -241,42 +247,41 @@ class _HomePageState extends State<HomePage> {
   }
 
   // ============================================
-  // VEHICLE HERO (avec photo)
+  // HERO TESLA FIXE (photo + plaque + infos)
   // ============================================
 
-  Widget _buildVehicleHero(BuildContext context, Vehicle vehicle) {
+  Widget _buildTeslaHero(BuildContext context) {
     return GestureDetector(
-      onTap: () => context.push('/vehicle-details/${vehicle.id}'),
+      onTap: () => context.push('/vehicle-details/1'),
       child: Container(
-        height: 210,
+        height: 260,
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(22),
           boxShadow: AppShadows.hero,
         ),
         child: Stack(
           children: [
+            // ✅ PHOTO TESLA FIXE
             ClipRRect(
               borderRadius: BorderRadius.circular(22),
               child: Container(
                 width: double.infinity,
-                height: 210,
-                decoration: const BoxDecoration(gradient: AppGradients.navy),
-                child: vehicle.imageUrl.isNotEmpty
-                    ? Image.asset(
-                        vehicle.imageUrl,
-                        fit: BoxFit.cover,
-                        alignment: Alignment.center,
-                        errorBuilder: (_, __, ___) => const Center(
-                          child: Icon(Icons.directions_car_rounded,
-                              color: Colors.white24, size: 80),
-                        ),
-                      )
-                    : const Center(
-                        child: Icon(Icons.directions_car_rounded,
-                            color: Colors.white24, size: 80),
-                      ),
+                height: 260,
+                decoration: const BoxDecoration(
+                  gradient: AppGradients.navy,
+                ),
+                child: Image.asset(
+                  'assets/images/tesla_model_3.jpg',
+                  fit: BoxFit.cover,
+                  alignment: Alignment.center,
+                  errorBuilder: (_, __, ___) => const Center(
+                    child: Icon(Icons.directions_car_rounded,
+                        color: Colors.white24, size: 80),
+                  ),
+                ),
               ),
             ),
+            // Overlay
             Container(
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(22),
@@ -285,18 +290,19 @@ class _HomePageState extends State<HomePage> {
                   end: Alignment.bottomCenter,
                   colors: [
                     Colors.transparent,
-                    Colors.black.withOpacity(0.55),
+                    Colors.black.withOpacity(0.6),
                   ],
                   stops: const [0.5, 1.0],
                 ),
               ),
             ),
+            // Badge VÉHICULE ACTIF
             Positioned(
-              top: 12,
-              left: 12,
+              top: 14,
+              left: 14,
               child: Container(
                 padding:
-                    const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
+                    const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                 decoration: BoxDecoration(
                   color: Colors.black.withOpacity(0.4),
                   borderRadius: BorderRadius.circular(20),
@@ -305,7 +311,7 @@ class _HomePageState extends State<HomePage> {
                 child: const Text(
                   'VÉHICULE ACTIF',
                   style: TextStyle(
-                    fontSize: 7,
+                    fontSize: 8,
                     fontWeight: FontWeight.w800,
                     color: Colors.white,
                     letterSpacing: 1,
@@ -313,12 +319,13 @@ class _HomePageState extends State<HomePage> {
                 ),
               ),
             ),
+            // Badge En bon état
             Positioned(
-              top: 12,
-              right: 12,
+              top: 14,
+              right: 14,
               child: Container(
                 padding:
-                    const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
+                    const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                 decoration: BoxDecoration(
                   color: AppColors.success,
                   borderRadius: BorderRadius.circular(20),
@@ -327,12 +334,12 @@ class _HomePageState extends State<HomePage> {
                   mainAxisSize: MainAxisSize.min,
                   children: const [
                     Icon(Icons.check_circle_rounded,
-                        color: Colors.white, size: 10),
+                        color: Colors.white, size: 11),
                     SizedBox(width: 3),
                     Text(
                       'En bon état',
                       style: TextStyle(
-                        fontSize: 8,
+                        fontSize: 9,
                         fontWeight: FontWeight.w800,
                         color: Colors.white,
                       ),
@@ -341,22 +348,23 @@ class _HomePageState extends State<HomePage> {
                 ),
               ),
             ),
+            // Infos Tesla
             Positioned(
-              bottom: 12,
-              left: 12,
-              right: 12,
+              bottom: 14,
+              left: 14,
+              right: 14,
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Row(
-                    children: [
-                      const Icon(Icons.electric_car_rounded,
-                          color: Colors.white, size: 15),
-                      const SizedBox(width: 5),
+                    children: const [
+                      Icon(Icons.electric_car_rounded,
+                          color: Colors.white, size: 18),
+                      SizedBox(width: 6),
                       Text(
-                        '${vehicle.brand} ${vehicle.model}',
-                        style: const TextStyle(
-                          fontSize: 18,
+                        'Tesla Model 3',
+                        style: TextStyle(
+                          fontSize: 22,
                           fontWeight: FontWeight.w900,
                           color: Colors.white,
                           letterSpacing: -0.5,
@@ -364,20 +372,20 @@ class _HomePageState extends State<HomePage> {
                       ),
                     ],
                   ),
-                  const SizedBox(height: 5),
+                  const SizedBox(height: 6),
                   Container(
                     padding: const EdgeInsets.symmetric(
-                        horizontal: 7, vertical: 2),
+                        horizontal: 9, vertical: 4),
                     decoration: BoxDecoration(
                       color: Colors.white,
-                      borderRadius: BorderRadius.circular(5),
+                      borderRadius: BorderRadius.circular(6),
                     ),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         Container(
-                          width: 12,
-                          height: 15,
+                          width: 14,
+                          height: 18,
                           decoration: const BoxDecoration(
                             color: Color(0xFF003399),
                             borderRadius:
@@ -388,17 +396,17 @@ class _HomePageState extends State<HomePage> {
                               'F',
                               style: TextStyle(
                                 color: Colors.white,
-                                fontSize: 8,
+                                fontSize: 9,
                                 fontWeight: FontWeight.w800,
                               ),
                             ),
                           ),
                         ),
-                        const SizedBox(width: 5),
-                        Text(
-                          vehicle.plate,
-                          style: const TextStyle(
-                            fontSize: 11,
+                        const SizedBox(width: 6),
+                        const Text(
+                          'AB-123-CD',
+                          style: TextStyle(
+                            fontSize: 14,
                             fontWeight: FontWeight.w900,
                             color: AppColors.navy,
                           ),
@@ -406,22 +414,22 @@ class _HomePageState extends State<HomePage> {
                       ],
                     ),
                   ),
-                  const SizedBox(height: 5),
+                  const SizedBox(height: 6),
                   Text(
-                    'Long Range AWD · ${vehicle.year} · ${vehicle.fuelType.label}',
+                    '2024 · Électrique · Automatique',
                     style: TextStyle(
                       color: Colors.white.withOpacity(0.9),
-                      fontSize: 10,
+                      fontSize: 12,
                       fontWeight: FontWeight.w500,
                     ),
                   ),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: 12),
                   Container(
                     padding: const EdgeInsets.symmetric(
-                        horizontal: 12, vertical: 7),
+                        horizontal: 16, vertical: 10),
                     decoration: BoxDecoration(
                       color: Colors.white.withOpacity(0.25),
-                      borderRadius: BorderRadius.circular(18),
+                      borderRadius: BorderRadius.circular(20),
                       border:
                           Border.all(color: Colors.white.withOpacity(0.4)),
                     ),
@@ -432,13 +440,13 @@ class _HomePageState extends State<HomePage> {
                           'Voir les détails',
                           style: TextStyle(
                             color: Colors.white,
-                            fontSize: 10,
+                            fontSize: 12,
                             fontWeight: FontWeight.w700,
                           ),
                         ),
-                        SizedBox(width: 3),
+                        SizedBox(width: 4),
                         Icon(Icons.chevron_right_rounded,
-                            color: Colors.white, size: 13),
+                            color: Colors.white, size: 16),
                       ],
                     ),
                   ),
@@ -450,9 +458,9 @@ class _HomePageState extends State<HomePage> {
       ),
     );
   }
-  
+
   // ============================================
-  // SCORE ROW (avec cercle animé)
+  // SCORE ROW
   // ============================================
 
   Widget _buildScoreRow(Vehicle? vehicle) {
@@ -486,10 +494,45 @@ class _HomePageState extends State<HomePage> {
                   Expanded(
                     child: Row(
                       children: [
-                        // ⚡ CERCLE ANIMÉ (widget séparé) ⚡
-                        AnimatedScoreCircle(
-                          score: _notifier.mecaGoScore,
-                          progress: (vehicle?.progress ?? 0.85),
+                        Stack(
+                          alignment: Alignment.center,
+                          children: [
+                            SizedBox(
+                              width: 48,
+                              height: 48,
+                              child: CircularProgressIndicator(
+                                value: 0.85,
+                                strokeWidth: 5,
+                                backgroundColor:
+                                    AppColors.border.withOpacity(0.5),
+                                valueColor:
+                                    const AlwaysStoppedAnimation<Color>(
+                                  AppColors.orange,
+                                ),
+                              ),
+                            ),
+                            const Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Text(
+                                  '85',
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w900,
+                                    color: AppColors.navy,
+                                  ),
+                                ),
+                                Text(
+                                  '/100',
+                                  style: TextStyle(
+                                    fontSize: 7,
+                                    color: AppColors.textSecondary,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
                         ),
                         const SizedBox(width: 10),
                         Expanded(
@@ -555,9 +598,9 @@ class _HomePageState extends State<HomePage> {
                         ),
                       ),
                       const SizedBox(height: 2),
-                      Text(
-                        '${_notifier.totalSavings.toStringAsFixed(0)} €',
-                        style: const TextStyle(
+                      const Text(
+                        '125 €',
+                        style: TextStyle(
                           fontSize: 20,
                           fontWeight: FontWeight.w900,
                           color: AppColors.navy,

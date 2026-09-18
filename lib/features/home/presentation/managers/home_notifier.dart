@@ -7,7 +7,7 @@ class HomeNotifier with ChangeNotifier {
   final DatabaseService _databaseService = DatabaseService();
 
   bool _isLoading = false;
-  int _mecaGoScore = 85;
+  int _mecaGoScore = 0;
   double _totalSavings = 0.0;
   Vehicle? _activeVehicle;
   List<Vehicle> _vehicles = [];
@@ -25,20 +25,14 @@ class HomeNotifier with ChangeNotifier {
     try {
       _vehicles = await _databaseService.getVehicles();
 
-      if (_vehicles.isEmpty) {
-        await _insertDemoVehicles();
-        _vehicles = await _databaseService.getVehicles();
-      }
-
       if (_vehicles.isNotEmpty) {
         _activeVehicle = _vehicles.first;
+        _calculateMecaGoScore();
       }
-
-      _totalSavings = 125.0;
-      _calculateMecaGoScore();
 
       _isLoading = false;
       notifyListeners();
+      debugPrint('🔄 ${_vehicles.length} véhicules chargés');
     } catch (e) {
       debugPrint('❌ Erreur chargement : $e');
       _isLoading = false;
@@ -46,12 +40,13 @@ class HomeNotifier with ChangeNotifier {
     }
   }
 
-  /// 🔄 Force le rechargement (appelé après ajout)
   Future<void> reloadVehicles() async {
     try {
       _vehicles = await _databaseService.getVehicles();
-      if (_vehicles.isNotEmpty && _activeVehicle == null) {
+      if (_vehicles.isNotEmpty) {
         _activeVehicle = _vehicles.first;
+      } else {
+        _activeVehicle = null;
       }
       _calculateMecaGoScore();
       notifyListeners();
@@ -59,68 +54,6 @@ class HomeNotifier with ChangeNotifier {
     } catch (e) {
       debugPrint('❌ Erreur reload : $e');
     }
-  }
-
-  Future<void> _insertDemoVehicles() async {
-    final demoVehicles = [
-      const Vehicle(
-        id: '1',
-        brand: 'Tesla',
-        model: 'Model 3',
-        plate: 'AB-123-CD',
-        year: 2024,
-        mileage: 23450,
-        fuelType: FuelType.electrique,
-        transmission: TransmissionType.automatique,
-        progress: 0.85,
-        isAlert: false,
-        imageUrl: 'assets/images/tesla_model_3.jpg',
-      ),
-      const Vehicle(
-        id: '2',
-        brand: 'Renault',
-        model: 'Clio 5',
-        plate: 'EF-456-GH',
-        year: 2019,
-        mileage: 87200,
-        fuelType: FuelType.diesel,
-        transmission: TransmissionType.manuelle,
-        progress: 0.45,
-        isAlert: true,
-        imageUrl: '',
-      ),
-      const Vehicle(
-        id: '3',
-        brand: 'Peugeot',
-        model: '208',
-        plate: 'IJ-789-KL',
-        year: 2021,
-        mileage: 45000,
-        fuelType: FuelType.essence,
-        transmission: TransmissionType.manuelle,
-        progress: 0.72,
-        isAlert: false,
-        imageUrl: '',
-      ),
-      const Vehicle(
-        id: '4',
-        brand: 'Peugeot',
-        model: 'Boxer',
-        plate: 'MN-012-OP',
-        year: 2010,
-        mileage: 185000,
-        fuelType: FuelType.diesel,
-        transmission: TransmissionType.manuelle,
-        progress: 0.55,
-        isAlert: false,
-        imageUrl: '',
-      ),
-    ];
-
-    for (final vehicle in demoVehicles) {
-      await _databaseService.insertVehicle(vehicle);
-    }
-    debugPrint('✅ 4 véhicules de démo insérés');
   }
 
   void _calculateMecaGoScore() {
@@ -148,11 +81,12 @@ class HomeNotifier with ChangeNotifier {
       if (_activeVehicle == null) {
         _activeVehicle = vehicle;
       }
+      _calculateMecaGoScore();
       notifyListeners();
       debugPrint(
-          '✅ Véhicule ajouté au notifier : ${vehicle.brand} ${vehicle.model}');
+          '✅ Véhicule ajouté : ${vehicle.brand} ${vehicle.model}');
     } catch (e) {
-      debugPrint('❌ Erreur ajout véhicule : $e');
+      debugPrint('❌ Erreur ajout : $e');
     }
   }
 
@@ -251,6 +185,7 @@ class HomeNotifier with ChangeNotifier {
       if (_activeVehicle?.id == id) {
         _activeVehicle = _vehicles.isNotEmpty ? _vehicles.first : null;
       }
+      _calculateMecaGoScore();
       notifyListeners();
     } catch (e) {
       debugPrint('❌ Erreur suppression : $e');
