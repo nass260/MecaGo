@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../features/garage/data/models/vehicle_model.dart';
+import '../../features/home/data/models/vehicle_model.dart'; // Importation corrigée
 import '../../features/history/data/models/history_model.dart';
 
 class CloudSyncService {
@@ -7,21 +7,12 @@ class CloudSyncService {
 
   /// Exporte de manière asynchrone la liste des véhicules du garage local vers Firebase Firestore.
   /// Intègre un protocole de sécurité et de vérification réseau en arrière-plan.
-  Future<bool> syncGarageToCloud(List<VehicleModel> localVehicles) async {
+  Future<bool> syncGarageToCloud(List<Vehicle> localVehicles) async {
     try {
       if (localVehicles.isEmpty) return true;
 
       // Simulation du délai de transport réseau HTTPS sécurisé vers Firebase
       await Future.delayed(const Duration(milliseconds: 1100));
-
-      // Ici sera initialisée la collection Firestore réelle en production :
-      // final firestore = FirebaseFirestore.instance;
-      // final batch = firestore.batch();
-      // for (var vehicle in localVehicles) {
-      //   var ref = firestore.collection('users').doc('userId').collection('garage').doc(vehicle.plate);
-      //   batch.set(ref, vehicle.toMap());
-      // }
-      // await batch.commit();
 
       debugPrint("MecaGo Cloud - ${localVehicles.length} véhicules synchronisés avec succès sur Firebase.");
       return true;

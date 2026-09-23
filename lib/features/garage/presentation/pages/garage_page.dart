@@ -20,8 +20,12 @@ class _GaragePageState extends State<GaragePage> {
   @override
   void initState() {
     super.initState();
-    _notifier.loadDashboardData();
     _notifier.addListener(_onNotifierChanged);
+
+    // ✅ Charger APRÈS le build
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _notifier.loadDashboardData();
+    });
   }
 
   @override
@@ -53,6 +57,7 @@ class _GaragePageState extends State<GaragePage> {
             return CustomScrollView(
               physics: const BouncingScrollPhysics(),
               slivers: [
+                // EN-TÊTE
                 SliverToBoxAdapter(
                   child: Padding(
                     padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
@@ -106,12 +111,16 @@ class _GaragePageState extends State<GaragePage> {
                     ),
                   ),
                 ),
+
+                // STATISTIQUES
                 SliverToBoxAdapter(
                   child: Padding(
                     padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
                     child: _buildStats(),
                   ),
                 ),
+
+                // LISTE
                 if (_notifier.vehicles.isEmpty)
                   SliverFillRemaining(
                     child: _buildEmptyState(context),
@@ -139,6 +148,10 @@ class _GaragePageState extends State<GaragePage> {
       ),
     );
   }
+
+  // ============================================
+  // STATS
+  // ============================================
 
   Widget _buildStats() {
     final List<Vehicle> vehicles = _notifier.vehicles;
@@ -222,6 +235,10 @@ class _GaragePageState extends State<GaragePage> {
       ),
     );
   }
+
+  // ============================================
+  // VEHICLE CARD
+  // ============================================
 
   Widget _buildVehicleCard(BuildContext context, Vehicle vehicle) {
     return GestureDetector(
@@ -400,6 +417,10 @@ class _GaragePageState extends State<GaragePage> {
     );
   }
 
+  // ============================================
+  // EMPTY STATE
+  // ============================================
+
   Widget _buildEmptyState(BuildContext context) {
     return Center(
       child: Padding(
@@ -448,6 +469,10 @@ class _GaragePageState extends State<GaragePage> {
       ),
     );
   }
+
+  // ============================================
+  // HELPERS
+  // ============================================
 
   Color _getHealthColor(double progress) {
     if (progress > 0.6) return AppColors.success;

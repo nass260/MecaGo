@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/widgets/premium_card.dart';
 import '../../../../core/widgets/premium_button.dart';
-import '../../../maintenance/presentation/pages/parts_catalog_page.dart'; // <-- Importation du catalogue de vente
 
 class VehicleDetailsPage extends StatelessWidget {
   const VehicleDetailsPage({super.key});
@@ -55,7 +55,7 @@ class VehicleDetailsPage extends StatelessWidget {
                     ),
                     const SizedBox(height: 18),
                     
-                    // Plaque d'immatriculation SIV rétro-éclairée
+                    // Plaque d'immatriculation SIV rétro-éclairée corrigée en w800
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
                       decoration: BoxDecoration(
@@ -66,7 +66,7 @@ class VehicleDetailsPage extends StatelessWidget {
                       ),
                       child: const Text(
                         'AB-123-CD',
-                        style: TextStyle(fontWeight: FontWeight.extrabold, fontFamily: 'monospace', fontSize: 14, color: AppColors.navy, letterSpacing: 1.5),
+                        style: TextStyle(fontWeight: FontWeight.w800, fontFamily: 'monospace', fontSize: 14, color: AppColors.navy, letterSpacing: 1.5),
                       ),
                     ),
                     
@@ -122,17 +122,12 @@ class VehicleDetailsPage extends StatelessWidget {
               ),
             ),
             
-            // 4. ACTION BASSE DE CONVERSION DIRECTE VERS LE CATALOGUE MARCHAND PREMIUM
+            // 4. ACTION BASSE DE CONVERSION DIRECTE VERS LE CATALOGUE MARCHAND VIA ROUTAGE PREMIUM
             Padding(
               padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
               child: PremiumButton(
-                text: 'Acheter les pièces compatibles', // Modification de l'accroche investisseur
-                onPressed: () {
-                  // Redirection native et fluide vers l'écran commercial
-                  Navigator.of(context).push(
-                    MaterialPageRoute(builder: (context) => const PartsCatalogPage()),
-                  );
-                },
+                text: 'Acheter les pièces compatibles',
+                onPressed: () => context.push('/parts-catalog'),
               ),
             ),
           ],
@@ -190,18 +185,14 @@ class VehicleDetailsPage extends StatelessWidget {
                 children: [
                   Text(title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: AppColors.navy)),
                   const SizedBox(height: 2),
-                  Text(subtitle, style: const TextStyle(color: AppColors.textSecondary, fontSize: 12, fontWeight: FontWeight.w500)),
+                  Text(subtitle, style: const TextStyle(color: AppColors.textSecondary, fontSize: 12)),
                 ],
               ),
             ),
             const SizedBox(width: 8),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-              decoration: BoxDecoration(color: color.withOpacity(0.1), borderRadius: BorderRadius.circular(20)),
-              child: Text(
-                status,
-                style: TextStyle(color: color, fontSize: 11, fontWeight: FontWeight.extrabold),
-              ),
+            Text(
+              status,
+              style: TextStyle(color: color, fontWeight: FontWeight.bold, fontSize: 12),
             ),
           ],
         ),

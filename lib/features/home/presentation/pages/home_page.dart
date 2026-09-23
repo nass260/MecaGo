@@ -18,8 +18,12 @@ class _HomePageState extends State<HomePage> {
   @override
   void initState() {
     super.initState();
-    GlobalNotifier.instance.loadDashboardData();
     GlobalNotifier.instance.addListener(_onNotifierChanged);
+
+    // ✅ Charger APRÈS le build
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      GlobalNotifier.instance.loadDashboardData();
+    });
   }
 
   @override
@@ -65,7 +69,6 @@ class _HomePageState extends State<HomePage> {
                   children: [
                     _buildHeader(context),
                     const SizedBox(height: 12),
-                    // ✅ PHOTO TESLA FIXE (toujours affichée)
                     _buildTeslaHero(context),
                     const SizedBox(height: 14),
                     _buildScoreRow(vehicle),
@@ -92,8 +95,6 @@ class _HomePageState extends State<HomePage> {
   // ============================================
 
   Widget _buildHeader(BuildContext context) {
-    final notifier = GlobalNotifier.instance;
-
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -233,8 +234,8 @@ class _HomePageState extends State<HomePage> {
         ),
         const SizedBox(height: 2),
         Text(
-          notifier.activeVehicle != null
-              ? 'Prêt pour entretenir votre ${notifier.activeVehicle!.brand} ?'
+          GlobalNotifier.instance.activeVehicle != null
+              ? 'Prêt pour entretenir votre ${GlobalNotifier.instance.activeVehicle!.brand} ?'
               : 'Prêt pour entretenir votre Tesla ?',
           style: const TextStyle(
             color: AppColors.textSecondary,
@@ -247,7 +248,7 @@ class _HomePageState extends State<HomePage> {
   }
 
   // ============================================
-  // HERO TESLA FIXE (photo + plaque + infos)
+  // HERO TESLA FIXE
   // ============================================
 
   Widget _buildTeslaHero(BuildContext context) {
@@ -261,7 +262,6 @@ class _HomePageState extends State<HomePage> {
         ),
         child: Stack(
           children: [
-            // ✅ PHOTO TESLA FIXE
             ClipRRect(
               borderRadius: BorderRadius.circular(22),
               child: Container(
@@ -281,7 +281,6 @@ class _HomePageState extends State<HomePage> {
                 ),
               ),
             ),
-            // Overlay
             Container(
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(22),
@@ -296,7 +295,6 @@ class _HomePageState extends State<HomePage> {
                 ),
               ),
             ),
-            // Badge VÉHICULE ACTIF
             Positioned(
               top: 14,
               left: 14,
@@ -319,7 +317,6 @@ class _HomePageState extends State<HomePage> {
                 ),
               ),
             ),
-            // Badge En bon état
             Positioned(
               top: 14,
               right: 14,
@@ -348,7 +345,6 @@ class _HomePageState extends State<HomePage> {
                 ),
               ),
             ),
-            // Infos Tesla
             Positioned(
               bottom: 14,
               left: 14,

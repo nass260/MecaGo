@@ -2,7 +2,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'core/navigation/app_router.dart';
-import 'core/services/hive_service.dart';
 import 'core/services/notification_service.dart';
 import 'core/services/sync_manager.dart';
 
@@ -18,13 +17,7 @@ void main() async {
     ),
   );
 
-  // ✅ INITIALISATION HIVE
-  try {
-    await HiveService().initialize();
-    debugPrint('✅ Hive initialisé');
-  } catch (e) {
-    debugPrint('❌ Erreur Hive : $e');
-  }
+  // ✅ PLUS DE HIVE - On utilise localStorage
 
   try {
     const notificationService = NotificationService();
