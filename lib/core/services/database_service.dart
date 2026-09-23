@@ -7,12 +7,33 @@ import '../../features/home/data/models/vehicle_model.dart';
 // Pour le Web
 import 'dart:html' as html;
 
+// Pour Mobile/Desktop
+import 'package:hive_flutter/hive_flutter.dart';
+
 class DatabaseService {
   static final DatabaseService _instance = DatabaseService._internal();
   factory DatabaseService() => _instance;
   DatabaseService._internal();
 
   static const String _vehiclesKey = 'mecago_vehicles';
+  static const String _hiveBox = 'mecago_box';
+
+  // ============================================
+  // INITIALISATION
+  // ============================================
+
+  /// À appeler au démarrage de l'app (dans main.dart)
+  Future<void> initialize() async {
+    if (!kIsWeb) {
+      try {
+        await Hive.initFlutter();
+        await Hive.openBox(_hiveBox);
+        debugPrint('✅ Hive initialisé');
+      } catch (e) {
+        debugPrint('❌ Erreur Hive : $e');
+      }
+    }
+  }
 
   // ============================================
   // STOCKAGE
@@ -21,13 +42,18 @@ class DatabaseService {
   Future<String?> _getString(String key) async {
     if (kIsWeb) {
       return html.window.localStorage[key];
+    } else {
+      final box = Hive.box(_hiveBox);
+      return box.get(key) as String?;
     }
-    return null;
   }
 
   Future<void> _setString(String key, String value) async {
     if (kIsWeb) {
       html.window.localStorage[key] = value;
+    } else {
+      final box = Hive.box(_hiveBox);
+      await box.put(key, value);
     }
   }
 

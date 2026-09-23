@@ -2,6 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'core/navigation/app_router.dart';
+import 'core/services/database_service.dart';
 import 'core/services/notification_service.dart';
 import 'core/services/sync_manager.dart';
 
@@ -17,7 +18,13 @@ void main() async {
     ),
   );
 
-  // ✅ PLUS DE HIVE - On utilise localStorage
+  // ✅ Initialiser la base de données (Hive sur mobile, localStorage sur Web)
+  try {
+    await DatabaseService().initialize();
+    debugPrint('✅ DatabaseService initialisé');
+  } catch (e) {
+    debugPrint('❌ Erreur DatabaseService : $e');
+  }
 
   try {
     const notificationService = NotificationService();
