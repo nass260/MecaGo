@@ -18,7 +18,7 @@ void main() async {
     ),
   );
 
-  // ✅ Initialiser la base de données (Hive sur mobile, localStorage sur Web)
+  // ✅ 1. Initialiser la base de données
   try {
     await DatabaseService().initialize();
     debugPrint('✅ DatabaseService initialisé');
@@ -26,14 +26,19 @@ void main() async {
     debugPrint('❌ Erreur DatabaseService : $e');
   }
 
+  // ✅ 2. Initialiser les notifications
   try {
     const notificationService = NotificationService();
     await notificationService.initializeNotificationChannels();
     debugPrint('✅ Notifications initialisées');
+
+    // Demander la permission (sur mobile)
+    await notificationService.requestPermission();
   } catch (e) {
     debugPrint('⚠️ Notifications : $e');
   }
 
+  // ✅ 3. Initialiser SyncManager
   try {
     await SyncManager().initialize();
     debugPrint('✅ SyncManager initialisé');

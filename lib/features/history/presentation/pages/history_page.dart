@@ -2,6 +2,8 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/theme/app_theme.dart';
+import '../../../../core/services/pdf_export_service.dart';
+import '../../../../core/services/global_notifier.dart';
 
 class HistoryPage extends StatefulWidget {
   const HistoryPage({super.key});
@@ -11,8 +13,10 @@ class HistoryPage extends StatefulWidget {
 }
 
 class _HistoryPageState extends State<HistoryPage> {
+  final PdfExportService _pdfService = const PdfExportService();
   String _selectedPeriod = 'Tout';
   String? _selectedVehicleId;
+  bool _isExporting = false;
 
   final List<String> _periods = ['Tout', '3 mois', '6 mois', '1 an'];
 
@@ -64,14 +68,29 @@ class _HistoryPageState extends State<HistoryPage> {
     },
   ];
 
-  // Véhicules disponibles
-  final List<Map<String, String>> _vehicles = [
-    {'id': '1', 'name': 'Tesla Model 3'},
-    {'id': '2', 'name': 'Renault Clio 5'},
-  ];
+  @override
+  void initState() {
+    super.initState();
+    GlobalNotifier.instance.addListener(_onNotifierChanged);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      GlobalNotifier.instance.loadDashboardData();
+    });
+  }
+
+  @override
+  void dispose() {
+    GlobalNotifier.instance.removeListener(_onNotifierChanged);
+    super.dispose();
+  }
+
+  void _onNotifierChanged() {
+    if (mounted) setState(() {});
+  }
 
   @override
   Widget build(BuildContext context) {
+    final notifier = GlobalNotifier.instance;
+
     final totalCost =
         _allLogs.fold<double>(0, (sum, log) => sum + (log['cost'] as double));
     final totalSaved =
@@ -114,7 +133,9 @@ class _HistoryPageState extends State<HistoryPage> {
                       ],
                     ),
                     GestureDetector(
-                      onTap: _exportPDF,
+                      onTap: _isExporting
+                          ? null
+                          : () => _exportPDF(notifier.activeVehicle, totalSaved),
                       child: Container(
                         width: 46,
                         height: 46,
@@ -123,11 +144,20 @@ class _HistoryPageState extends State<HistoryPage> {
                           shape: BoxShape.circle,
                           boxShadow: AppShadows.orangeButton,
                         ),
-                        child: const Icon(
-                          Icons.picture_as_pdf_rounded,
-                          color: Colors.white,
-                          size: 22,
-                        ),
+                        child: _isExporting
+                            ? const Padding(
+                                padding: EdgeInsets.all(12),
+                                child: CircularProgressIndicator(
+                                  valueColor: AlwaysStoppedAnimation<Color>(
+                                      Colors.white),
+                                  strokeWidth: 2,
+                                ),
+                              )
+                            : const Icon(
+                                Icons.picture_as_pdf_rounded,
+                                color: Colors.white,
+                                size: 22,
+                              ),
                       ),
                     ),
                   ],
@@ -313,7 +343,6 @@ class _HistoryPageState extends State<HistoryPage> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Filtre véhicule
         SizedBox(
           height: 40,
           child: ListView(
@@ -324,18 +353,10 @@ class _HistoryPageState extends State<HistoryPage> {
                 _selectedVehicleId == null,
                 () => setState(() => _selectedVehicleId = null),
               ),
-              ..._vehicles.map((vehicle) {
-                return _buildFilterChip(
-                  vehicle['name']!,
-                  _selectedVehicleId == vehicle['id'],
-                  () => setState(() => _selectedVehicleId = vehicle['id']),
-                );
-              }).toList(),
             ],
           ),
         ),
         const SizedBox(height: 10),
-        // Filtre période
         SizedBox(
           height: 36,
           child: ListView(
@@ -387,7 +408,8 @@ class _HistoryPageState extends State<HistoryPage> {
         margin: const EdgeInsets.only(right: 8),
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
         decoration: BoxDecoration(
-          color: isSelected ? AppColors.navy : AppColors.border.withOpacity(0.3),
+          color:
+              isSelected ? AppColors.navy : AppColors.border.withOpacity(0.3),
           borderRadius: BorderRadius.circular(16),
         ),
         child: Text(
@@ -500,54 +522,64 @@ class _HistoryPageState extends State<HistoryPage> {
   // EXPORT PDF
   // ============================================
 
-  void _exportPDF() {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: const Row(
-          children: [
-            Icon(Icons.picture_as_pdf_rounded, color: AppColors.orange),
-            SizedBox(width: 10),
-            Text('Export PDF'),
-          ],
+  Future<void> _exportPDF(dynamic vehicle, double totalSaved) async {
+    if (vehicle == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('⚠️ Ajoutez d\'abord un véhicule'),
+          backgroundColor: AppColors.orange,
+          behavior: SnackBarBehavior.floating,
         ),
-        content: const Text(
-          'Votre carnet d\'entretien va être généré et exporté en PDF.\n\n'
-          'Vous pourrez le partager avec un acheteur en cas de revente.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Annuler'),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.pop(context);
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: const Text('✅ PDF généré avec succès !'),
-                  backgroundColor: AppColors.success,
-                  behavior: SnackBarBehavior.floating,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
+      );
+      return;
+    }
+
+    setState(() => _isExporting = true);
+
+    try {
+      await _pdfService.exportMaintenanceBook(
+        vehicle: vehicle,
+        totalSavings: totalSaved,
+      );
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Row(
+              children: [
+                Icon(Icons.check_circle_rounded, color: Colors.white),
+                SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    '✅ PDF généré avec succès !',
+                    style: TextStyle(fontWeight: FontWeight.w600),
                   ),
                 ),
-              );
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.orange,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
+              ],
             ),
-            child: const Text(
-              'Générer',
-              style: TextStyle(color: Colors.white),
+            backgroundColor: AppColors.success,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
             ),
           ),
-        ],
-      ),
-    );
+        );
+      }
+    } catch (e) {
+      debugPrint('❌ Erreur export PDF : $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('❌ Erreur : $e'),
+            backgroundColor: AppColors.danger,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isExporting = false);
+      }
+    }
   }
 }

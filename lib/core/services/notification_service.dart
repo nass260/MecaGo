@@ -8,7 +8,6 @@ class NotificationService {
   static final FlutterLocalNotificationsPlugin _notifications =
       FlutterLocalNotificationsPlugin();
 
-  /// Canal Android pour les rappels d'entretien
   static const AndroidNotificationChannel _maintenanceChannel =
       AndroidNotificationChannel(
     'mecago_maintenance',
@@ -18,7 +17,6 @@ class NotificationService {
     playSound: true,
   );
 
-  /// Canal Android pour les alertes critiques
   static const AndroidNotificationChannel _alertChannel =
       AndroidNotificationChannel(
     'mecago_alerts',
@@ -31,8 +29,8 @@ class NotificationService {
   /// Initialise les canaux de notification
   Future<void> initializeNotificationChannels() async {
     try {
-      // Initialisation des paramètres
-      const androidSettings = AndroidInitializationSettings('@mipmap/ic_launcher');
+      const androidSettings =
+          AndroidInitializationSettings('@mipmap/ic_launcher');
       const iosSettings = DarwinInitializationSettings(
         requestAlertPermission: true,
         requestBadgePermission: true,
@@ -49,7 +47,6 @@ class NotificationService {
         onDidReceiveNotificationResponse: _onNotificationTapped,
       );
 
-      // Création des canaux Android
       final androidPlugin = _notifications
           .resolvePlatformSpecificImplementation<
               AndroidFlutterLocalNotificationsPlugin>();
@@ -61,11 +58,11 @@ class NotificationService {
 
       debugPrint('✅ Canaux de notification créés');
     } catch (e) {
-      debugPrint('⚠️ Erreur initialisation notifications : $e');
+      debugPrint('⚠️ Erreur init notifications : $e');
     }
   }
 
-  /// Demande la permission (iOS + Android 13+)
+  /// Demande la permission
   Future<bool> requestPermission() async {
     try {
       final androidPlugin = _notifications
@@ -132,59 +129,35 @@ class NotificationService {
       );
 
       await _notifications.show(id, title, body, details);
+      debugPrint('✅ Notification affichée : $title');
     } catch (e) {
-      debugPrint('❌ Erreur affichage notification : $e');
+      debugPrint('❌ Erreur affichage : $e');
     }
   }
 
-  /// Programme un rappel d'entretien
-  Future<void> scheduleMaintenanceReminder({
-    required int id,
+  /// 🔔 NOTIFICATION DE BIENVENUE
+  Future<void> showWelcomeNotification(String vehicleName) async {
+    await showNotification(
+      id: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+      title: '🚗 Nouveau véhicule ajouté !',
+      body: '$vehicleName est maintenant dans votre garage MecaGo.',
+    );
+  }
+
+  /// 🔔 NOTIFICATION DE RAPPEL D'ENTRETIEN
+  Future<void> showMaintenanceReminder({
     required String vehicleName,
     required String maintenanceTitle,
-    required DateTime scheduledDate,
-    required int remainingKm,
+    required String remainingKm,
   }) async {
-    try {
-      final androidDetails = AndroidNotificationDetails(
-        _maintenanceChannel.id,
-        _maintenanceChannel.name,
-        channelDescription: _maintenanceChannel.description,
-        importance: Importance.high,
-        priority: Priority.high,
-        icon: '@mipmap/ic_launcher',
-        color: const Color(0xFFFF6A00),
-      );
-
-      const iosDetails = DarwinNotificationDetails(
-        presentAlert: true,
-        presentBadge: true,
-        presentSound: true,
-      );
-
-      final details = NotificationDetails(
-        android: androidDetails,
-        iOS: iosDetails,
-      );
-
-      await _notifications.zonedSchedule(
-        id,
-        '🔧 Entretien à prévoir',
-        '$vehicleName · $maintenanceTitle dans $remainingKm km',
-        _convertToTZDateTime(scheduledDate),
-        details,
-        androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
-        uiLocalNotificationDateInterpretation:
-            UILocalNotificationDateInterpretation.absoluteTime,
-      );
-
-      debugPrint('✅ Rappel programmé pour $scheduledDate');
-    } catch (e) {
-      debugPrint('❌ Erreur programmation rappel : $e');
-    }
+    await showNotification(
+      id: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+      title: '🔧 Entretien à prévoir',
+      body: '$vehicleName · $maintenanceTitle dans $remainingKm',
+    );
   }
 
-  /// Affiche une alerte critique
+  /// 🚨 NOTIFICATION CRITIQUE
   Future<void> showCriticalAlert({
     required String vehicleName,
     required String issue,
@@ -207,15 +180,7 @@ class NotificationService {
     await _notifications.cancelAll();
   }
 
-  /// Callback quand l'utilisateur tape sur une notification
   void _onNotificationTapped(NotificationResponse response) {
     debugPrint('🔔 Notification tapée : ${response.payload}');
-    // TODO: Naviguer vers la page concernée
-  }
-
-  /// Conversion DateTime → TZDateTime (pour zonedSchedule)
-  dynamic _convertToTZDateTime(DateTime dateTime) {
-    // Note: nécessite le package timezone pour une vraie conversion
-    return dateTime;
   }
 }

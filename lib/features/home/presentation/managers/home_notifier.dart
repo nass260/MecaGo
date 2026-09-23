@@ -1,10 +1,12 @@
 // lib/features/home/presentation/managers/home_notifier.dart
 import 'package:flutter/material.dart';
 import '../../../../core/services/database_service.dart';
+import '../../../../core/services/notification_service.dart';
 import '../../data/models/vehicle_model.dart';
 
 class HomeNotifier with ChangeNotifier {
   final DatabaseService _databaseService = DatabaseService();
+  final NotificationService _notificationService = const NotificationService();
 
   bool _isLoading = false;
   int _mecaGoScore = 0;
@@ -74,6 +76,7 @@ class HomeNotifier with ChangeNotifier {
     notifyListeners();
   }
 
+  /// ✅ AJOUTER UN VÉHICULE AVEC NOTIFICATION
   Future<void> addVehicle(Vehicle vehicle) async {
     try {
       await _databaseService.insertVehicle(vehicle);
@@ -83,8 +86,21 @@ class HomeNotifier with ChangeNotifier {
       }
       _calculateMecaGoScore();
       notifyListeners();
-      debugPrint(
-          '✅ Véhicule ajouté : ${vehicle.brand} ${vehicle.model}');
+
+      debugPrint('✅ Véhicule ajouté : ${vehicle.brand} ${vehicle.model}');
+
+      // 🔔 NOTIFICATION DE BIENVENUE
+      await _notificationService.showWelcomeNotification(
+        '${vehicle.brand} ${vehicle.model}',
+      );
+
+      // 🔔 PROGRAMMER UN RAPPEL D'ENTRETIEN (simulation)
+      await Future.delayed(const Duration(seconds: 3));
+      await _notificationService.showMaintenanceReminder(
+        vehicleName: '${vehicle.brand} ${vehicle.model}',
+        maintenanceTitle: 'Vidange moteur',
+        remainingKm: '1 200 km',
+      );
     } catch (e) {
       debugPrint('❌ Erreur ajout : $e');
     }
