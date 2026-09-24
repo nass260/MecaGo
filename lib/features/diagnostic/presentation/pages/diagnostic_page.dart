@@ -3,13 +3,11 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/services/autodoc_service.dart';
-import '../../../home/data/models/vehicle_model.dart';
-import '../../../home/presentation/managers/home_notifier.dart';
 
 /// Niveau de gravité du diagnostic
 enum SeverityLevel {
-  critical('CRITIQUE', Colors.red, Icons.warning_rounded, '🚨'),
-  high('ÉLEVÉ', Color(0xFFFF6A00), Icons.priority_high_rounded, '⚠️'),
+  critical('CRITIQUE', AppColors.danger, Icons.warning_rounded, '🚨'),
+  high('ÉLEVÉ', AppColors.orange, Icons.priority_high_rounded, '⚠️'),
   medium('MOYEN', Colors.blue, Icons.info_rounded, '📌'),
   low('FAIBLE', AppColors.success, Icons.check_circle_rounded, '✅');
 
@@ -49,14 +47,15 @@ class DiagnosticPage extends StatefulWidget {
 }
 
 class _DiagnosticPageState extends State<DiagnosticPage> {
-  final HomeNotifier _notifier = HomeNotifier();
   final AutodocService _autodocService = const AutodocService();
   final TextEditingController _symptomController = TextEditingController();
 
-  Vehicle? _selectedVehicle;
+  String _selectedVehicleBrand = 'Peugeot';
+  String _selectedVehicleModel = '308';
   DiagnosisResult? _result;
   bool _isAnalyzing = false;
   List<Part> _recommendedParts = [];
+  bool _isLoadingParts = false;
 
   final List<String> _quickSymptoms = [
     'Bruit de sifflement quand je freine',
@@ -70,15 +69,8 @@ class _DiagnosticPageState extends State<DiagnosticPage> {
   ];
 
   @override
-  void initState() {
-    super.initState();
-    _notifier.loadDashboardData();
-  }
-
-  @override
   void dispose() {
     _symptomController.dispose();
-    _notifier.dispose();
     super.dispose();
   }
 
@@ -102,24 +94,7 @@ class _DiagnosticPageState extends State<DiagnosticPage> {
           ),
         ),
       ),
-      body: AnimatedBuilder(
-        animation: _notifier,
-        builder: (context, _) {
-          if (_notifier.isLoading) {
-            return const Center(
-              child: CircularProgressIndicator(
-                valueColor: AlwaysStoppedAnimation<Color>(AppColors.orange),
-              ),
-            );
-          }
-
-          if (_result != null) {
-            return _buildResultView();
-          }
-
-          return _buildInputView();
-        },
-      ),
+      body: _result != null ? _buildResultView() : _buildInputView(),
     );
   }
 
@@ -135,12 +110,66 @@ class _DiagnosticPageState extends State<DiagnosticPage> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // Bandeau IA
-          _buildAiBanner(),
+          Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              gradient: AppGradients.navy,
+              borderRadius: BorderRadius.circular(20),
+              boxShadow: AppShadows.hero,
+            ),
+            child: Row(
+              children: [
+                Container(
+                  width: 56,
+                  height: 56,
+                  decoration: BoxDecoration(
+                    gradient: AppGradients.orange,
+                    shape: BoxShape.circle,
+                    boxShadow: [
+                      BoxShadow(
+                        color: AppColors.orange.withOpacity(0.5),
+                        blurRadius: 12,
+                      ),
+                    ],
+                  ),
+                  child: const Icon(
+                    Icons.psychology_rounded,
+                    color: Colors.white,
+                    size: 28,
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: const [
+                      Text(
+                        'Assistant IA MecaGo',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 16,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                      SizedBox(height: 4),
+                      Text(
+                        'Décrivez votre panne, l\'IA identifie la cause',
+                        style: TextStyle(
+                          color: Colors.white70,
+                          fontSize: 12,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
           const SizedBox(height: 24),
 
-          // Sélection véhicule
+          // Véhicule
           const Text(
-            'Sélectionnez votre véhicule',
+            'Véhicule concerné',
             style: TextStyle(
               color: AppColors.navy,
               fontSize: 15,
@@ -148,10 +177,57 @@ class _DiagnosticPageState extends State<DiagnosticPage> {
             ),
           ),
           const SizedBox(height: 12),
-          _buildVehicleSelector(),
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(16),
+              boxShadow: AppShadows.card,
+            ),
+            child: Row(
+              children: [
+                Container(
+                  width: 50,
+                  height: 50,
+                  decoration: BoxDecoration(
+                    color: AppColors.orange.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: const Icon(
+                    Icons.directions_car_rounded,
+                    color: AppColors.orange,
+                    size: 24,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        '$_selectedVehicleBrand $_selectedVehicleModel',
+                        style: const TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.navy,
+                        ),
+                      ),
+                      const Text(
+                        'Essence · Manuelle',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: AppColors.textSecondary,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
           const SizedBox(height: 24),
 
-          // Décrivez le problème
+          // Description
           const Text(
             'Décrivez votre problème',
             style: TextStyle(
@@ -169,7 +245,31 @@ class _DiagnosticPageState extends State<DiagnosticPage> {
             ),
           ),
           const SizedBox(height: 12),
-          _buildSymptomInput(),
+          Container(
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(16),
+              boxShadow: AppShadows.card,
+            ),
+            child: TextField(
+              controller: _symptomController,
+              maxLines: 4,
+              decoration: const InputDecoration(
+                hintText:
+                    'Ex: J\'entends un bruit de sifflement quand je freine...',
+                hintStyle: TextStyle(
+                  color: AppColors.textSecondary,
+                  fontSize: 13,
+                ),
+                border: InputBorder.none,
+                contentPadding: EdgeInsets.all(16),
+              ),
+              style: const TextStyle(
+                fontSize: 14,
+                color: AppColors.navy,
+              ),
+            ),
+          ),
           const SizedBox(height: 16),
 
           // Symptômes rapides
@@ -182,7 +282,36 @@ class _DiagnosticPageState extends State<DiagnosticPage> {
             ),
           ),
           const SizedBox(height: 10),
-          _buildQuickSymptoms(),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: _quickSymptoms.map((symptom) {
+              return GestureDetector(
+                onTap: () {
+                  _symptomController.text = symptom;
+                  setState(() {});
+                },
+                child: Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(20),
+                    border:
+                        Border.all(color: AppColors.border.withOpacity(0.6)),
+                  ),
+                  child: Text(
+                    symptom,
+                    style: const TextStyle(
+                      fontSize: 11,
+                      color: AppColors.navy,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              );
+            }).toList(),
+          ),
           const SizedBox(height: 24),
 
           // Bouton analyse
@@ -192,236 +321,9 @@ class _DiagnosticPageState extends State<DiagnosticPage> {
     );
   }
 
-  Widget _buildAiBanner() {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [AppColors.navy, Color(0xFF1E293B)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.navy.withOpacity(0.3),
-            blurRadius: 16,
-            offset: const Offset(0, 6),
-          ),
-        ],
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 56,
-            height: 56,
-            decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                colors: [AppColors.orange, Color(0xFFFF8C00)],
-              ),
-              shape: BoxShape.circle,
-              boxShadow: [
-                BoxShadow(
-                  color: AppColors.orange.withOpacity(0.5),
-                  blurRadius: 12,
-                ),
-              ],
-            ),
-            child: const Icon(
-              Icons.psychology_rounded,
-              color: Colors.white,
-              size: 28,
-            ),
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: const [
-                Text(
-                  'Assistant IA MecaGo',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 16,
-                    fontWeight: FontWeight.w800,
-                  ),
-                ),
-                SizedBox(height: 4),
-                Text(
-                  'Décrivez votre panne, l\'IA identifie la cause',
-                  style: TextStyle(
-                    color: Colors.white70,
-                    fontSize: 12,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildVehicleSelector() {
-    if (_notifier.vehicles.isEmpty) {
-      return Container(
-        padding: const EdgeInsets.all(20),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: AppColors.border.withOpacity(0.4)),
-        ),
-        child: const Text(
-          'Aucun véhicule dans le garage',
-          style: TextStyle(
-            color: AppColors.textSecondary,
-            fontSize: 14,
-          ),
-        ),
-      );
-    }
-
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.border.withOpacity(0.4)),
-      ),
-      child: Column(
-        children: _notifier.vehicles.map((vehicle) {
-          final isSelected = _selectedVehicle?.id == vehicle.id;
-          return InkWell(
-            onTap: () => setState(() => _selectedVehicle = vehicle),
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-              decoration: BoxDecoration(
-                color: isSelected
-                    ? AppColors.orange.withOpacity(0.08)
-                    : Colors.transparent,
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(
-                  color: isSelected ? AppColors.orange : Colors.transparent,
-                  width: 2,
-                ),
-              ),
-              child: Row(
-                children: [
-                  Icon(
-                    Icons.directions_car_rounded,
-                    color: isSelected
-                        ? AppColors.orange
-                        : AppColors.textSecondary,
-                    size: 22,
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          '${vehicle.brand} ${vehicle.model}',
-                          style: TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w700,
-                            color: isSelected
-                                ? AppColors.orange
-                                : AppColors.navy,
-                          ),
-                        ),
-                        Text(
-                          '${vehicle.plate} · ${vehicle.fuelType.icon} ${vehicle.fuelType.label}',
-                          style: const TextStyle(
-                            fontSize: 11,
-                            color: AppColors.textSecondary,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  if (isSelected)
-                    const Icon(
-                      Icons.check_circle_rounded,
-                      color: AppColors.orange,
-                      size: 22,
-                    ),
-                ],
-              ),
-            ),
-          );
-        }).toList(),
-      ),
-    );
-  }
-
-  Widget _buildSymptomInput() {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.border.withOpacity(0.4)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.02),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: TextField(
-        controller: _symptomController,
-        maxLines: 4,
-        decoration: const InputDecoration(
-          hintText: 'Ex: J\'entends un bruit de sifflement quand je freine...',
-          hintStyle: TextStyle(
-            color: AppColors.textSecondary,
-            fontSize: 13,
-          ),
-          border: InputBorder.none,
-          contentPadding: EdgeInsets.all(16),
-        ),
-        style: const TextStyle(
-          fontSize: 14,
-          color: AppColors.navy,
-        ),
-      ),
-    );
-  }
-
-  Widget _buildQuickSymptoms() {
-    return Wrap(
-      spacing: 8,
-      runSpacing: 8,
-      children: _quickSymptoms.map((symptom) {
-        return GestureDetector(
-          onTap: () {
-            _symptomController.text = symptom;
-            setState(() {});
-          },
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: AppColors.border.withOpacity(0.6)),
-            ),
-            child: Text(
-              symptom,
-              style: const TextStyle(
-                fontSize: 11,
-                color: AppColors.navy,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ),
-        );
-      }).toList(),
-    );
-  }
-
   Widget _buildAnalyzeButton() {
-    final canAnalyze = _selectedVehicle != null &&
-        _symptomController.text.trim().isNotEmpty &&
-        !_isAnalyzing;
+    final canAnalyze =
+        _symptomController.text.trim().isNotEmpty && !_isAnalyzing;
 
     return GestureDetector(
       onTap: canAnalyze ? _analyze : null,
@@ -430,22 +332,10 @@ class _DiagnosticPageState extends State<DiagnosticPage> {
         width: double.infinity,
         padding: const EdgeInsets.symmetric(vertical: 18),
         decoration: BoxDecoration(
-          gradient: canAnalyze
-              ? const LinearGradient(
-                  colors: [AppColors.orange, Color(0xFFFF8C00)],
-                )
-              : null,
+          gradient: canAnalyze ? AppGradients.orange : null,
           color: canAnalyze ? null : AppColors.border,
           borderRadius: BorderRadius.circular(18),
-          boxShadow: canAnalyze
-              ? [
-                  BoxShadow(
-                    color: AppColors.orange.withOpacity(0.4),
-                    blurRadius: 16,
-                    offset: const Offset(0, 6),
-                  ),
-                ]
-              : null,
+          boxShadow: canAnalyze ? AppShadows.orangeButton : null,
         ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -467,9 +357,7 @@ class _DiagnosticPageState extends State<DiagnosticPage> {
               ),
             const SizedBox(width: 10),
             Text(
-              _isAnalyzing
-                  ? 'Analyse en cours...'
-                  : 'Lancer le diagnostic',
+              _isAnalyzing ? 'Analyse en cours...' : 'Lancer le diagnostic',
               style: TextStyle(
                 color: canAnalyze ? Colors.white : AppColors.textSecondary,
                 fontSize: 16,
@@ -496,7 +384,7 @@ class _DiagnosticPageState extends State<DiagnosticPage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Carte de gravité
+          // Carte gravité
           Container(
             width: double.infinity,
             padding: const EdgeInsets.all(20),
@@ -573,10 +461,8 @@ class _DiagnosticPageState extends State<DiagnosticPage> {
                 ),
                 const SizedBox(height: 16),
                 Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 14,
-                    vertical: 8,
-                  ),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                   decoration: BoxDecoration(
                     color: Colors.white.withOpacity(0.2),
                     borderRadius: BorderRadius.circular(12),
@@ -621,7 +507,7 @@ class _DiagnosticPageState extends State<DiagnosticPage> {
             decoration: BoxDecoration(
               color: Colors.white,
               borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: AppColors.border.withOpacity(0.4)),
+              boxShadow: AppShadows.card,
             ),
             child: Column(
               children: result.symptoms.map((s) {
@@ -656,7 +542,16 @@ class _DiagnosticPageState extends State<DiagnosticPage> {
           const SizedBox(height: 24),
 
           // Pièces recommandées
-          if (_recommendedParts.isNotEmpty) ...[
+          if (_isLoadingParts)
+            const Center(
+              child: Padding(
+                padding: EdgeInsets.all(20),
+                child: CircularProgressIndicator(
+                  valueColor: AlwaysStoppedAnimation<Color>(AppColors.orange),
+                ),
+              ),
+            )
+          else if (_recommendedParts.isNotEmpty) ...[
             const Text(
               '🛒 Pièces recommandées',
               style: TextStyle(
@@ -678,8 +573,34 @@ class _DiagnosticPageState extends State<DiagnosticPage> {
             const SizedBox(height: 24),
           ],
 
-          // Boutons d'action
-          _buildResultActions(),
+          // Bouton nouveau diagnostic
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton(
+              onPressed: () {
+                setState(() {
+                  _result = null;
+                  _recommendedParts = [];
+                  _symptomController.clear();
+                });
+              },
+              style: OutlinedButton.styleFrom(
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                side: const BorderSide(color: AppColors.border),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                ),
+              ),
+              child: const Text(
+                'Nouveau diagnostic',
+                style: TextStyle(
+                  color: AppColors.navy,
+                  fontSize: 15,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+          ),
         ],
       ),
     );
@@ -692,14 +613,7 @@ class _DiagnosticPageState extends State<DiagnosticPage> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.border.withOpacity(0.4)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.02),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
+        boxShadow: AppShadows.card,
       ),
       child: Row(
         children: [
@@ -762,87 +676,30 @@ class _DiagnosticPageState extends State<DiagnosticPage> {
                   color: AppColors.orange,
                 ),
               ),
+              const SizedBox(height: 4),
+              GestureDetector(
+                onTap: () => _orderPart(part),
+                child: Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: AppColors.orange,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const Text(
+                    'Commander',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 10,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                ),
+              ),
             ],
           ),
         ],
       ),
-    );
-  }
-
-  Widget _buildResultActions() {
-    return Column(
-      children: [
-        // Bouton commander
-        if (_recommendedParts.isNotEmpty)
-          GestureDetector(
-            onTap: () => _orderPart(_recommendedParts.first),
-            child: Container(
-              width: double.infinity,
-              padding: const EdgeInsets.symmetric(vertical: 18),
-              decoration: BoxDecoration(
-                gradient: const LinearGradient(
-                  colors: [AppColors.orange, Color(0xFFFF8C00)],
-                ),
-                borderRadius: BorderRadius.circular(18),
-                boxShadow: [
-                  BoxShadow(
-                    color: AppColors.orange.withOpacity(0.4),
-                    blurRadius: 16,
-                    offset: const Offset(0, 6),
-                  ),
-                ],
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: const [
-                  Icon(
-                    Icons.shopping_cart_rounded,
-                    color: Colors.white,
-                    size: 20,
-                  ),
-                  SizedBox(width: 10),
-                  Text(
-                    'Commander sur AUTODOC',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 16,
-                      fontWeight: FontWeight.w800,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        const SizedBox(height: 12),
-        // Bouton nouveau diagnostic
-        SizedBox(
-          width: double.infinity,
-          child: OutlinedButton(
-            onPressed: () {
-              setState(() {
-                _result = null;
-                _recommendedParts = [];
-                _symptomController.clear();
-              });
-            },
-            style: OutlinedButton.styleFrom(
-              padding: const EdgeInsets.symmetric(vertical: 16),
-              side: BorderSide(color: AppColors.border),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
-              ),
-            ),
-            child: const Text(
-              'Nouveau diagnostic',
-              style: TextStyle(
-                color: AppColors.navy,
-                fontSize: 15,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-          ),
-        ),
-      ],
     );
   }
 
@@ -851,17 +708,19 @@ class _DiagnosticPageState extends State<DiagnosticPage> {
   // ============================================
 
   void _analyze() async {
-    setState(() => _isAnalyzing = true);
+    setState(() {
+      _isAnalyzing = true;
+      _isLoadingParts = true;
+    });
 
-    // Simulation d'analyse IA
     await Future.delayed(const Duration(seconds: 2));
 
     final symptom = _symptomController.text.toLowerCase();
     final result = _analyzeSymptom(symptom);
 
-    // Récupérer les pièces recommandées
     final parts = await _autodocService.getRecommendedParts(
-      vehicle: _selectedVehicle!,
+      brand: _selectedVehicleBrand,
+      model: _selectedVehicleModel,
       diagnosis: symptom,
     );
 
@@ -871,11 +730,11 @@ class _DiagnosticPageState extends State<DiagnosticPage> {
       _result = result;
       _recommendedParts = parts;
       _isAnalyzing = false;
+      _isLoadingParts = false;
     });
   }
 
   DiagnosisResult _analyzeSymptom(String symptom) {
-    // Bruit de frein
     if (symptom.contains('frein') || symptom.contains('sifflement')) {
       return const DiagnosisResult(
         title: 'Usure des plaquettes de frein',
@@ -890,12 +749,11 @@ class _DiagnosticPageState extends State<DiagnosticPage> {
           'Témoin d\'usure atteint',
         ],
         recommendedParts: [PartCategory.plaquettesFrein],
-        estimatedCost: '35 € - 45 €',
+        estimatedCost: '35 - 45 EUR',
         urgent: true,
       );
     }
 
-    // Voyant moteur
     if (symptom.contains('voyant') || symptom.contains('moteur')) {
       return const DiagnosisResult(
         title: 'Anomalie moteur détectée',
@@ -910,12 +768,11 @@ class _DiagnosticPageState extends State<DiagnosticPage> {
           'Consommation potentiellement augmentée',
         ],
         recommendedParts: [PartCategory.bougies],
-        estimatedCost: '30 € - 100 €',
+        estimatedCost: '30 - 100 EUR',
         urgent: true,
       );
     }
 
-    // Vibrations
     if (symptom.contains('vibration') || symptom.contains('volant')) {
       return const DiagnosisResult(
         title: 'Déséquilibre des roues',
@@ -930,12 +787,11 @@ class _DiagnosticPageState extends State<DiagnosticPage> {
           'Usure irrégulière des pneus',
         ],
         recommendedParts: [PartCategory.pneus, PartCategory.amortisseurs],
-        estimatedCost: '80 € - 160 €',
+        estimatedCost: '80 - 160 EUR',
         urgent: false,
       );
     }
 
-    // Démarrage
     if (symptom.contains('démarr') || symptom.contains('démarre')) {
       return const DiagnosisResult(
         title: 'Batterie faible',
@@ -946,16 +802,15 @@ class _DiagnosticPageState extends State<DiagnosticPage> {
         severity: SeverityLevel.high,
         symptoms: [
           'Démarrage difficile',
-          'Phare faibles',
+          'Phares faibles',
           'Bruit de clic au démarrage',
         ],
         recommendedParts: [PartCategory.batterie],
-        estimatedCost: '90 € - 130 €',
+        estimatedCost: '90 - 130 EUR',
         urgent: true,
       );
     }
 
-    // Fumée blanche
     if (symptom.contains('fumée') || symptom.contains('blanche')) {
       return const DiagnosisResult(
         title: 'Joint de culasse possible',
@@ -970,12 +825,11 @@ class _DiagnosticPageState extends State<DiagnosticPage> {
           'Surchauffe moteur',
         ],
         recommendedParts: [PartCategory.courroie],
-        estimatedCost: '500 € - 1500 €',
+        estimatedCost: '500 - 1500 EUR',
         urgent: true,
       );
     }
 
-    // Consommation
     if (symptom.contains('consommation') || symptom.contains('carburant')) {
       return const DiagnosisResult(
         title: 'Filtre à air encrassé',
@@ -990,12 +844,11 @@ class _DiagnosticPageState extends State<DiagnosticPage> {
           'Fumée noire possible',
         ],
         recommendedParts: [PartCategory.filtreAir, PartCategory.bougies],
-        estimatedCost: '15 € - 50 €',
+        estimatedCost: '15 - 50 EUR',
         urgent: false,
       );
     }
 
-    // Pédale molle
     if (symptom.contains('pédale') || symptom.contains('molle')) {
       return const DiagnosisResult(
         title: 'Niveau de liquide de frein bas',
@@ -1010,12 +863,11 @@ class _DiagnosticPageState extends State<DiagnosticPage> {
           'Possible fuite',
         ],
         recommendedParts: [PartCategory.plaquettesFrein],
-        estimatedCost: '50 € - 200 €',
+        estimatedCost: '50 - 200 EUR',
         urgent: true,
       );
     }
 
-    // Climatisation
     if (symptom.contains('clim') || symptom.contains('froid')) {
       return const DiagnosisResult(
         title: 'Recharge de climatisation nécessaire',
@@ -1030,12 +882,11 @@ class _DiagnosticPageState extends State<DiagnosticPage> {
           'Compresseur bruyant',
         ],
         recommendedParts: [PartCategory.filtreHabitable],
-        estimatedCost: '30 € - 80 €',
+        estimatedCost: '30 - 80 EUR',
         urgent: false,
       );
     }
 
-    // Par défaut
     return const DiagnosisResult(
       title: 'Diagnostic général',
       description:
@@ -1056,7 +907,8 @@ class _DiagnosticPageState extends State<DiagnosticPage> {
   void _orderPart(Part part) async {
     final success = await _autodocService.openPartLink(
       part: part,
-      vehicle: _selectedVehicle!,
+      brand: _selectedVehicleBrand,
+      model: _selectedVehicleModel,
     );
 
     if (!mounted) return;
@@ -1065,7 +917,7 @@ class _DiagnosticPageState extends State<DiagnosticPage> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: const Text('Impossible d\'ouvrir AUTODOC'),
-          backgroundColor: Colors.red,
+          backgroundColor: AppColors.danger,
           behavior: SnackBarBehavior.floating,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),

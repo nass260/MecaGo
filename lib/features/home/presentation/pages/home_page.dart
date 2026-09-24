@@ -20,7 +20,6 @@ class _HomePageState extends State<HomePage> {
     super.initState();
     GlobalNotifier.instance.addListener(_onNotifierChanged);
 
-    // ✅ Charger APRÈS le build
     WidgetsBinding.instance.addPostFrameCallback((_) {
       GlobalNotifier.instance.loadDashboardData();
     });
@@ -100,18 +99,28 @@ class _HomePageState extends State<HomePage> {
       children: [
         Row(
           children: [
-            Container(
-              width: 38,
-              height: 38,
-              decoration: BoxDecoration(
-                gradient: AppGradients.orange,
-                borderRadius: BorderRadius.circular(11),
-                boxShadow: AppShadows.orangeButton,
-              ),
-              child: const Icon(
-                Icons.directions_car_filled_rounded,
-                color: Colors.white,
-                size: 20,
+            // ✅ LOGO MECAGO — chemin corrigé
+            ClipRRect(
+              borderRadius: BorderRadius.circular(11),
+              child: Image.asset(
+                'ressources/images/mecago_logo.png',
+                width: 38,
+                height: 38,
+                fit: BoxFit.cover,
+                errorBuilder: (_, __, ___) => Container(
+                  width: 38,
+                  height: 38,
+                  decoration: BoxDecoration(
+                    gradient: AppGradients.orange,
+                    borderRadius: BorderRadius.circular(11),
+                    boxShadow: AppShadows.orangeButton,
+                  ),
+                  child: const Icon(
+                    Icons.directions_car_filled_rounded,
+                    color: Colors.white,
+                    size: 20,
+                  ),
+                ),
               ),
             ),
             const SizedBox(width: 10),
@@ -270,8 +279,9 @@ class _HomePageState extends State<HomePage> {
                 decoration: const BoxDecoration(
                   gradient: AppGradients.navy,
                 ),
+                // ✅ Chemin corrigé : ressources/ au lieu de assets/
                 child: Image.asset(
-                  'assets/images/tesla_model_3.jpg',
+                  'ressources/images/tesla_model_3.jpg',
                   fit: BoxFit.cover,
                   alignment: Alignment.center,
                   errorBuilder: (_, __, ___) => const Center(
@@ -680,7 +690,7 @@ class _HomePageState extends State<HomePage> {
   }
 
   // ============================================
-  // QUICK ACTIONS
+  // QUICK ACTIONS (6 boutons avec Diagnostic)
   // ============================================
 
   Widget _buildQuickActions(BuildContext context) {
@@ -697,7 +707,7 @@ class _HomePageState extends State<HomePage> {
               onTap: () => context.push('/tutorials'),
             ),
           ),
-          const SizedBox(width: 6),
+          const SizedBox(width: 4),
           Expanded(
             child: _buildQuickAction(
               icon: Icons.notifications_active_rounded,
@@ -707,17 +717,27 @@ class _HomePageState extends State<HomePage> {
               onTap: () => context.push('/reminders'),
             ),
           ),
-          const SizedBox(width: 6),
+          const SizedBox(width: 4),
+          Expanded(
+            child: _buildQuickAction(
+              icon: Icons.psychology_rounded,
+              label: 'Diagnostic',
+              subtitle: 'IA',
+              badge: null,
+              onTap: () => context.push('/diagnostic'),
+            ),
+          ),
+          const SizedBox(width: 4),
           Expanded(
             child: _buildQuickAction(
               icon: Icons.qr_code_scanner_rounded,
               label: 'Scanner',
-              subtitle: 'Plaque / VIN',
+              subtitle: 'Plaque',
               badge: null,
               onTap: () => context.push('/scanner'),
             ),
           ),
-          const SizedBox(width: 6),
+          const SizedBox(width: 4),
           Expanded(
             child: _buildQuickAction(
               icon: Icons.access_time_rounded,
@@ -727,11 +747,11 @@ class _HomePageState extends State<HomePage> {
               onTap: () => context.go('/history'),
             ),
           ),
-          const SizedBox(width: 6),
+          const SizedBox(width: 4),
           Expanded(
             child: _buildQuickAction(
               icon: Icons.directions_car_rounded,
-              label: 'Mon Garage',
+              label: 'Garage',
               subtitle: 'Mes véhicules',
               badge: null,
               onTap: () => context.go('/garage'),
@@ -765,13 +785,13 @@ class _HomePageState extends State<HomePage> {
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 Container(
-                  width: 36,
-                  height: 36,
+                  width: 34,
+                  height: 34,
                   decoration: BoxDecoration(
                     color: AppColors.orange.withOpacity(0.1),
                     borderRadius: BorderRadius.circular(10),
                   ),
-                  child: Icon(icon, color: AppColors.orange, size: 18),
+                  child: Icon(icon, color: AppColors.orange, size: 17),
                 ),
                 const SizedBox(height: 6),
                 SizedBox(
@@ -779,7 +799,7 @@ class _HomePageState extends State<HomePage> {
                   child: Text(
                     label,
                     style: const TextStyle(
-                      fontSize: 9,
+                      fontSize: 8,
                       fontWeight: FontWeight.w800,
                       color: AppColors.navy,
                     ),
@@ -793,7 +813,7 @@ class _HomePageState extends State<HomePage> {
                   child: Text(
                     subtitle,
                     style: const TextStyle(
-                      fontSize: 7,
+                      fontSize: 6,
                       fontWeight: FontWeight.w500,
                       color: AppColors.textSecondary,
                     ),

@@ -22,7 +22,6 @@ class _GaragePageState extends State<GaragePage> {
     super.initState();
     _notifier.addListener(_onNotifierChanged);
 
-    // ✅ Charger APRÈS le build
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _notifier.loadDashboardData();
     });
@@ -64,28 +63,30 @@ class _GaragePageState extends State<GaragePage> {
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Text(
-                              'Mon Garage',
-                              style: TextStyle(
-                                color: AppColors.navy,
-                                fontSize: 26,
-                                fontWeight: FontWeight.w900,
-                                letterSpacing: -0.6,
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text(
+                                'Mon Garage',
+                                style: TextStyle(
+                                  color: AppColors.navy,
+                                  fontSize: 26,
+                                  fontWeight: FontWeight.w900,
+                                  letterSpacing: -0.6,
+                                ),
                               ),
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              '${_notifier.vehicles.length} véhicule${_notifier.vehicles.length > 1 ? 's' : ''} enregistré${_notifier.vehicles.length > 1 ? 's' : ''}',
-                              style: const TextStyle(
-                                color: AppColors.textSecondary,
-                                fontSize: 14,
-                                fontWeight: FontWeight.w500,
+                              const SizedBox(height: 4),
+                              Text(
+                                '${_notifier.vehicles.length} véhicule${_notifier.vehicles.length > 1 ? 's' : ''} enregistré${_notifier.vehicles.length > 1 ? 's' : ''}',
+                                style: const TextStyle(
+                                  color: AppColors.textSecondary,
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w500,
+                                ),
                               ),
-                            ),
-                          ],
+                            ],
+                          ),
                         ),
                         GestureDetector(
                           onTap: () async {
@@ -263,9 +264,11 @@ class _GaragePageState extends State<GaragePage> {
                     decoration: const BoxDecoration(
                       gradient: AppGradients.navy,
                     ),
+                    // ✅ Chemin corrigé : ressources/ au lieu de assets/
                     child: vehicle.imageUrl.isNotEmpty
                         ? Image.asset(
-                            vehicle.imageUrl,
+                            vehicle.imageUrl.replaceAll(
+                                'assets/', 'ressources/'),
                             fit: BoxFit.cover,
                             alignment: Alignment.center,
                             errorBuilder: (_, __, ___) => const Center(
@@ -356,6 +359,8 @@ class _GaragePageState extends State<GaragePage> {
                                   color: Colors.white,
                                   letterSpacing: -0.5,
                                 ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
                               ),
                               const SizedBox(height: 2),
                               Text(
@@ -365,10 +370,13 @@ class _GaragePageState extends State<GaragePage> {
                                   fontSize: 11,
                                   fontWeight: FontWeight.w500,
                                 ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
                               ),
                             ],
                           ),
                         ),
+                        const SizedBox(width: 8),
                         Container(
                           padding: const EdgeInsets.all(6),
                           decoration: BoxDecoration(

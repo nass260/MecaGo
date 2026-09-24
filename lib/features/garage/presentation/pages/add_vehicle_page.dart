@@ -100,7 +100,9 @@ class AddVehiclePage extends StatelessWidget {
                       decoration: BoxDecoration(
                         borderRadius: BorderRadius.circular(20),
                         image: const DecorationImage(
-                          image: AssetImage('assets/images/tesla_model_3.jpg'),
+                          // ✅ Chemin corrigé : ressources/ au lieu de assets/
+                          image: AssetImage(
+                              'ressources/images/tesla_model_3.jpg'),
                           fit: BoxFit.cover,
                         ),
                         boxShadow: [

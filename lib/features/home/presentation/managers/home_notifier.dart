@@ -173,7 +173,8 @@ class HomeNotifier with ChangeNotifier {
   String _getVehicleImage(String brand, String model) {
     final key = '${brand.toLowerCase()}_${model.toLowerCase()}';
     final images = <String, String>{
-      'tesla_model 3': 'assets/images/tesla_model_3.jpg',
+      // ✅ Chemin corrigé : ressources/ au lieu de assets/
+      'tesla_model 3': 'ressources/images/tesla_model_3.jpg',
     };
     return images[key] ?? '';
   }

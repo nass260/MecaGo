@@ -13,6 +13,7 @@ import '../../../features/garage/presentation/pages/plate_scanner_page.dart';
 import '../../../features/garage/presentation/pages/vin_input_page.dart';
 import '../../../features/garage/presentation/pages/vehicle_result_page.dart';
 import '../../../features/scanner/presentation/pages/scanner_page.dart';
+import '../../../features/diagnostic/presentation/pages/diagnostic_page.dart';
 import '../../../features/history/presentation/pages/history_page.dart';
 import '../../../features/profile/presentation/pages/profile_page.dart';
 import '../../../features/authentication/presentation/pages/paywall_page.dart';
@@ -77,6 +78,10 @@ class AppRouter {
         path: '/tutorials',
         builder: (context, state) => const TutorialsPage(),
       ),
+      GoRoute(
+        path: '/diagnostic',
+        builder: (context, state) => const DiagnosticPage(),
+      ),
       StatefulShellRoute.indexedStack(
         builder: (context, state, navigationShell) {
           return Scaffold(
@@ -122,8 +127,8 @@ class AppRouter {
                             shape: BoxShape.circle,
                             boxShadow: [
                               BoxShadow(
-                                color: const Color(0xFFFF6A00)
-                                    .withOpacity(0.35),
+                                color:
+                                    const Color(0xFFFF6A00).withOpacity(0.35),
                                 blurRadius: 12,
                                 offset: const Offset(0, 6),
                               )

@@ -1,7 +1,6 @@
 // lib/core/services/autodoc_service.dart
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
-import '../../features/home/data/models/vehicle_model.dart';
 
 /// Catégories de pièces détachées
 enum PartCategory {
@@ -48,14 +47,11 @@ class Part {
     this.discountPercent,
   });
 
-  /// Prix formaté
-  String get formattedPrice => '${price.toStringAsFixed(2)} €';
+  String get formattedPrice => '${price.toStringAsFixed(2)} EUR';
 
-  /// Prix barré formaté
   String? get formattedOriginalPrice =>
-      originalPrice != null ? '${originalPrice!.toStringAsFixed(2)} €' : null;
+      originalPrice != null ? '${originalPrice!.toStringAsFixed(2)} EUR' : null;
 
-  /// Réduction en euros
   double get savings => (originalPrice ?? price) - price;
 }
 
@@ -68,21 +64,15 @@ class AutodocService {
 
   /// Recherche les pièces compatibles avec un véhicule
   Future<List<Part>> searchParts({
-    required Vehicle vehicle,
+    required String brand,
+    required String model,
     required PartCategory category,
     int limit = 10,
   }) async {
     try {
-      debugPrint(
-        '🔍 Recherche ${category.label} pour ${vehicle.brand} ${vehicle.model}',
-      );
-
-      // Simulation d'appel API (à remplacer par le vrai appel)
+      debugPrint('🔍 Recherche ${category.label} pour $brand $model');
       await Future.delayed(const Duration(milliseconds: 800));
-
-      // Données simulées par catégorie
-      final parts = _getMockParts(category, vehicle);
-
+      final parts = _getMockParts(category, brand, model);
       return parts.take(limit).toList();
     } catch (e) {
       debugPrint('❌ Erreur recherche pièces : $e');
@@ -90,32 +80,29 @@ class AutodocService {
     }
   }
 
-  /// Recherche multi-catégories (pour un diagnostic complet)
-  Future<Map<PartCategory, List<Part>>> searchMultipleCategories({
-    required Vehicle vehicle,
-    required List<PartCategory> categories,
+  /// Récupère les pièces recommandées selon le diagnostic
+  Future<List<Part>> getRecommendedParts({
+    required String brand,
+    required String model,
+    required String diagnosis,
   }) async {
-    final results = <PartCategory, List<Part>>{};
-
-    for (final category in categories) {
-      results[category] = await searchParts(
-        vehicle: vehicle,
-        category: category,
-        limit: 5,
-      );
-    }
-
-    return results;
+    final category = _detectCategoryFromDiagnosis(diagnosis);
+    if (category == null) return [];
+    return searchParts(
+      brand: brand,
+      model: model,
+      category: category,
+    );
   }
 
   /// Ouvre le lien d'achat avec tracking affilié
   Future<bool> openPartLink({
     required Part part,
-    required Vehicle vehicle,
+    required String brand,
+    required String model,
   }) async {
     try {
-      final url = _buildAffiliateUrl(part: part, vehicle: vehicle);
-
+      final url = _buildAffiliateUrl(part: part, brand: brand, model: model);
       debugPrint('🛒 Ouverture lien : $url');
 
       final uri = Uri.parse(url);
@@ -123,7 +110,6 @@ class AutodocService {
         await launchUrl(uri, mode: LaunchMode.externalApplication);
         return true;
       }
-
       return false;
     } catch (e) {
       debugPrint('❌ Erreur ouverture lien : $e');
@@ -134,13 +120,14 @@ class AutodocService {
   /// Construit l'URL d'affiliation avec tracking UTM
   String _buildAffiliateUrl({
     required Part part,
-    required Vehicle vehicle,
+    required String brand,
+    required String model,
   }) {
     final params = {
       'utm_source': 'mecago',
       'utm_medium': 'app',
       'utm_campaign': 'affiliation',
-      'utm_content': '${vehicle.brand}_${vehicle.model}',
+      'utm_content': '${brand}_$model',
       'affiliate_id': _affiliateId,
       'ref': 'mecago_premium',
     };
@@ -154,25 +141,11 @@ class AutodocService {
 
   /// Calcule la commission MecaGo sur une pièce
   double calculateCommission(Part part) {
-    // 5% de commission sur le prix
     return part.price * 0.05;
   }
 
-  /// Récupère les pièces recommandées selon le diagnostic
-  Future<List<Part>> getRecommendedParts({
-    required Vehicle vehicle,
-    required String diagnosis,
-  }) async {
-    // Détecte la catégorie depuis le diagnostic
-    final category = _detectCategoryFromDiagnosis(diagnosis);
-
-    if (category == null) return [];
-
-    return searchParts(vehicle: vehicle, category: category);
-  }
-
   // ============================================
-  // HELPERS PRIVÉS
+  // HELPERS
   // ============================================
 
   PartCategory? _detectCategoryFromDiagnosis(String diagnosis) {
@@ -211,12 +184,14 @@ class AutodocService {
     if (lower.contains('bougie')) {
       return PartCategory.bougies;
     }
-
     return null;
   }
 
-  /// Données simulées (à remplacer par la vraie API)
-  List<Part> _getMockParts(PartCategory category, Vehicle vehicle) {
+  List<Part> _getMockParts(
+    PartCategory category,
+    String brand,
+    String model,
+  ) {
     switch (category) {
       case PartCategory.plaquettesFrein:
         return [
@@ -227,7 +202,7 @@ class AutodocService {
             price: 34.99,
             originalPrice: 49.99,
             discountPercent: 30,
-            reference: 'BP-${vehicle.brand}-${vehicle.model}-AV',
+            reference: 'BP-$brand-$model-AV',
             category: category,
           ),
           Part(
@@ -235,7 +210,7 @@ class AutodocService {
             name: 'Plaquettes de frein avant',
             brand: 'VALEO',
             price: 42.50,
-            reference: 'BP-${vehicle.brand}-${vehicle.model}-AV-V',
+            reference: 'BP-$brand-$model-AV-V',
             category: category,
           ),
           Part(
@@ -243,7 +218,7 @@ class AutodocService {
             name: 'Plaquettes de frein arrière',
             brand: 'TRW',
             price: 28.90,
-            reference: 'BP-${vehicle.brand}-${vehicle.model}-AR',
+            reference: 'BP-$brand-$model-AR',
             category: category,
           ),
           Part(
@@ -253,7 +228,7 @@ class AutodocService {
             price: 124.99,
             originalPrice: 159.99,
             discountPercent: 22,
-            reference: 'KIT-${vehicle.brand}-${vehicle.model}',
+            reference: 'KIT-$brand-$model',
             category: category,
           ),
         ];
@@ -265,7 +240,7 @@ class AutodocService {
             name: 'Disque de frein ventilé avant',
             brand: 'BOSCH',
             price: 52.99,
-            reference: 'DF-${vehicle.brand}-${vehicle.model}-AV',
+            reference: 'DF-$brand-$model-AV',
             category: category,
           ),
           Part(
@@ -273,7 +248,7 @@ class AutodocService {
             name: 'Disque de frein arrière',
             brand: 'VALEO',
             price: 38.50,
-            reference: 'DF-${vehicle.brand}-${vehicle.model}-AR',
+            reference: 'DF-$brand-$model-AR',
             category: category,
           ),
         ];
@@ -287,7 +262,7 @@ class AutodocService {
             price: 8.99,
             originalPrice: 12.99,
             discountPercent: 30,
-            reference: 'FH-${vehicle.brand}-${vehicle.model}',
+            reference: 'FH-$brand-$model',
             category: category,
           ),
           Part(
@@ -295,7 +270,7 @@ class AutodocService {
             name: 'Filtre à huile premium',
             brand: 'MANN-FILTER',
             price: 12.50,
-            reference: 'FH-${vehicle.brand}-${vehicle.model}-P',
+            reference: 'FH-$brand-$model-P',
             category: category,
           ),
         ];
@@ -307,7 +282,7 @@ class AutodocService {
             name: 'Filtre à air',
             brand: 'PURFLUX',
             price: 14.99,
-            reference: 'FA-${vehicle.brand}-${vehicle.model}',
+            reference: 'FA-$brand-$model',
             category: category,
           ),
         ];
@@ -321,7 +296,7 @@ class AutodocService {
             price: 24.99,
             originalPrice: 34.99,
             discountPercent: 28,
-            reference: 'FHP-${vehicle.brand}-${vehicle.model}',
+            reference: 'FHP-$brand-$model',
             category: category,
           ),
           Part(
@@ -329,7 +304,7 @@ class AutodocService {
             name: 'Filtre habitacle charbon actif',
             brand: 'MANN-FILTER',
             price: 19.99,
-            reference: 'FHC-${vehicle.brand}-${vehicle.model}',
+            reference: 'FHC-$brand-$model',
             category: category,
           ),
         ];
@@ -341,7 +316,7 @@ class AutodocService {
             name: 'Filtre à gasoil',
             brand: 'PURFLUX',
             price: 18.99,
-            reference: 'FG-${vehicle.brand}-${vehicle.model}',
+            reference: 'FG-$brand-$model',
             category: category,
           ),
         ];
@@ -375,7 +350,7 @@ class AutodocService {
             name: 'Bougie d\'allumage (x4)',
             brand: 'NGK',
             price: 32.99,
-            reference: 'BO-${vehicle.brand}-${vehicle.model}',
+            reference: 'BO-$brand-$model',
             category: category,
           ),
         ];
@@ -409,7 +384,7 @@ class AutodocService {
             name: 'Amortisseur avant (x2)',
             brand: 'MONROE',
             price: 124.99,
-            reference: 'AM-${vehicle.brand}-${vehicle.model}-AV',
+            reference: 'AM-$brand-$model-AV',
             category: category,
           ),
         ];
@@ -423,7 +398,7 @@ class AutodocService {
             price: 89.99,
             originalPrice: 119.99,
             discountPercent: 25,
-            reference: 'CO-${vehicle.brand}-${vehicle.model}',
+            reference: 'CO-$brand-$model',
             category: category,
           ),
         ];

@@ -117,9 +117,11 @@ class _VehicleDetailsPageState extends State<VehicleDetailsPage> {
                 decoration: const BoxDecoration(
                   gradient: AppGradients.navy,
                 ),
+                // ✅ Chemin corrigé : ressources/ au lieu de assets/
                 child: vehicle.imageUrl.isNotEmpty
                     ? Image.asset(
-                        vehicle.imageUrl,
+                        vehicle.imageUrl
+                            .replaceAll('assets/', 'ressources/'),
                         fit: BoxFit.cover,
                         alignment: Alignment.center,
                         errorBuilder: (_, __, ___) => const Center(
