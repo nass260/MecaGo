@@ -15,7 +15,7 @@ class _MaintenancePageState extends State<MaintenancePage> {
   String? _selectedTask;
   String _selectedVehicle = 'Tesla Model 3';
   // ✅ Chemin corrigé : ressources/ au lieu de assets/
-  String _selectedVehicleImage = 'ressources/images/tesla_model_3.jpg';
+  String _selectedVehicleImage = 'assets/images/tesla_model_3.jpg';
 
   final List<Map<String, dynamic>> _categories = [
     {

@@ -103,7 +103,7 @@ class _HomePageState extends State<HomePage> {
             ClipRRect(
               borderRadius: BorderRadius.circular(11),
               child: Image.asset(
-                'ressources/images/mecago_logo.png',
+                'assets/images/mecago_logo.jpg',
                 width: 38,
                 height: 38,
                 fit: BoxFit.cover,
@@ -281,7 +281,7 @@ class _HomePageState extends State<HomePage> {
                 ),
                 // ✅ Chemin corrigé : ressources/ au lieu de assets/
                 child: Image.asset(
-                  'ressources/images/tesla_model_3.jpg',
+                  'assets/images/tesla_model_3.jpg',
                   fit: BoxFit.cover,
                   alignment: Alignment.center,
                   errorBuilder: (_, __, ___) => const Center(

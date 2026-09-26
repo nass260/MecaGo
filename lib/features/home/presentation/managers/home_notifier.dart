@@ -174,7 +174,7 @@ class HomeNotifier with ChangeNotifier {
     final key = '${brand.toLowerCase()}_${model.toLowerCase()}';
     final images = <String, String>{
       // ✅ Chemin corrigé : ressources/ au lieu de assets/
-      'tesla_model 3': 'ressources/images/tesla_model_3.jpg',
+      'tesla_model 3': 'assets/images/tesla_model_3.jpg',
     };
     return images[key] ?? '';
   }

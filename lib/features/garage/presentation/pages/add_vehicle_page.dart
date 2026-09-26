@@ -102,7 +102,7 @@ class AddVehiclePage extends StatelessWidget {
                         image: const DecorationImage(
                           // ✅ Chemin corrigé : ressources/ au lieu de assets/
                           image: AssetImage(
-                              'ressources/images/tesla_model_3.jpg'),
+                              'assets/images/tesla_model_3.jpg'),
                           fit: BoxFit.cover,
                         ),
                         boxShadow: [
