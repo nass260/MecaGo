@@ -258,34 +258,32 @@ class _GaragePageState extends State<GaragePage> {
               ),
               child: Stack(
                 children: [
+                  // ✅ FOND NAVY EN PREMIER (pour éviter le vide derrière)
                   Container(
                     height: 160,
                     width: double.infinity,
                     decoration: const BoxDecoration(
                       gradient: AppGradients.navy,
                     ),
-                    // ✅ Chemin corrigé : ressources/ au lieu de assets/
-                    child: vehicle.imageUrl.isNotEmpty
-                        ? Image.asset(
-                            vehicle.imageUrl.replaceAll(
-                                'assets/', 'ressources/'),
-                            fit: BoxFit.cover,
-                            alignment: Alignment.center,
-                            errorBuilder: (_, __, ___) => const Center(
-                              child: Icon(
-                                Icons.directions_car_rounded,
-                                color: Colors.white24,
-                                size: 64,
-                              ),
-                            ),
-                          )
-                        : const Center(
-                            child: Icon(
-                              Icons.directions_car_rounded,
-                              color: Colors.white24,
-                              size: 64,
-                            ),
-                          ),
+                  ),
+                  // ✅ IMAGE AVEC BoxFit.cover
+                  Positioned.fill(
+                    child: Image.asset(
+                      vehicle.imageUrl.isNotEmpty
+                          ? vehicle.imageUrl
+                          : 'assets/images/vehicle_default.jpg',
+                      fit: vehicle.imageUrl.isNotEmpty
+                          ? BoxFit.cover
+                          : BoxFit.contain,
+                      alignment: Alignment.center,
+                      errorBuilder: (_, __, ___) => const Center(
+                        child: Icon(
+                          Icons.directions_car_rounded,
+                          color: Colors.white24,
+                          size: 64,
+                        ),
+                      ),
+                    ),
                   ),
                   Positioned(
                     top: 12,
@@ -341,6 +339,25 @@ class _GaragePageState extends State<GaragePage> {
                         ),
                       ),
                     ),
+                  // ✅ DÉGRADÉ EN BAS POUR LIRE LE TEXTE
+                  Positioned(
+                    bottom: 0,
+                    left: 0,
+                    right: 0,
+                    height: 80,
+                    child: Container(
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topCenter,
+                          end: Alignment.bottomCenter,
+                          colors: [
+                            Colors.transparent,
+                            AppColors.navy.withOpacity(0.9),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
                   Positioned(
                     bottom: 12,
                     left: 12,
