@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "622529761930",
+    "project_id": "mecago-ai",
+    "storage_bucket": "mecago-ai.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:622529761930:android:7febff91865a31908a1373",
+        "android_client_info": {
+          "package_name": "com.example.mecago"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyA6OgFBEr4q9Eo31keEHgq1YL-gXYSwgxk"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

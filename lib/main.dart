@@ -1,6 +1,8 @@
 // lib/main.dart
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'firebase_options.dart';
 import 'core/navigation/app_router.dart';
 import 'core/services/database_service.dart';
 import 'core/services/notification_service.dart';
@@ -18,7 +20,17 @@ void main() async {
     ),
   );
 
-  // ✅ 1. Initialiser la base de données
+  // ✅ Initialiser Firebase (c'est TOUT)
+  try {
+    await Firebase.initializeApp(
+      options: DefaultFirebaseOptions.currentPlatform,
+    );
+    debugPrint('✅ Firebase initialisé');
+  } catch (e) {
+    debugPrint('❌ Erreur Firebase : $e');
+  }
+
+  // ✅ Le reste
   try {
     await DatabaseService().initialize();
     debugPrint('✅ DatabaseService initialisé');
@@ -26,19 +38,15 @@ void main() async {
     debugPrint('❌ Erreur DatabaseService : $e');
   }
 
-  // ✅ 2. Initialiser les notifications
   try {
     const notificationService = NotificationService();
     await notificationService.initializeNotificationChannels();
     debugPrint('✅ Notifications initialisées');
-
-    // Demander la permission (sur mobile)
     await notificationService.requestPermission();
   } catch (e) {
     debugPrint('⚠️ Notifications : $e');
   }
 
-  // ✅ 3. Initialiser SyncManager
   try {
     await SyncManager().initialize();
     debugPrint('✅ SyncManager initialisé');

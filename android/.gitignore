@@ -12,3 +12,5 @@ GeneratedPluginRegistrant.java
 key.properties
 **/*.keystore
 **/*.jks
+# Secrets (ne JAMAIS pousser sur GitHub)
+.env

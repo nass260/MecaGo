@@ -238,10 +238,12 @@ class _GaragePageState extends State<GaragePage> {
   }
 
   // ============================================
-  // VEHICLE CARD
+  // VEHICLE CARD (NOUVEAU DESIGN)
   // ============================================
 
   Widget _buildVehicleCard(BuildContext context, Vehicle vehicle) {
+    final bool hasPhoto = vehicle.imageUrl.isNotEmpty;
+
     return GestureDetector(
       onTap: () => context.push('/vehicle-details/${vehicle.id}'),
       child: Container(
@@ -258,33 +260,30 @@ class _GaragePageState extends State<GaragePage> {
               ),
               child: Stack(
                 children: [
-                  // ✅ FOND NAVY EN PREMIER (pour éviter le vide derrière)
+                  // FOND NAVY
                   Container(
-                    height: 160,
+                    height: 180,
                     width: double.infinity,
                     decoration: const BoxDecoration(
                       gradient: AppGradients.navy,
                     ),
                   ),
-                  // ✅ IMAGE AVEC BoxFit.cover
+
+                  // CONTENU
                   Positioned.fill(
-                    child: Image.asset(
-                      vehicle.imageUrl.isNotEmpty
-                          ? vehicle.imageUrl
-                          : 'assets/images/vehicle_default.jpg',
-                      fit: vehicle.imageUrl.isNotEmpty
-                          ? BoxFit.cover
-                          : BoxFit.contain,
-                      alignment: Alignment.center,
-                      errorBuilder: (_, __, ___) => const Center(
-                        child: Icon(
-                          Icons.directions_car_rounded,
-                          color: Colors.white24,
-                          size: 64,
-                        ),
-                      ),
-                    ),
+                    child: hasPhoto
+                        // === PHOTO UTILISATEUR ===
+                        ? Image.asset(
+                            vehicle.imageUrl,
+                            fit: BoxFit.cover,
+                            alignment: Alignment.center,
+                            errorBuilder: (_, __, ___) => _buildDefaultCard(),
+                          )
+                        // === CARTE PAR DÉFAUT (car_neon) ===
+                        : _buildDefaultCard(),
                   ),
+
+                  // BADGE SANTÉ
                   Positioned(
                     top: 12,
                     right: 12,
@@ -294,8 +293,7 @@ class _GaragePageState extends State<GaragePage> {
                         vertical: 6,
                       ),
                       decoration: BoxDecoration(
-                        color: _getHealthColor(vehicle.progress)
-                            .withOpacity(0.9),
+                        color: _getHealthColor(vehicle.progress),
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: Text(
@@ -308,6 +306,8 @@ class _GaragePageState extends State<GaragePage> {
                       ),
                     ),
                   ),
+
+                  // BADGE ALERTE
                   if (vehicle.isAlert)
                     Positioned(
                       top: 12,
@@ -339,29 +339,12 @@ class _GaragePageState extends State<GaragePage> {
                         ),
                       ),
                     ),
-                  // ✅ DÉGRADÉ EN BAS POUR LIRE LE TEXTE
+
+                  // TITRE + SOUS-TITRE + FLÈCHE
                   Positioned(
-                    bottom: 0,
-                    left: 0,
-                    right: 0,
-                    height: 80,
-                    child: Container(
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          begin: Alignment.topCenter,
-                          end: Alignment.bottomCenter,
-                          colors: [
-                            Colors.transparent,
-                            AppColors.navy.withOpacity(0.9),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-                  Positioned(
-                    bottom: 12,
-                    left: 12,
-                    right: 12,
+                    bottom: 14,
+                    left: 14,
+                    right: 14,
                     child: Row(
                       children: [
                         Expanded(
@@ -379,11 +362,11 @@ class _GaragePageState extends State<GaragePage> {
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
                               ),
-                              const SizedBox(height: 2),
+                              const SizedBox(height: 3),
                               Text(
                                 '${vehicle.plate} · ${vehicle.year}',
                                 style: TextStyle(
-                                  color: Colors.white.withOpacity(0.9),
+                                  color: Colors.white.withOpacity(0.75),
                                   fontSize: 11,
                                   fontWeight: FontWeight.w500,
                                 ),
@@ -395,7 +378,8 @@ class _GaragePageState extends State<GaragePage> {
                         ),
                         const SizedBox(width: 8),
                         Container(
-                          padding: const EdgeInsets.all(6),
+                          width: 32,
+                          height: 32,
                           decoration: BoxDecoration(
                             color: Colors.white.withOpacity(0.2),
                             shape: BoxShape.circle,
@@ -403,7 +387,7 @@ class _GaragePageState extends State<GaragePage> {
                           child: const Icon(
                             Icons.chevron_right_rounded,
                             color: Colors.white,
-                            size: 18,
+                            size: 20,
                           ),
                         ),
                       ],
@@ -437,6 +421,25 @@ class _GaragePageState extends State<GaragePage> {
               ),
             ),
           ],
+        ),
+      ),
+    );
+  }
+
+  // ============================================
+  // CARTE PAR DÉFAUT (car_neon)
+  // ============================================
+
+  Widget _buildDefaultCard() {
+    return Center(
+      child: Image.asset(
+        'assets/images/car_neon.png',
+        height: 140,
+        fit: BoxFit.contain,
+        errorBuilder: (_, __, ___) => const Icon(
+          Icons.directions_car_rounded,
+          color: AppColors.orange,
+          size: 80,
         ),
       ),
     );

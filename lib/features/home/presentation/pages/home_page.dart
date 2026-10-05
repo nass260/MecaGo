@@ -61,13 +61,11 @@ class _HomePageState extends State<HomePage> {
                 physics: const AlwaysScrollableScrollPhysics(
                   parent: BouncingScrollPhysics(),
                 ),
-                // ✅ CORRECTION 2 : padding bottom réduit de 100 à 30
                 padding: const EdgeInsets.fromLTRB(20, 12, 20, 30),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     _buildHeader(context),
-                    // ✅ CORRECTION 1 : espace réduit de 18 à 8
                     const SizedBox(height: 8),
                     _buildGreeting(),
                     const SizedBox(height: 16),
@@ -707,7 +705,7 @@ class _HomePageState extends State<HomePage> {
   }
 
   // ============================================
-  // QUICK ACTIONS
+  // QUICK ACTIONS (Scanner / Tutoriels / Diagnostic / Garage)
   // ============================================
 
   Widget _buildQuickActions(BuildContext context) {
@@ -737,11 +735,11 @@ class _HomePageState extends State<HomePage> {
           const SizedBox(width: 10),
           Expanded(
             child: _buildQuickAction(
-              icon: Icons.notifications_active_rounded,
-              label: 'Rappels',
-              subtitle: 'À venir',
-              badge: '3',
-              onTap: () => context.push('/reminders'),
+              icon: Icons.psychology_rounded,
+              label: 'Diagnostic',
+              subtitle: 'IA',
+              badge: null,
+              onTap: () => context.push('/diagnostic'),
             ),
           ),
           const SizedBox(width: 10),

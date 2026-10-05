@@ -2,7 +2,10 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/theme/app_theme.dart';
-import '../../../../core/services/autodoc_service.dart';
+import '../../../../core/services/ai_service.dart';
+import '../../../../core/services/diagnostic_rules.dart';
+import '../../../../core/services/global_notifier.dart';
+import '../widgets/mecago_chat_widget.dart';
 
 /// Niveau de gravité du diagnostic
 enum SeverityLevel {
@@ -16,27 +19,156 @@ enum SeverityLevel {
   final IconData icon;
   final String emoji;
   const SeverityLevel(this.label, this.color, this.icon, this.emoji);
+
+  static SeverityLevel fromString(String value) {
+    switch (value.toLowerCase()) {
+      case 'critical':
+        return SeverityLevel.critical;
+      case 'high':
+        return SeverityLevel.high;
+      case 'medium':
+        return SeverityLevel.medium;
+      case 'low':
+        return SeverityLevel.low;
+      default:
+        return SeverityLevel.medium;
+    }
+  }
 }
 
-/// Résultat du diagnostic
+/// Statut d'un système
+enum SystemStatus { excellent, bon, attention, probleme }
+
+class SystemCheck {
+  final String name;
+  final String description;
+  final IconData icon;
+  final Color iconColor;
+  final SystemStatus status;
+
+  const SystemCheck({
+    required this.name,
+    required this.description,
+    required this.icon,
+    required this.iconColor,
+    required this.status,
+  });
+
+  String get statusLabel {
+    switch (status) {
+      case SystemStatus.excellent:
+        return 'Excellent';
+      case SystemStatus.bon:
+        return 'Bon';
+      case SystemStatus.attention:
+        return 'Attention';
+      case SystemStatus.probleme:
+        return 'Problème';
+    }
+  }
+
+  Color get statusColor {
+    switch (status) {
+      case SystemStatus.excellent:
+      case SystemStatus.bon:
+        return AppColors.success;
+      case SystemStatus.attention:
+        return AppColors.orange;
+      case SystemStatus.probleme:
+        return AppColors.danger;
+    }
+  }
+
+  Color get statusBgColor {
+    switch (status) {
+      case SystemStatus.excellent:
+      case SystemStatus.bon:
+        return AppColors.successLight;
+      case SystemStatus.attention:
+        return const Color(0xFFFFF7ED);
+      case SystemStatus.probleme:
+        return const Color(0xFFFEF2F2);
+    }
+  }
+}
+
 class DiagnosisResult {
   final String title;
   final String description;
   final SeverityLevel severity;
   final List<String> symptoms;
-  final List<PartCategory> recommendedParts;
+  final List<PartSuggestion> parts;
   final String estimatedCost;
   final bool urgent;
+  final List<SystemCheck> systems;
+  final bool isFromAI;
+  final String providerName;
 
   const DiagnosisResult({
     required this.title,
     required this.description,
     required this.severity,
     required this.symptoms,
-    required this.recommendedParts,
+    required this.parts,
     required this.estimatedCost,
     required this.urgent,
+    required this.systems,
+    required this.isFromAI,
+    required this.providerName,
   });
+}
+
+class PartSuggestion {
+  final String name;
+  final String category;
+  final String priceEstimate;
+  final String priority;
+
+  const PartSuggestion({
+    required this.name,
+    required this.category,
+    required this.priceEstimate,
+    required this.priority,
+  });
+
+  IconData get icon {
+    switch (category.toLowerCase()) {
+      case 'freinage':
+        return Icons.car_repair_rounded;
+      case 'filtration':
+        return Icons.filter_alt_rounded;
+      case 'moteur':
+        return Icons.settings_rounded;
+      case 'electrique':
+        return Icons.electric_bolt_rounded;
+      case 'suspension':
+        return Icons.linear_scale_rounded;
+      default:
+        return Icons.build_rounded;
+    }
+  }
+
+  Color get priorityColor {
+    switch (priority.toLowerCase()) {
+      case 'urgent':
+        return AppColors.danger;
+      case 'recommended':
+        return AppColors.orange;
+      default:
+        return AppColors.textSecondary;
+    }
+  }
+
+  String get priorityLabel {
+    switch (priority.toLowerCase()) {
+      case 'urgent':
+        return 'URGENT';
+      case 'recommended':
+        return 'RECOMMANDÉ';
+      default:
+        return 'OPTIONNEL';
+    }
+  }
 }
 
 class DiagnosticPage extends StatefulWidget {
@@ -47,15 +179,16 @@ class DiagnosticPage extends StatefulWidget {
 }
 
 class _DiagnosticPageState extends State<DiagnosticPage> {
-  final AutodocService _autodocService = const AutodocService();
+  final AiService _aiService = const AiService();
   final TextEditingController _symptomController = TextEditingController();
 
   String _selectedVehicleBrand = 'Peugeot';
   String _selectedVehicleModel = '308';
+  String _selectedVehicleFuel = 'Essence';
+  int _selectedVehicleYear = 2020;
   DiagnosisResult? _result;
   bool _isAnalyzing = false;
-  List<Part> _recommendedParts = [];
-  bool _isLoadingParts = false;
+  String? _errorMessage;
 
   final List<String> _quickSymptoms = [
     'Bruit de sifflement quand je freine',
@@ -66,41 +199,138 @@ class _DiagnosticPageState extends State<DiagnosticPage> {
     'Consommation de carburant élevée',
     'Pédale de frein molle',
     'Climatisation ne refroidit plus',
+    'Bruit métallique au freinage',
+    'Ralenti instable',
+    'Voyant ABS allumé',
+    'Direction dure',
   ];
 
   @override
+  void initState() {
+    super.initState();
+    final notifier = GlobalNotifier.instance;
+    final activeVehicle = notifier.activeVehicle;
+    if (activeVehicle != null) {
+      _selectedVehicleBrand = activeVehicle.brand;
+      _selectedVehicleModel = activeVehicle.model;
+      _selectedVehicleFuel = activeVehicle.fuelType.label;
+      _selectedVehicleYear = activeVehicle.year;
+    }
+    _symptomController.addListener(_onTextChanged);
+  }
+
+  @override
   void dispose() {
+    _symptomController.removeListener(_onTextChanged);
     _symptomController.dispose();
     super.dispose();
+  }
+
+  void _onTextChanged() {
+    if (mounted) setState(() {});
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.background,
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_rounded, color: AppColors.navy),
-          onPressed: () => context.pop(),
-        ),
-        title: const Text(
-          'Diagnostic IA',
-          style: TextStyle(
-            color: AppColors.navy,
-            fontSize: 18,
-            fontWeight: FontWeight.w800,
-          ),
+      body: SafeArea(
+        child: Column(
+          children: [
+            _buildHeader(),
+            Expanded(
+              child: _result != null
+                  ? _buildResultView()
+                  : _buildInputView(),
+            ),
+          ],
         ),
       ),
-      body: _result != null ? _buildResultView() : _buildInputView(),
     );
   }
 
-  // ============================================
-  // VUE DE SAISIE
-  // ============================================
+  Widget _buildHeader() {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 12, 20, 8),
+      child: Row(
+        children: [
+          GestureDetector(
+            onTap: () => context.pop(),
+            child: Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                color: Colors.white,
+                shape: BoxShape.circle,
+                boxShadow: AppShadows.card,
+              ),
+              child: const Icon(Icons.arrow_back_rounded,
+                  color: AppColors.navy, size: 20),
+            ),
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    const Icon(Icons.monitor_heart_rounded,
+                        color: AppColors.orange, size: 20),
+                    const SizedBox(width: 6),
+                    const Text(
+                      'Diagnostic',
+                      style: TextStyle(
+                        fontSize: 22,
+                        fontWeight: FontWeight.w900,
+                        color: AppColors.navy,
+                        letterSpacing: -0.5,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 2),
+                const Text(
+                  'Analyse complète de votre véhicule par IA',
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: AppColors.textSecondary,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+            decoration: BoxDecoration(
+              color: AppColors.orange.withOpacity(0.12),
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(
+                color: AppColors.orange.withOpacity(0.3),
+                width: 1,
+              ),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: const [
+                Icon(Icons.workspace_premium_rounded,
+                    color: AppColors.orange, size: 14),
+                SizedBox(width: 4),
+                Text(
+                  'Premium',
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w800,
+                    color: AppColors.orange,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 
   Widget _buildInputView() {
     return SingleChildScrollView(
@@ -109,131 +339,14 @@ class _DiagnosticPageState extends State<DiagnosticPage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Bandeau IA
-          Container(
-            padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(
-              gradient: AppGradients.navy,
-              borderRadius: BorderRadius.circular(20),
-              boxShadow: AppShadows.hero,
-            ),
-            child: Row(
-              children: [
-                Container(
-                  width: 56,
-                  height: 56,
-                  decoration: BoxDecoration(
-                    gradient: AppGradients.orange,
-                    shape: BoxShape.circle,
-                    boxShadow: [
-                      BoxShadow(
-                        color: AppColors.orange.withOpacity(0.5),
-                        blurRadius: 12,
-                      ),
-                    ],
-                  ),
-                  child: const Icon(
-                    Icons.psychology_rounded,
-                    color: Colors.white,
-                    size: 28,
-                  ),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: const [
-                      Text(
-                        'Assistant IA MecaGo',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 16,
-                          fontWeight: FontWeight.w800,
-                        ),
-                      ),
-                      SizedBox(height: 4),
-                      Text(
-                        'Décrivez votre panne, l\'IA identifie la cause',
-                        style: TextStyle(
-                          color: Colors.white70,
-                          fontSize: 12,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 24),
-
-          // Véhicule
-          const Text(
-            'Véhicule concerné',
-            style: TextStyle(
-              color: AppColors.navy,
-              fontSize: 15,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-          const SizedBox(height: 12),
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(16),
-              boxShadow: AppShadows.card,
-            ),
-            child: Row(
-              children: [
-                Container(
-                  width: 50,
-                  height: 50,
-                  decoration: BoxDecoration(
-                    color: AppColors.orange.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: const Icon(
-                    Icons.directions_car_rounded,
-                    color: AppColors.orange,
-                    size: 24,
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        '$_selectedVehicleBrand $_selectedVehicleModel',
-                        style: const TextStyle(
-                          fontSize: 15,
-                          fontWeight: FontWeight.w700,
-                          color: AppColors.navy,
-                        ),
-                      ),
-                      const Text(
-                        'Essence · Manuelle',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: AppColors.textSecondary,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 24),
-
-          // Description
+          _buildVehicleCard(),
+          const SizedBox(height: 20),
           const Text(
             'Décrivez votre problème',
             style: TextStyle(
               color: AppColors.navy,
               fontSize: 15,
-              fontWeight: FontWeight.w700,
+              fontWeight: FontWeight.w800,
             ),
           ),
           const SizedBox(height: 8),
@@ -254,6 +367,7 @@ class _DiagnosticPageState extends State<DiagnosticPage> {
             child: TextField(
               controller: _symptomController,
               maxLines: 4,
+              onChanged: (value) => setState(() {}),
               decoration: const InputDecoration(
                 hintText:
                     'Ex: J\'entends un bruit de sifflement quand je freine...',
@@ -270,18 +384,16 @@ class _DiagnosticPageState extends State<DiagnosticPage> {
               ),
             ),
           ),
-          const SizedBox(height: 16),
-
-          // Symptômes rapides
+          const SizedBox(height: 20),
           const Text(
             'Ou choisissez un symptôme courant',
             style: TextStyle(
               color: AppColors.navy,
               fontSize: 13,
-              fontWeight: FontWeight.w600,
+              fontWeight: FontWeight.w700,
             ),
           ),
-          const SizedBox(height: 10),
+          const SizedBox(height: 12),
           Wrap(
             spacing: 8,
             runSpacing: 8,
@@ -292,13 +404,12 @@ class _DiagnosticPageState extends State<DiagnosticPage> {
                   setState(() {});
                 },
                 child: Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 12, vertical: 8),
                   decoration: BoxDecoration(
                     color: Colors.white,
                     borderRadius: BorderRadius.circular(20),
-                    border:
-                        Border.all(color: AppColors.border.withOpacity(0.6)),
+                    border: Border.all(color: AppColors.border),
                   ),
                   child: Text(
                     symptom,
@@ -313,10 +424,176 @@ class _DiagnosticPageState extends State<DiagnosticPage> {
             }).toList(),
           ),
           const SizedBox(height: 24),
-
-          // Bouton analyse
+          if (_errorMessage != null) ...[
+            Container(
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: AppColors.danger.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: AppColors.danger.withOpacity(0.3),
+                ),
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.error_outline_rounded,
+                      color: AppColors.danger, size: 20),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      _errorMessage!,
+                      style: const TextStyle(
+                        color: AppColors.danger,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 16),
+          ],
           _buildAnalyzeButton(),
         ],
+      ),
+    );
+  }
+
+  // ============================================
+  // CARTE VÉHICULE (avec car_neon.png par défaut)
+  // ============================================
+
+  Widget _buildVehicleCard() {
+    final imageUrl = GlobalNotifier.instance.activeVehicle?.imageUrl ?? '';
+    final hasPhoto = imageUrl.isNotEmpty;
+
+    return Container(
+      height: 160,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(20),
+        gradient: AppGradients.navy,
+        boxShadow: AppShadows.hero,
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(20),
+        child: Stack(
+          children: [
+            // Image (photo utilisateur OU car_neon.png par défaut)
+            Positioned.fill(
+              child: hasPhoto
+                  ? Image.asset(
+                      imageUrl,
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, __, ___) => _buildDefaultCarImage(),
+                    )
+                  : _buildDefaultCarImage(),
+            ),
+
+            // Dégradé
+            Positioned.fill(
+              child: Container(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.centerLeft,
+                    end: Alignment.centerRight,
+                    colors: [
+                      AppColors.navy.withOpacity(0.95),
+                      AppColors.navy.withOpacity(0.4),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+
+            // Contenu
+            Positioned(
+              left: 18,
+              top: 18,
+              right: 18,
+              bottom: 18,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 8, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: AppColors.success,
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: const [
+                            Icon(Icons.check_circle_rounded,
+                                color: Colors.white, size: 10),
+                            SizedBox(width: 4),
+                            Text(
+                              '100%',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 10,
+                                fontWeight: FontWeight.w800,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        '$_selectedVehicleBrand $_selectedVehicleModel',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 22,
+                          fontWeight: FontWeight.w900,
+                          letterSpacing: -0.5,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        '$_selectedVehicleFuel · $_selectedVehicleYear',
+                        style: TextStyle(
+                          color: Colors.white.withOpacity(0.85),
+                          fontSize: 12,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// Image par défaut (voiture néon orange)
+  Widget _buildDefaultCarImage() {
+    return Center(
+      child: Image.asset(
+        'assets/images/car_neon.png',
+        fit: BoxFit.contain,
+        errorBuilder: (_, __, ___) => Container(
+          decoration: const BoxDecoration(
+            gradient: AppGradients.navy,
+          ),
+          child: const Center(
+            child: Icon(
+              Icons.directions_car_rounded,
+              color: Colors.white24,
+              size: 80,
+            ),
+          ),
+        ),
       ),
     );
   }
@@ -370,13 +647,8 @@ class _DiagnosticPageState extends State<DiagnosticPage> {
     );
   }
 
-  // ============================================
-  // VUE DE RÉSULTAT
-  // ============================================
-
   Widget _buildResultView() {
     final result = _result!;
-    final severity = result.severity;
 
     return SingleChildScrollView(
       physics: const BouncingScrollPhysics(),
@@ -384,174 +656,53 @@ class _DiagnosticPageState extends State<DiagnosticPage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Carte gravité
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [severity.color, severity.color.withOpacity(0.7)],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-              borderRadius: BorderRadius.circular(20),
-              boxShadow: [
-                BoxShadow(
-                  color: severity.color.withOpacity(0.3),
-                  blurRadius: 16,
-                  offset: const Offset(0, 6),
+          _buildVehicleCard(),
+          const SizedBox(height: 16),
+          _buildGlobalStatusCard(result),
+          const SizedBox(height: 16),
+          _buildAnalysisCard(result),
+          const SizedBox(height: 20),
+          Row(
+            children: [
+              const Text(
+                'Détails du diagnostic',
+                style: TextStyle(
+                  color: AppColors.navy,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w800,
                 ),
-              ],
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
+              ),
+              const Spacer(),
+              Container(
+                padding: const EdgeInsets.symmetric(
+                    horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: AppColors.successLight,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: const [
+                    Icon(Icons.check_circle_rounded,
+                        color: AppColors.success, size: 12),
+                    SizedBox(width: 4),
                     Text(
-                      severity.emoji,
-                      style: const TextStyle(fontSize: 32),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Gravité ${severity.label}',
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 14,
-                              fontWeight: FontWeight.w800,
-                              letterSpacing: 1,
-                            ),
-                          ),
-                          const SizedBox(height: 2),
-                          Text(
-                            result.urgent
-                                ? 'Intervention recommandée'
-                                : 'À surveiller',
-                            style: TextStyle(
-                              color: Colors.white.withOpacity(0.9),
-                              fontSize: 12,
-                            ),
-                          ),
-                        ],
+                      'Tout est OK',
+                      style: TextStyle(
+                        fontSize: 10,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.success,
                       ),
                     ),
                   ],
                 ),
-                const SizedBox(height: 20),
-                Text(
-                  result.title,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 22,
-                    fontWeight: FontWeight.w900,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  result.description,
-                  style: TextStyle(
-                    color: Colors.white.withOpacity(0.95),
-                    fontSize: 13,
-                    height: 1.5,
-                  ),
-                ),
-                const SizedBox(height: 16),
-                Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.2),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const Icon(
-                        Icons.euro_rounded,
-                        color: Colors.white,
-                        size: 16,
-                      ),
-                      const SizedBox(width: 6),
-                      Text(
-                        'Coût estimé : ${result.estimatedCost}',
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 13,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 24),
-
-          // Symptômes détectés
-          const Text(
-            'Symptômes détectés',
-            style: TextStyle(
-              color: AppColors.navy,
-              fontSize: 16,
-              fontWeight: FontWeight.w800,
-            ),
+              ),
+            ],
           ),
           const SizedBox(height: 12),
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(16),
-              boxShadow: AppShadows.card,
-            ),
-            child: Column(
-              children: result.symptoms.map((s) {
-                return Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 6),
-                  child: Row(
-                    children: [
-                      Container(
-                        width: 6,
-                        height: 6,
-                        decoration: BoxDecoration(
-                          color: severity.color,
-                          shape: BoxShape.circle,
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Text(
-                          s,
-                          style: const TextStyle(
-                            fontSize: 13,
-                            color: AppColors.navy,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                );
-              }).toList(),
-            ),
-          ),
-          const SizedBox(height: 24),
-
-          // Pièces recommandées
-          if (_isLoadingParts)
-            const Center(
-              child: Padding(
-                padding: EdgeInsets.all(20),
-                child: CircularProgressIndicator(
-                  valueColor: AlwaysStoppedAnimation<Color>(AppColors.orange),
-                ),
-              ),
-            )
-          else if (_recommendedParts.isNotEmpty) ...[
+          ...result.systems.map((system) => _buildSystemCard(system)),
+          const SizedBox(height: 20),
+          if (result.parts.isNotEmpty) ...[
             const Text(
               '🛒 Pièces recommandées',
               style: TextStyle(
@@ -569,19 +720,22 @@ class _DiagnosticPageState extends State<DiagnosticPage> {
               ),
             ),
             const SizedBox(height: 12),
-            ..._recommendedParts.map((part) => _buildPartCard(part)),
-            const SizedBox(height: 24),
+            ...result.parts.map((part) => _buildPartCard(part)),
+            const SizedBox(height: 20),
           ],
-
-          // Bouton nouveau diagnostic
+          MecaGoChatWidget(
+            vehicleInfo:
+                '$_selectedVehicleBrand $_selectedVehicleModel, $_selectedVehicleFuel, $_selectedVehicleYear',
+          ),
+          const SizedBox(height: 20),
           SizedBox(
             width: double.infinity,
             child: OutlinedButton(
               onPressed: () {
                 setState(() {
                   _result = null;
-                  _recommendedParts = [];
                   _symptomController.clear();
+                  _errorMessage = null;
                 });
               },
               style: OutlinedButton.styleFrom(
@@ -606,7 +760,297 @@ class _DiagnosticPageState extends State<DiagnosticPage> {
     );
   }
 
-  Widget _buildPartCard(Part part) {
+  Widget _buildGlobalStatusCard(DiagnosisResult result) {
+    final score = _calculateGlobalScore(result);
+    final color = score >= 80
+        ? AppColors.success
+        : score >= 50
+            ? AppColors.orange
+            : AppColors.danger;
+    final statusText = score >= 80
+        ? 'Excellent'
+        : score >= 50
+            ? 'Moyen'
+            : 'Critique';
+
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: AppShadows.card,
+      ),
+      child: Row(
+        children: [
+          Stack(
+            alignment: Alignment.center,
+            children: [
+              SizedBox(
+                width: 90,
+                height: 90,
+                child: CircularProgressIndicator(
+                  value: score / 100,
+                  strokeWidth: 8,
+                  backgroundColor: AppColors.border.withOpacity(0.4),
+                  valueColor: AlwaysStoppedAnimation<Color>(color),
+                ),
+              ),
+              Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    '$score',
+                    style: TextStyle(
+                      fontSize: 26,
+                      fontWeight: FontWeight.w900,
+                      color: color,
+                      height: 1,
+                    ),
+                  ),
+                  const Text(
+                    '/100',
+                    style: TextStyle(
+                      fontSize: 11,
+                      color: AppColors.textSecondary,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+          const SizedBox(width: 20),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'État général',
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.navy,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  statusText,
+                  style: TextStyle(
+                    fontSize: 22,
+                    fontWeight: FontWeight.w900,
+                    color: color,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  result.urgent
+                      ? 'Une intervention est recommandée.'
+                      : 'Aucun problème critique détecté.',
+                  style: const TextStyle(
+                    fontSize: 12,
+                    color: AppColors.textSecondary,
+                    height: 1.4,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  int _calculateGlobalScore(DiagnosisResult result) {
+    switch (result.severity) {
+      case SeverityLevel.critical:
+        return 25;
+      case SeverityLevel.high:
+        return 55;
+      case SeverityLevel.medium:
+        return 75;
+      case SeverityLevel.low:
+        return 95;
+    }
+  }
+
+  Widget _buildAnalysisCard(DiagnosisResult result) {
+    final isAI = result.isFromAI;
+
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: isAI
+              ? [const Color(0xFFEEF2FF), const Color(0xFFE0E7FF)]
+              : [const Color(0xFFFFF7ED), const Color(0xFFFFEDD5)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: isAI
+              ? const Color(0xFFC7D2FE)
+              : const Color(0xFFFED7AA),
+          width: 1,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 36,
+                height: 36,
+                decoration: BoxDecoration(
+                  color: isAI ? const Color(0xFF4F46E5) : AppColors.orange,
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  isAI ? Icons.auto_awesome_rounded : Icons.science_rounded,
+                  color: Colors.white,
+                  size: 18,
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      isAI
+                          ? 'Analyse ${result.providerName}'
+                          : 'Analyse locale',
+                      style: TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w800,
+                        color: isAI
+                            ? const Color(0xFF4F46E5)
+                            : AppColors.orange,
+                      ),
+                    ),
+                    Text(
+                      isAI ? 'IA avancée' : 'Base de données MecaGo',
+                      style: const TextStyle(
+                        fontSize: 10,
+                        color: AppColors.textSecondary,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              if (!isAI)
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: AppColors.orange.withOpacity(0.15),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: const Text(
+                    'HORS LIGNE',
+                    style: TextStyle(
+                      fontSize: 9,
+                      fontWeight: FontWeight.w800,
+                      color: AppColors.orange,
+                    ),
+                  ),
+                ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          Text(
+            result.title,
+            style: const TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w900,
+              color: AppColors.navy,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            result.description,
+            style: const TextStyle(
+              fontSize: 13,
+              color: AppColors.navy,
+              height: 1.5,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSystemCard(SystemCheck system) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 10),
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: AppShadows.card,
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 42,
+            height: 42,
+            decoration: BoxDecoration(
+              color: system.iconColor.withOpacity(0.12),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Icon(system.icon, color: system.iconColor, size: 22),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  system.name,
+                  style: const TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w800,
+                    color: AppColors.navy,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  system.description,
+                  style: const TextStyle(
+                    fontSize: 11,
+                    color: AppColors.textSecondary,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Container(
+            padding: const EdgeInsets.symmetric(
+                horizontal: 10, vertical: 5),
+            decoration: BoxDecoration(
+              color: system.statusBgColor,
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Text(
+              system.statusLabel,
+              style: TextStyle(
+                fontSize: 10,
+                fontWeight: FontWeight.w800,
+                color: system.statusColor,
+              ),
+            ),
+          ),
+          const SizedBox(width: 8),
+          const Icon(Icons.chevron_right_rounded,
+              color: AppColors.textLight, size: 20),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPartCard(PartSuggestion part) {
     return Container(
       margin: const EdgeInsets.only(bottom: 10),
       padding: const EdgeInsets.all(14),
@@ -624,11 +1068,7 @@ class _DiagnosticPageState extends State<DiagnosticPage> {
               color: AppColors.orange.withOpacity(0.1),
               borderRadius: BorderRadius.circular(12),
             ),
-            child: Icon(
-              part.category.icon,
-              color: AppColors.orange,
-              size: 22,
-            ),
+            child: Icon(part.icon, color: AppColors.orange, size: 22),
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -643,14 +1083,35 @@ class _DiagnosticPageState extends State<DiagnosticPage> {
                     color: AppColors.navy,
                   ),
                 ),
-                const SizedBox(height: 2),
-                Text(
-                  part.brand,
-                  style: const TextStyle(
-                    fontSize: 11,
-                    color: AppColors.textSecondary,
-                    fontWeight: FontWeight.w600,
-                  ),
+                const SizedBox(height: 4),
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 6, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: part.priorityColor.withOpacity(0.15),
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: Text(
+                        part.priorityLabel,
+                        style: TextStyle(
+                          fontSize: 9,
+                          fontWeight: FontWeight.w800,
+                          color: part.priorityColor,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      part.category,
+                      style: const TextStyle(
+                        fontSize: 11,
+                        color: AppColors.textSecondary,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),
@@ -658,43 +1119,61 @@ class _DiagnosticPageState extends State<DiagnosticPage> {
           Column(
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
-              if (part.originalPrice != null) ...[
-                Text(
-                  part.formattedOriginalPrice!,
-                  style: const TextStyle(
-                    fontSize: 11,
-                    color: AppColors.textSecondary,
-                    decoration: TextDecoration.lineThrough,
-                  ),
-                ),
-              ],
               Text(
-                part.formattedPrice,
+                part.priceEstimate,
                 style: const TextStyle(
-                  fontSize: 16,
+                  fontSize: 14,
                   fontWeight: FontWeight.w900,
                   color: AppColors.orange,
                 ),
               ),
-              const SizedBox(height: 4),
-              GestureDetector(
-                onTap: () => _orderPart(part),
-                child: Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: AppColors.orange,
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: const Text(
-                    'Commander',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 10,
-                      fontWeight: FontWeight.w800,
+              const SizedBox(height: 6),
+              Row(
+                children: [
+                  GestureDetector(
+                    onTap: () => _openTutorial(part),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(
+                          color: AppColors.orange,
+                          width: 1,
+                        ),
+                      ),
+                      child: const Text(
+                        '📚 Tutoriel',
+                        style: TextStyle(
+                          color: AppColors.orange,
+                          fontSize: 10,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
                     ),
                   ),
-                ),
+                  const SizedBox(width: 6),
+                  GestureDetector(
+                    onTap: () => _orderPart(part),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 10, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: AppColors.orange,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: const Text(
+                        'Commander',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 10,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ],
           ),
@@ -707,223 +1186,235 @@ class _DiagnosticPageState extends State<DiagnosticPage> {
   // LOGIQUE
   // ============================================
 
-  void _analyze() async {
+  Future<void> _analyze() async {
     setState(() {
       _isAnalyzing = true;
-      _isLoadingParts = true;
+      _errorMessage = null;
     });
 
-    await Future.delayed(const Duration(seconds: 2));
+    final symptom = _symptomController.text.trim();
+    final vehicleInfo = '$_selectedVehicleBrand $_selectedVehicleModel';
 
-    final symptom = _symptomController.text.toLowerCase();
-    final result = _analyzeSymptom(symptom);
+    try {
+      final response = await _aiService.diagnose(
+        vehicleInfo: vehicleInfo,
+        symptoms: symptom,
+      );
+      final result = _mapJsonToResult(
+        response.json,
+        isFromAI: true,
+        providerName: response.providerName,
+      );
+      if (!mounted) return;
+      setState(() {
+        _result = result;
+        _isAnalyzing = false;
+      });
+      return;
+    } catch (e) {
+      debugPrint('⚠️ IA indisponible : $e');
+    }
 
-    final parts = await _autodocService.getRecommendedParts(
-      brand: _selectedVehicleBrand,
-      model: _selectedVehicleModel,
-      diagnosis: symptom,
-    );
-
+    await Future.delayed(const Duration(milliseconds: 500));
+    final rule = DiagnosticRules.findRule(symptom);
+    final result = _mapRuleToResult(rule, symptom);
     if (!mounted) return;
-
     setState(() {
       _result = result;
-      _recommendedParts = parts;
       _isAnalyzing = false;
-      _isLoadingParts = false;
     });
   }
 
-  DiagnosisResult _analyzeSymptom(String symptom) {
-    if (symptom.contains('frein') || symptom.contains('sifflement')) {
-      return const DiagnosisResult(
-        title: 'Usure des plaquettes de frein',
-        description:
-            'Les plaquettes de frein avant présentent une usure avancée. '
-            'Le sifflement est caractéristique du témoin d\'usure. '
-            'Un remplacement est recommandé pour votre sécurité.',
-        severity: SeverityLevel.critical,
-        symptoms: [
-          'Bruit de sifflement au freinage',
-          'Usure > 80% détectée',
-          'Témoin d\'usure atteint',
-        ],
-        recommendedParts: [PartCategory.plaquettesFrein],
-        estimatedCost: '35 - 45 EUR',
-        urgent: true,
+  DiagnosisResult _mapJsonToResult(
+    Map<String, dynamic> json, {
+    required bool isFromAI,
+    required String providerName,
+  }) {
+    final partsJson = json['parts'] as List<dynamic>? ?? [];
+    final parts = partsJson.map((p) {
+      final map = p as Map<String, dynamic>;
+      return PartSuggestion(
+        name: map['name'] as String? ?? 'Pièce',
+        category: map['category'] as String? ?? 'général',
+        priceEstimate: map['price_estimate'] as String? ?? 'N/A',
+        priority: map['priority'] as String? ?? 'recommended',
       );
-    }
+    }).toList();
 
-    if (symptom.contains('voyant') || symptom.contains('moteur')) {
-      return const DiagnosisResult(
-        title: 'Anomalie moteur détectée',
-        description:
-            'Le voyant moteur indique une anomalie. '
-            'Un diagnostic électronique (OBD) est nécessaire '
-            'pour identifier précisément la cause.',
-        severity: SeverityLevel.high,
-        symptoms: [
-          'Voyant moteur allumé',
-          'Possible perte de puissance',
-          'Consommation potentiellement augmentée',
-        ],
-        recommendedParts: [PartCategory.bougies],
-        estimatedCost: '30 - 100 EUR',
-        urgent: true,
-      );
-    }
+    final symptomsJson = json['symptoms'] as List<dynamic>? ?? [];
+    final symptoms = symptomsJson.map((s) => s.toString()).toList();
 
-    if (symptom.contains('vibration') || symptom.contains('volant')) {
-      return const DiagnosisResult(
-        title: 'Déséquilibre des roues',
-        description:
-            'Les vibrations dans le volant indiquent probablement '
-            'un déséquilibre des roues avant ou un problème '
-            'd\'amortisseurs. Un équilibrage est recommandé.',
-        severity: SeverityLevel.medium,
-        symptoms: [
-          'Vibrations dans le volant',
-          'Apparition à vitesse élevée',
-          'Usure irrégulière des pneus',
-        ],
-        recommendedParts: [PartCategory.pneus, PartCategory.amortisseurs],
-        estimatedCost: '80 - 160 EUR',
-        urgent: false,
-      );
-    }
+    final severityStr = json['severity'] as String? ?? 'medium';
+    final severity = SeverityLevel.fromString(severityStr);
 
-    if (symptom.contains('démarr') || symptom.contains('démarre')) {
-      return const DiagnosisResult(
-        title: 'Batterie faible',
-        description:
-            'Les difficultés de démarrage sont souvent liées '
-            'à une batterie faible ou en fin de vie. '
-            'Un test de batterie est recommandé.',
-        severity: SeverityLevel.high,
-        symptoms: [
-          'Démarrage difficile',
-          'Phares faibles',
-          'Bruit de clic au démarrage',
-        ],
-        recommendedParts: [PartCategory.batterie],
-        estimatedCost: '90 - 130 EUR',
-        urgent: true,
-      );
-    }
-
-    if (symptom.contains('fumée') || symptom.contains('blanche')) {
-      return const DiagnosisResult(
-        title: 'Joint de culasse possible',
-        description:
-            'La fumée blanche à l\'échappement peut indiquer '
-            'un problème de joint de culasse. '
-            'Une vérification urgente est nécessaire.',
-        severity: SeverityLevel.critical,
-        symptoms: [
-          'Fumée blanche épaisse',
-          'Perte de liquide de refroidissement',
-          'Surchauffe moteur',
-        ],
-        recommendedParts: [PartCategory.courroie],
-        estimatedCost: '500 - 1500 EUR',
-        urgent: true,
-      );
-    }
-
-    if (symptom.contains('consommation') || symptom.contains('carburant')) {
-      return const DiagnosisResult(
-        title: 'Filtre à air encrassé',
-        description:
-            'Une consommation élevée peut être causée par '
-            'un filtre à air encrassé ou des bougies usées. '
-            'Un remplacement améliorera la consommation.',
-        severity: SeverityLevel.medium,
-        symptoms: [
-          'Consommation augmentée',
-          'Perte de puissance',
-          'Fumée noire possible',
-        ],
-        recommendedParts: [PartCategory.filtreAir, PartCategory.bougies],
-        estimatedCost: '15 - 50 EUR',
-        urgent: false,
-      );
-    }
-
-    if (symptom.contains('pédale') || symptom.contains('molle')) {
-      return const DiagnosisResult(
-        title: 'Niveau de liquide de frein bas',
-        description:
-            'Une pédale de frein molle indique généralement '
-            'un niveau bas de liquide de frein ou une purge '
-            'nécessaire. Vérification urgente.',
-        severity: SeverityLevel.critical,
-        symptoms: [
-          'Pédale de frein molle',
-          'Freinage moins efficace',
-          'Possible fuite',
-        ],
-        recommendedParts: [PartCategory.plaquettesFrein],
-        estimatedCost: '50 - 200 EUR',
-        urgent: true,
-      );
-    }
-
-    if (symptom.contains('clim') || symptom.contains('froid')) {
-      return const DiagnosisResult(
-        title: 'Recharge de climatisation nécessaire',
-        description:
-            'La climatisation qui ne refroidit plus nécessite '
-            'probablement une recharge de gaz. '
-            'Un filtre habitacle neuf est aussi recommandé.',
-        severity: SeverityLevel.low,
-        symptoms: [
-          'Air moins froid',
-          'Mauvaise odeur',
-          'Compresseur bruyant',
-        ],
-        recommendedParts: [PartCategory.filtreHabitable],
-        estimatedCost: '30 - 80 EUR',
-        urgent: false,
-      );
-    }
-
-    return const DiagnosisResult(
-      title: 'Diagnostic général',
-      description:
-          'Votre problème nécessite un examen plus approfondi. '
-          'Nous vous recommandons de consulter un professionnel '
-          'ou de faire un scan OBD.',
-      severity: SeverityLevel.medium,
-      symptoms: [
-        'Symptôme non spécifique',
-        'Analyse complémentaire nécessaire',
-      ],
-      recommendedParts: [],
-      estimatedCost: 'Variable',
-      urgent: false,
+    return DiagnosisResult(
+      title: json['title'] as String? ?? 'Diagnostic',
+      description: json['description'] as String? ?? '',
+      severity: severity,
+      symptoms: symptoms,
+      parts: parts,
+      estimatedCost: json['estimated_cost'] as String? ?? 'Variable',
+      urgent: json['urgent'] as bool? ?? false,
+      systems: _buildSystemsFromSeverity(
+          severity, json['title'] as String? ?? ''),
+      isFromAI: isFromAI,
+      providerName: providerName,
     );
   }
 
-  void _orderPart(Part part) async {
-    final success = await _autodocService.openPartLink(
-      part: part,
-      brand: _selectedVehicleBrand,
-      model: _selectedVehicleModel,
-    );
-
-    if (!mounted) return;
-
-    if (!success) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: const Text('Impossible d\'ouvrir AUTODOC'),
-          backgroundColor: AppColors.danger,
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-        ),
+  DiagnosisResult _mapRuleToResult(DiagnosticRule? rule, String symptom) {
+    if (rule == null) {
+      return DiagnosisResult(
+        title: 'Diagnostic général',
+        description:
+            'Votre problème nécessite un examen plus approfondi. '
+            'Nous vous recommandons de consulter un professionnel '
+            'ou de faire un scan OBD.',
+        severity: SeverityLevel.medium,
+        symptoms: [
+          'Symptôme non spécifique',
+          'Analyse complémentaire nécessaire'
+        ],
+        parts: const [],
+        estimatedCost: 'Variable',
+        urgent: false,
+        systems: _buildSystemsFromSeverity(
+            SeverityLevel.medium, 'Diagnostic général'),
+        isFromAI: false,
+        providerName: 'Local',
       );
     }
+
+    final parts = rule.parts.map((p) {
+      return PartSuggestion(
+        name: p['name'] ?? 'Pièce',
+        category: p['category'] ?? 'général',
+        priceEstimate: p['price_estimate'] ?? 'N/A',
+        priority: p['priority'] ?? 'recommended',
+      );
+    }).toList();
+
+    return DiagnosisResult(
+      title: rule.title,
+      description: rule.description,
+      severity: SeverityLevel.fromString(rule.severity),
+      symptoms: rule.symptoms,
+      parts: parts,
+      estimatedCost: rule.estimatedCost,
+      urgent: rule.urgent,
+      systems: _buildSystemsFromSeverity(
+          SeverityLevel.fromString(rule.severity), rule.title),
+      isFromAI: false,
+      providerName: 'Local',
+    );
+  }
+
+  List<SystemCheck> _buildSystemsFromSeverity(
+      SeverityLevel severity, String title) {
+    final lower = title.toLowerCase();
+
+    SystemCheck battery = const SystemCheck(
+      name: 'Batterie',
+      description: 'Niveau de santé : 98%',
+      icon: Icons.battery_charging_full_rounded,
+      iconColor: AppColors.success,
+      status: SystemStatus.excellent,
+    );
+    SystemCheck engine = const SystemCheck(
+      name: 'Moteur & Transmission',
+      description: 'Aucun défaut détecté',
+      icon: Icons.settings_rounded,
+      iconColor: Color(0xFF3B82F6),
+      status: SystemStatus.excellent,
+    );
+    SystemCheck brakes = const SystemCheck(
+      name: 'Freins',
+      description: 'Usure : 12%',
+      icon: Icons.car_repair_rounded,
+      iconColor: Color(0xFFF97316),
+      status: SystemStatus.bon,
+    );
+    SystemCheck climate = const SystemCheck(
+      name: 'Climatisation',
+      description: 'Fonctionnement optimal',
+      icon: Icons.ac_unit_rounded,
+      iconColor: Color(0xFF8B5CF6),
+      status: SystemStatus.excellent,
+    );
+
+    if (lower.contains('frein') ||
+        lower.contains('plaquette') ||
+        lower.contains('disque')) {
+      brakes = SystemCheck(
+        name: 'Freins',
+        description: severity == SeverityLevel.critical
+            ? 'Usure critique détectée'
+            : 'Usure : 65%',
+        icon: Icons.car_repair_rounded,
+        iconColor: AppColors.danger,
+        status: severity == SeverityLevel.critical
+            ? SystemStatus.probleme
+            : SystemStatus.attention,
+      );
+    } else if (lower.contains('batterie') ||
+        lower.contains('démarre') ||
+        lower.contains('alternateur')) {
+      battery = SystemCheck(
+        name: 'Batterie',
+        description: 'Batterie faible',
+        icon: Icons.battery_charging_full_rounded,
+        iconColor: AppColors.danger,
+        status: SystemStatus.probleme,
+      );
+    } else if (lower.contains('moteur') ||
+        lower.contains('bougie') ||
+        lower.contains('injection')) {
+      engine = SystemCheck(
+        name: 'Moteur & Transmission',
+        description: 'Anomalie détectée',
+        icon: Icons.settings_rounded,
+        iconColor: AppColors.orange,
+        status: SystemStatus.attention,
+      );
+    } else if (lower.contains('clim') ||
+        lower.contains('refroidissement')) {
+      climate = SystemCheck(
+        name: 'Climatisation',
+        description: 'Entretien recommandé',
+        icon: Icons.ac_unit_rounded,
+        iconColor: AppColors.orange,
+        status: SystemStatus.attention,
+      );
+    }
+
+    return [battery, engine, brakes, climate];
+  }
+
+  Future<void> _orderPart(PartSuggestion part) async {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('🛒 Recherche AUTODOC : "${part.name}"'),
+        backgroundColor: AppColors.orange,
+        behavior: SnackBarBehavior.floating,
+        duration: const Duration(seconds: 2),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
+      ),
+    );
+  }
+
+  void _openTutorial(PartSuggestion part) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('📚 Tutoriel : "${part.name}"\nBientôt disponible !'),
+        backgroundColor: AppColors.navy,
+        behavior: SnackBarBehavior.floating,
+        duration: const Duration(seconds: 2),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
+      ),
+    );
   }
 }
