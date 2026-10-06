@@ -2,6 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'firebase_options.dart';
 import 'core/navigation/app_router.dart';
 import 'core/services/database_service.dart';
@@ -20,7 +21,19 @@ void main() async {
     ),
   );
 
-  // ✅ Initialiser Firebase (c'est TOUT)
+  // ✅ 1. Initialiser Supabase (pour les images de pièces)
+  try {
+    await Supabase.initialize(
+      url: 'https://rpuhqomualtsfwpldtdw.supabase.co',
+      anonKey:
+          'sb_publishable_Pnoa31QZWalX2gufPXYEAg_Yy3dphZj', // ⚠️ Remplace par TA clé complète
+    );
+    debugPrint('✅ Supabase initialisé');
+  } catch (e) {
+    debugPrint('❌ Erreur Supabase : $e');
+  }
+
+  // ✅ 2. Initialiser Firebase
   try {
     await Firebase.initializeApp(
       options: DefaultFirebaseOptions.currentPlatform,
@@ -30,7 +43,7 @@ void main() async {
     debugPrint('❌ Erreur Firebase : $e');
   }
 
-  // ✅ Le reste
+  // ✅ 3. Initialiser le reste
   try {
     await DatabaseService().initialize();
     debugPrint('✅ DatabaseService initialisé');

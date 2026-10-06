@@ -14,6 +14,7 @@ import '../../../features/garage/presentation/pages/vin_input_page.dart';
 import '../../../features/garage/presentation/pages/vehicle_result_page.dart';
 import '../../../features/scanner/presentation/pages/scanner_page.dart';
 import '../../../features/diagnostic/presentation/pages/diagnostic_page.dart';
+import '../../../features/diagnostic/presentation/pages/tutorial_page.dart';
 import '../../../features/history/presentation/pages/history_page.dart';
 import '../../../features/profile/presentation/pages/profile_page.dart';
 import '../../../features/authentication/presentation/pages/paywall_page.dart';
@@ -81,6 +82,14 @@ class AppRouter {
       GoRoute(
         path: '/diagnostic',
         builder: (context, state) => const DiagnosticPage(),
+      ),
+      // ✅ NOUVELLE ROUTE : Tutoriel détaillé d'une pièce
+      GoRoute(
+        path: '/tutorial',
+        builder: (context, state) {
+          final partName = state.uri.queryParameters['part'] ?? 'Pièce';
+          return TutorialPage(partName: partName);
+        },
       ),
       StatefulShellRoute.indexedStack(
         builder: (context, state, navigationShell) {

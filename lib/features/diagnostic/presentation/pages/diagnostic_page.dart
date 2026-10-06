@@ -5,6 +5,7 @@ import '../../../../core/theme/app_theme.dart';
 import '../../../../core/services/ai_service.dart';
 import '../../../../core/services/diagnostic_rules.dart';
 import '../../../../core/services/global_notifier.dart';
+import '../../../../core/services/piece_image_service.dart';
 import '../widgets/mecago_chat_widget.dart';
 
 /// Niveau de gravité du diagnostic
@@ -180,6 +181,7 @@ class DiagnosticPage extends StatefulWidget {
 
 class _DiagnosticPageState extends State<DiagnosticPage> {
   final AiService _aiService = const AiService();
+  final PieceImageService _pieceImageService = const PieceImageService();
   final TextEditingController _symptomController = TextEditingController();
 
   String _selectedVehicleBrand = 'Peugeot';
@@ -460,10 +462,6 @@ class _DiagnosticPageState extends State<DiagnosticPage> {
     );
   }
 
-  // ============================================
-  // CARTE VÉHICULE (avec car_neon.png par défaut)
-  // ============================================
-
   Widget _buildVehicleCard() {
     final imageUrl = GlobalNotifier.instance.activeVehicle?.imageUrl ?? '';
     final hasPhoto = imageUrl.isNotEmpty;
@@ -479,7 +477,6 @@ class _DiagnosticPageState extends State<DiagnosticPage> {
         borderRadius: BorderRadius.circular(20),
         child: Stack(
           children: [
-            // Image (photo utilisateur OU car_neon.png par défaut)
             Positioned.fill(
               child: hasPhoto
                   ? Image.asset(
@@ -489,8 +486,6 @@ class _DiagnosticPageState extends State<DiagnosticPage> {
                     )
                   : _buildDefaultCarImage(),
             ),
-
-            // Dégradé
             Positioned.fill(
               child: Container(
                 decoration: BoxDecoration(
@@ -505,8 +500,6 @@ class _DiagnosticPageState extends State<DiagnosticPage> {
                 ),
               ),
             ),
-
-            // Contenu
             Positioned(
               left: 18,
               top: 18,
@@ -576,7 +569,6 @@ class _DiagnosticPageState extends State<DiagnosticPage> {
     );
   }
 
-  /// Image par défaut (voiture néon orange)
   Widget _buildDefaultCarImage() {
     return Center(
       child: Image.asset(
@@ -1050,6 +1042,10 @@ class _DiagnosticPageState extends State<DiagnosticPage> {
     );
   }
 
+  // ============================================
+  // CARTE PIÈCE (avec image Supabase)
+  // ============================================
+
   Widget _buildPartCard(PartSuggestion part) {
     return Container(
       margin: const EdgeInsets.only(bottom: 10),
@@ -1061,14 +1057,15 @@ class _DiagnosticPageState extends State<DiagnosticPage> {
       ),
       child: Row(
         children: [
-          Container(
+          // ✅ Image de la pièce depuis Supabase
+          _pieceImageService.buildPieceImage(
+            marque: _selectedVehicleBrand,
+            modele: _selectedVehicleModel,
+            motorisation: _selectedVehicleFuel,
+            nomPieceIa: part.name.toLowerCase().replaceAll(' ', '_'),
             width: 44,
             height: 44,
-            decoration: BoxDecoration(
-              color: AppColors.orange.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Icon(part.icon, color: AppColors.orange, size: 22),
+            borderRadius: 12,
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -1404,17 +1401,10 @@ class _DiagnosticPageState extends State<DiagnosticPage> {
     );
   }
 
+  // ✅ CÂBLAGE DU BOUTON TUTORIEL → Ouvre TutorialPage
   void _openTutorial(PartSuggestion part) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('📚 Tutoriel : "${part.name}"\nBientôt disponible !'),
-        backgroundColor: AppColors.navy,
-        behavior: SnackBarBehavior.floating,
-        duration: const Duration(seconds: 2),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
-      ),
+    context.push(
+      '/tutorial?part=${Uri.encodeComponent(part.name)}',
     );
   }
 }

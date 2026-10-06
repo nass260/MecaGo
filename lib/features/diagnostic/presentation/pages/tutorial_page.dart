@@ -1,6 +1,7 @@
 // lib/features/diagnostic/presentation/pages/tutorial_page.dart
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../../../core/theme/app_theme.dart';
 
 /// Étape d'un tutoriel
@@ -52,7 +53,7 @@ class TutorialPage extends StatelessWidget {
   });
 
   /// Récupère le tutoriel correspondant à la pièce
-  Tutorial? _getTutorial() {
+  Tutorial _getTutorial() {
     final lower = partName.toLowerCase();
 
     // ============================================
@@ -68,7 +69,8 @@ class TutorialPage extends StatelessWidget {
             'Cric + chandelles · Clé à chocs (16-18mm) · Repousse-piston · Nettoyant frein · Clé dynamométrique',
         warning:
             '⚠️ Ne roulez JAMAIS sans avoir pompé la pédale de frein après le remontage. Risque d\'accident grave.',
-        videoUrl: 'https://www.youtube.com/results?search_query=changer+plaquettes+de+frein',
+        videoUrl:
+            'https://www.youtube.com/results?search_query=changer+plaquettes+de+frein',
         videoTitle: 'Tutoriel - Changer ses plaquettes de frein',
         steps: [
           TutorialStep(
@@ -166,7 +168,8 @@ class TutorialPage extends StatelessWidget {
             'Cric + chandelles · Clé à chocs · Clé dynamométrique · Nettoyant frein · Étau',
         warning:
             '⚠️ Les disques doivent être remplacés par paire (avant ou arrière). Ne mélangez JAMAIS un disque neuf avec un ancien.',
-        videoUrl: 'https://www.youtube.com/results?search_query=changer+disques+de+frein',
+        videoUrl:
+            'https://www.youtube.com/results?search_query=changer+disques+de+frein',
         videoTitle: 'Tutoriel - Changer ses disques de frein',
         steps: [
           TutorialStep(
@@ -216,8 +219,7 @@ class TutorialPage extends StatelessWidget {
           TutorialStep(
             number: 8,
             title: 'Remonter l\'étrier',
-            description:
-                'Replacez l\'étrier et serrez les boulons au couple.',
+            description: 'Replacez l\'étrier et serrez les boulons au couple.',
           ),
           TutorialStep(
             number: 9,
@@ -245,7 +247,8 @@ class TutorialPage extends StatelessWidget {
         difficulty: 'Débutant',
         duration: '15 min',
         tools: 'Tournevis cruciforme · Chiffon',
-        videoUrl: 'https://www.youtube.com/results?search_query=changer+filtre+à+air',
+        videoUrl:
+            'https://www.youtube.com/results?search_query=changer+filtre+à+air',
         videoTitle: 'Tutoriel - Changer son filtre à air',
         steps: [
           TutorialStep(
@@ -282,8 +285,7 @@ class TutorialPage extends StatelessWidget {
           TutorialStep(
             number: 6,
             title: 'Refermer',
-            description:
-                'Replacez le couvercle et revissez les vis.',
+            description: 'Replacez le couvercle et revissez les vis.',
           ),
         ],
       );
@@ -299,7 +301,8 @@ class TutorialPage extends StatelessWidget {
         difficulty: 'Débutant',
         duration: '20 min',
         tools: 'Tournevis · Lampe torche',
-        videoUrl: 'https://www.youtube.com/results?search_query=changer+filtre+habitacle',
+        videoUrl:
+            'https://www.youtube.com/results?search_query=changer+filtre+habitacle',
         videoTitle: 'Tutoriel - Changer son filtre habitacle',
         steps: [
           TutorialStep(
@@ -318,14 +321,12 @@ class TutorialPage extends StatelessWidget {
           TutorialStep(
             number: 3,
             title: 'Retirer l\'ancien filtre',
-            description:
-                'Sortez le filtre usagé en notant son sens.',
+            description: 'Sortez le filtre usagé en notant son sens.',
           ),
           TutorialStep(
             number: 4,
             title: 'Nettoyer',
-            description:
-                'Aspirez la poussière dans le compartiment.',
+            description: 'Aspirez la poussière dans le compartiment.',
           ),
           TutorialStep(
             number: 5,
@@ -336,8 +337,7 @@ class TutorialPage extends StatelessWidget {
           TutorialStep(
             number: 6,
             title: 'Refermer',
-            description:
-                'Replacez le cache ou la boîte à gants.',
+            description: 'Replacez le cache ou la boîte à gants.',
           ),
         ],
       );
@@ -355,7 +355,8 @@ class TutorialPage extends StatelessWidget {
         tools: 'Clé plate (10mm) · Gants · Lunettes de protection',
         warning:
             '⚠️ Débranchez TOUJOURS la borne NÉGATIVE (-) en premier. Rebranchez-la en DERNIER. Risque d\'explosion sinon.',
-        videoUrl: 'https://www.youtube.com/results?search_query=changer+batterie+voiture',
+        videoUrl:
+            'https://www.youtube.com/results?search_query=changer+batterie+voiture',
         videoTitle: 'Tutoriel - Changer sa batterie',
         steps: [
           TutorialStep(
@@ -374,8 +375,7 @@ class TutorialPage extends StatelessWidget {
           TutorialStep(
             number: 3,
             title: 'Débrancher la borne POSITIVE',
-            description:
-                'Dévissez la borne POSITIVE (+). Écartez le câble.',
+            description: 'Dévissez la borne POSITIVE (+). Écartez le câble.',
           ),
           TutorialStep(
             number: 4,
@@ -423,7 +423,8 @@ class TutorialPage extends StatelessWidget {
         difficulty: 'Intermédiaire',
         duration: '45 min',
         tools: 'Clé à bougie (16mm) · Clé dynamométrique · Soufflette',
-        videoUrl: 'https://www.youtube.com/results?search_query=changer+bougies+allumage',
+        videoUrl:
+            'https://www.youtube.com/results?search_query=changer+bougies+allumage',
         videoTitle: 'Tutoriel - Changer ses bougies',
         steps: [
           TutorialStep(
@@ -693,60 +694,75 @@ class TutorialPage extends StatelessWidget {
     );
   }
 
+  // ============================================
+  // CARTE VIDÉO YOUTUBE (ouvre YouTube)
+  // ============================================
+
   Widget _buildVideoCard(Tutorial tutorial) {
     if (tutorial.videoUrl == null) return const SizedBox();
 
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: AppShadows.card,
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 50,
-            height: 50,
-            decoration: BoxDecoration(
-              color: const Color(0xFFFF0000).withOpacity(0.1),
-              borderRadius: BorderRadius.circular(12),
+    return GestureDetector(
+      onTap: () => _openYouTube(tutorial.videoUrl!),
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: AppShadows.card,
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 50,
+              height: 50,
+              decoration: BoxDecoration(
+                color: const Color(0xFFFF0000).withOpacity(0.1),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: const Icon(Icons.play_circle_filled_rounded,
+                  color: Color(0xFFFF0000), size: 28),
             ),
-            child: const Icon(Icons.play_circle_filled_rounded,
-                color: Color(0xFFFF0000), size: 28),
-          ),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  'Vidéo explicative',
-                  style: TextStyle(
-                    fontSize: 11,
-                    color: AppColors.textSecondary,
-                    fontWeight: FontWeight.w600,
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Vidéo explicative',
+                    style: TextStyle(
+                      fontSize: 11,
+                      color: AppColors.textSecondary,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  tutorial.videoTitle ?? 'Voir le tutoriel',
-                  style: const TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.navy,
+                  const SizedBox(height: 2),
+                  Text(
+                    tutorial.videoTitle ?? 'Voir le tutoriel',
+                    style: const TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.navy,
+                    ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
                   ),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
-          const Icon(Icons.chevron_right_rounded,
-              color: AppColors.textLight, size: 22),
-        ],
+            const Icon(Icons.open_in_new_rounded,
+                color: AppColors.textLight, size: 20),
+          ],
+        ),
       ),
     );
+  }
+
+  /// Ouvre YouTube dans le navigateur
+  Future<void> _openYouTube(String url) async {
+    final uri = Uri.parse(url);
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    }
   }
 
   Widget _buildWarningCard(String warning) {
