@@ -5,7 +5,9 @@ import '../../../../core/theme/app_theme.dart';
 import '../../../../core/services/ai_service.dart';
 import '../../../../core/services/diagnostic_rules.dart';
 import '../../../../core/services/global_notifier.dart';
+import '../../../../core/services/marque_image_service.dart';
 import '../../../../core/services/piece_image_service.dart';
+import '../../../home/data/models/vehicle_model.dart';
 import '../widgets/mecago_chat_widget.dart';
 
 /// Niveau de gravité du diagnostic
@@ -182,12 +184,10 @@ class DiagnosticPage extends StatefulWidget {
 class _DiagnosticPageState extends State<DiagnosticPage> {
   final AiService _aiService = const AiService();
   final PieceImageService _pieceImageService = const PieceImageService();
+  final MarqueImageService _marqueImageService = const MarqueImageService();
   final TextEditingController _symptomController = TextEditingController();
 
-  String _selectedVehicleBrand = 'Peugeot';
-  String _selectedVehicleModel = '308';
-  String _selectedVehicleFuel = 'Essence';
-  int _selectedVehicleYear = 2020;
+  Vehicle? _selectedVehicle;
   DiagnosisResult? _result;
   bool _isAnalyzing = false;
   String? _errorMessage;
@@ -207,17 +207,17 @@ class _DiagnosticPageState extends State<DiagnosticPage> {
     'Direction dure',
   ];
 
+  // Helpers pour accéder au véhicule actif
+  String get _brand => _selectedVehicle?.brand ?? 'Peugeot';
+  String get _model => _selectedVehicle?.model ?? '308';
+  String get _fuel => _selectedVehicle?.fuelType.label ?? 'Essence';
+  int get _year => _selectedVehicle?.year ?? 2020;
+
   @override
   void initState() {
     super.initState();
     final notifier = GlobalNotifier.instance;
-    final activeVehicle = notifier.activeVehicle;
-    if (activeVehicle != null) {
-      _selectedVehicleBrand = activeVehicle.brand;
-      _selectedVehicleModel = activeVehicle.model;
-      _selectedVehicleFuel = activeVehicle.fuelType.label;
-      _selectedVehicleYear = activeVehicle.year;
-    }
+    _selectedVehicle = notifier.activeVehicle;
     _symptomController.addListener(_onTextChanged);
   }
 
@@ -462,131 +462,314 @@ class _DiagnosticPageState extends State<DiagnosticPage> {
     );
   }
 
-  Widget _buildVehicleCard() {
-    final imageUrl = GlobalNotifier.instance.activeVehicle?.imageUrl ?? '';
-    final hasPhoto = imageUrl.isNotEmpty;
+  // ============================================
+  // CARTE VÉHICULE (cliquable → bottom sheet)
+  // ============================================
 
-    return Container(
-      height: 160,
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(20),
-        gradient: AppGradients.navy,
-        boxShadow: AppShadows.hero,
-      ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(20),
-        child: Stack(
-          children: [
-            Positioned.fill(
-              child: hasPhoto
-                  ? Image.asset(
-                      imageUrl,
-                      fit: BoxFit.cover,
-                      errorBuilder: (_, __, ___) => _buildDefaultCarImage(),
-                    )
-                  : _buildDefaultCarImage(),
-            ),
-            Positioned.fill(
-              child: Container(
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.centerLeft,
-                    end: Alignment.centerRight,
-                    colors: [
-                      AppColors.navy.withOpacity(0.95),
-                      AppColors.navy.withOpacity(0.4),
+  Widget _buildVehicleCard() {
+    return GestureDetector(
+      onTap: _showVehicleSelector,
+      child: Container(
+        height: 160,
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(20),
+          gradient: AppGradients.navy,
+          boxShadow: AppShadows.hero,
+        ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(20),
+          child: Stack(
+            children: [
+              // LOGO DE LA MARQUE (centré)
+              Positioned.fill(
+                child: Center(
+                  child: _marqueImageService.buildMarqueLogo(
+                    marque: _brand,
+                    width: 100,
+                    height: 100,
+                    borderRadius: 20,
+                  ),
+                ),
+              ),
+
+              // BADGE "CHANGER" en haut à droite
+              Positioned(
+                top: 12,
+                right: 12,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 10, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.15),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: Colors.white.withOpacity(0.3),
+                      width: 1,
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: const [
+                      Icon(Icons.swap_horiz_rounded,
+                          color: Colors.white, size: 12),
+                      SizedBox(width: 4),
+                      Text(
+                        'Changer',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 10,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
                     ],
                   ),
                 ),
               ),
-            ),
-            Positioned(
-              left: 18,
-              top: 18,
-              right: 18,
-              bottom: 18,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 8, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: AppColors.success,
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: const [
-                            Icon(Icons.check_circle_rounded,
-                                color: Colors.white, size: 10),
-                            SizedBox(width: 4),
-                            Text(
-                              '100%',
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 10,
-                                fontWeight: FontWeight.w800,
+
+              // CONTENU (badge santé + infos)
+              Positioned(
+                left: 18,
+                top: 18,
+                right: 18,
+                bottom: 18,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 8, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: AppColors.success,
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: const [
+                              Icon(Icons.check_circle_rounded,
+                                  color: Colors.white, size: 10),
+                              SizedBox(width: 4),
+                              Text(
+                                '100%',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w800,
+                                ),
                               ),
-                            ),
-                          ],
+                            ],
+                          ),
                         ),
-                      ),
-                    ],
-                  ),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        '$_selectedVehicleBrand $_selectedVehicleModel',
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 22,
-                          fontWeight: FontWeight.w900,
-                          letterSpacing: -0.5,
+                      ],
+                    ),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          '$_brand $_model',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 22,
+                            fontWeight: FontWeight.w900,
+                            letterSpacing: -0.5,
+                          ),
                         ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        '$_selectedVehicleFuel · $_selectedVehicleYear',
-                        style: TextStyle(
-                          color: Colors.white.withOpacity(0.85),
-                          fontSize: 12,
-                          fontWeight: FontWeight.w500,
+                        const SizedBox(height: 4),
+                        Text(
+                          '$_fuel · $_year',
+                          style: TextStyle(
+                            color: Colors.white.withOpacity(0.85),
+                            fontSize: 12,
+                            fontWeight: FontWeight.w500,
+                          ),
                         ),
-                      ),
-                    ],
-                  ),
-                ],
+                      ],
+                    ),
+                  ],
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
   }
 
-  Widget _buildDefaultCarImage() {
-    return Center(
-      child: Image.asset(
-        'assets/images/car_neon.png',
-        fit: BoxFit.contain,
-        errorBuilder: (_, __, ___) => Container(
-          decoration: const BoxDecoration(
-            gradient: AppGradients.navy,
-          ),
-          child: const Center(
-            child: Icon(
-              Icons.directions_car_rounded,
-              color: Colors.white24,
-              size: 80,
-            ),
+  // ============================================
+  // BOTTOM SHEET — Sélecteur de véhicule
+  // ============================================
+
+  void _showVehicleSelector() {
+    final vehicles = GlobalNotifier.instance.vehicles;
+
+    if (vehicles.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text('Aucun véhicule dans votre garage'),
+          backgroundColor: AppColors.orange,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
           ),
         ),
-      ),
+      );
+      return;
+    }
+
+    if (vehicles.length == 1) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text('Ajoutez un autre véhicule pour changer'),
+          backgroundColor: AppColors.orange,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+        ),
+      );
+      return;
+    }
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (context) {
+        return Container(
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+          ),
+          child: SafeArea(
+            top: false,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Poignée
+                Container(
+                  margin: const EdgeInsets.only(top: 12),
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: AppColors.border,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+                const SizedBox(height: 20),
+                // Titre
+                const Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 20),
+                  child: Row(
+                    children: [
+                      Icon(Icons.garage_rounded,
+                          color: AppColors.orange, size: 22),
+                      SizedBox(width: 10),
+                      Text(
+                        'Choisir un véhicule',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w900,
+                          color: AppColors.navy,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 16),
+                // Liste des véhicules
+                Flexible(
+                  child: ListView.builder(
+                    shrinkWrap: true,
+                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                    itemCount: vehicles.length,
+                    itemBuilder: (context, index) {
+                      final vehicle = vehicles[index];
+                      final isSelected = vehicle.id == _selectedVehicle?.id;
+
+                      return GestureDetector(
+                        onTap: () {
+                          setState(() {
+                            _selectedVehicle = vehicle;
+                          });
+                          Navigator.pop(context);
+                        },
+                        child: Container(
+                          margin: const EdgeInsets.only(bottom: 10),
+                          padding: const EdgeInsets.all(14),
+                          decoration: BoxDecoration(
+                            color: isSelected
+                                ? AppColors.orange.withOpacity(0.08)
+                                : Colors.white,
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(
+                              color: isSelected
+                                  ? AppColors.orange
+                                  : AppColors.border,
+                              width: isSelected ? 2 : 1,
+                            ),
+                          ),
+                          child: Row(
+                            children: [
+                              // Logo de la marque
+                              _marqueImageService.buildMarqueLogo(
+                                marque: vehicle.brand,
+                                width: 44,
+                                height: 44,
+                                borderRadius: 10,
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment:
+                                      CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      '${vehicle.brand} ${vehicle.model}',
+                                      style: const TextStyle(
+                                        fontSize: 15,
+                                        fontWeight: FontWeight.w800,
+                                        color: AppColors.navy,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 2),
+                                    Text(
+                                      '${vehicle.plate} · ${vehicle.year} · ${vehicle.fuelType.label}',
+                                      style: const TextStyle(
+                                        fontSize: 11,
+                                        color: AppColors.textSecondary,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              if (isSelected)
+                                Container(
+                                  padding: const EdgeInsets.all(4),
+                                  decoration: const BoxDecoration(
+                                    color: AppColors.orange,
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: const Icon(
+                                    Icons.check_rounded,
+                                    color: Colors.white,
+                                    size: 16,
+                                  ),
+                                ),
+                            ],
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+                const SizedBox(height: 16),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 
@@ -716,8 +899,7 @@ class _DiagnosticPageState extends State<DiagnosticPage> {
             const SizedBox(height: 20),
           ],
           MecaGoChatWidget(
-            vehicleInfo:
-                '$_selectedVehicleBrand $_selectedVehicleModel, $_selectedVehicleFuel, $_selectedVehicleYear',
+            vehicleInfo: '$_brand $_model, $_fuel, $_year',
           ),
           const SizedBox(height: 20),
           SizedBox(
@@ -1043,7 +1225,7 @@ class _DiagnosticPageState extends State<DiagnosticPage> {
   }
 
   // ============================================
-  // CARTE PIÈCE (avec image Supabase)
+  // CARTE PIÈCE (avec image Supabase - SIMPLIFIÉE)
   // ============================================
 
   Widget _buildPartCard(PartSuggestion part) {
@@ -1057,12 +1239,9 @@ class _DiagnosticPageState extends State<DiagnosticPage> {
       ),
       child: Row(
         children: [
-          // ✅ Image de la pièce depuis Supabase
+          // ✅ Image de la pièce depuis Supabase (1 seule requête)
           _pieceImageService.buildPieceImage(
-            marque: _selectedVehicleBrand,
-            modele: _selectedVehicleModel,
-            motorisation: _selectedVehicleFuel,
-            nomPieceIa: part.name.toLowerCase().replaceAll(' ', '_'),
+            nomPieceIa: part.name,
             width: 44,
             height: 44,
             borderRadius: 12,
@@ -1190,7 +1369,7 @@ class _DiagnosticPageState extends State<DiagnosticPage> {
     });
 
     final symptom = _symptomController.text.trim();
-    final vehicleInfo = '$_selectedVehicleBrand $_selectedVehicleModel';
+    final vehicleInfo = '$_brand $_model';
 
     try {
       final response = await _aiService.diagnose(
@@ -1401,7 +1580,6 @@ class _DiagnosticPageState extends State<DiagnosticPage> {
     );
   }
 
-  // ✅ CÂBLAGE DU BOUTON TUTORIEL → Ouvre TutorialPage
   void _openTutorial(PartSuggestion part) {
     context.push(
       '/tutorial?part=${Uri.encodeComponent(part.name)}',

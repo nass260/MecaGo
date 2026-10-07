@@ -1,102 +1,60 @@
-// lib/core/services/piece_image_service.dart
+// lib/core/services/marque_image_service.dart
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../theme/app_theme.dart';
 
-/// Service de récupération des images de pièces depuis Supabase
-class PieceImageService {
-  const PieceImageService();
+/// Service de récupération des logos de marques depuis Supabase
+class MarqueImageService {
+  const MarqueImageService();
 
-  /// Extrait un mot-clé générique à partir du nom de la pièce
-  String _extractKeyword(String nomPieceIa) {
-    final lower = nomPieceIa.toLowerCase();
-
-    // Freinage
-    if (lower.contains('plaquette')) return 'plaquettes';
-    if (lower.contains('disque')) return 'disques';
-    if (lower.contains('étrier')) return 'etrier';
-    if (lower.contains('frein')) return 'freins';
-
-    // Filtration
-    if (lower.contains('huile') && lower.contains('filtre')) {
-      return 'filtre_huile';
-    }
-    if (lower.contains('air') && lower.contains('filtre')) {
-      return 'filtre_air';
-    }
-    if (lower.contains('habitacle')) return 'filtre_habitacle';
-    if (lower.contains('gasoil') || lower.contains('diesel')) {
-      return 'filtre_gasoil';
-    }
-
-    // Moteur
-    if (lower.contains('bougie')) return 'bougies';
-    if (lower.contains('courroie')) return 'courroie';
-    if (lower.contains('vanne') && lower.contains('egr')) return 'vanne_egr';
-    if (lower.contains('turbo')) return 'turbo';
-    if (lower.contains('injecteur')) return 'injecteur';
-
-    // Électrique
-    if (lower.contains('batterie')) return 'batterie';
-    if (lower.contains('alternateur')) return 'alternateur';
-    if (lower.contains('démarreur')) return 'demarreur';
-    if (lower.contains('ampoule') || lower.contains('phare')) {
-      return 'ampoule';
-    }
-
-    // Suspension
-    if (lower.contains('amortisseur')) return 'amortisseur';
-    if (lower.contains('rotule')) return 'rotule';
-    if (lower.contains('cardan')) return 'cardan';
-    if (lower.contains('roulement')) return 'roulement';
-
-    // Climatisation
-    if (lower.contains('clim')) return 'clim';
-    if (lower.contains('compresseur')) return 'compresseur_clim';
-
-    // Par défaut : remplacer les espaces par des underscores
-    return nomPieceIa.toLowerCase().replaceAll(' ', '_');
+  /// Normalise le nom de la marque (lowercase + tirets)
+  String _normalizeMarque(String marque) {
+    return marque
+        .toLowerCase()
+        .trim()
+        .replaceAll(' ', '-')
+        .replaceAll('_', '-');
   }
 
-  /// Récupère l'URL de l'image d'une pièce depuis Supabase
-  /// (1 seule requête grâce à la table simplifiée)
-  Future<String?> getPieceImageUrl(String nomPieceIa) async {
+  /// Récupère l'URL du logo d'une marque depuis Supabase
+  Future<String?> getMarqueLogoUrl(String marque) async {
     try {
       final supabase = Supabase.instance.client;
-      final keyword = _extractKeyword(nomPieceIa);
+      final normalized = _normalizeMarque(marque);
 
-      debugPrint('🔍 Recherche image pièce : $keyword (depuis "$nomPieceIa")');
+      debugPrint('🔍 Recherche logo : $normalized (depuis "$marque")');
 
       final response = await supabase
-          .from('pieces_diagnostic')
-          .select('url_image')
-          .eq('nom_piece_ia', keyword)
+          .from('marques_images')
+          .select('url_logo')
+          .eq('nom_marque', normalized)
           .limit(1)
           .maybeSingle();
 
-      if (response != null && response['url_image'] != null) {
-        debugPrint('✅ Image trouvée : $keyword');
-        return response['url_image'] as String;
+      if (response != null && response['url_logo'] != null) {
+        debugPrint('✅ Logo trouvé : $normalized');
+        return response['url_logo'] as String;
       }
 
-      debugPrint('⚠️ Aucune image pour "$keyword"');
+      debugPrint('⚠️ Aucun logo pour "$normalized"');
       return null;
     } catch (e) {
-      debugPrint('❌ Erreur récupération image pièce : $e');
+      debugPrint('❌ Erreur récupération logo marque : $e');
       return null;
     }
   }
 
-  /// Widget asynchrone qui affiche l'image d'une pièce
-  Widget buildPieceImage({
-    required String nomPieceIa,
-    double width = 80,
-    double height = 80,
+  /// Widget asynchrone qui affiche le logo d'une marque
+  Widget buildMarqueLogo({
+    required String marque,
+    double width = 44,
+    double height = 44,
     double borderRadius = 12,
+    BoxFit fit = BoxFit.contain,
   }) {
     return FutureBuilder<String?>(
-      future: getPieceImageUrl(nomPieceIa),
+      future: getMarqueLogoUrl(marque),
       builder: (context, snapshot) {
         // État 1 : Chargement
         if (snapshot.connectionState == ConnectionState.waiting) {
@@ -118,21 +76,21 @@ class PieceImageService {
           );
         }
 
-        // État 2 : Erreur ou URL null
+        // État 2 : Erreur ou URL null → icône voiture par défaut
         if (snapshot.hasError || snapshot.data == null) {
           return _buildPlaceholder(
             width: width,
             height: height,
             borderRadius: borderRadius,
             child: Icon(
-              Icons.build_rounded,
+              Icons.directions_car_rounded,
               color: AppColors.orange,
               size: width * 0.5,
             ),
           );
         }
 
-        // État 3 : Image trouvée
+        // État 3 : Logo trouvé
         return Container(
           width: width,
           height: height,
@@ -147,12 +105,12 @@ class PieceImageService {
           child: ClipRRect(
             borderRadius: BorderRadius.circular(borderRadius),
             child: Padding(
-              padding: const EdgeInsets.all(4),
+              padding: const EdgeInsets.all(6),
               child: CachedNetworkImage(
                 imageUrl: snapshot.data!,
                 width: width,
                 height: height,
-                fit: BoxFit.contain,
+                fit: fit,
                 placeholder: (context, url) => const Center(
                   child: SizedBox(
                     width: 20,

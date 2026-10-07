@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/widgets/premium_button.dart';
 import '../../../../core/services/global_notifier.dart';
+import '../../../../core/services/marque_image_service.dart';
 import '../../../home/data/models/vehicle_model.dart';
 import '../../../home/presentation/managers/home_notifier.dart';
 
@@ -238,12 +239,10 @@ class _GaragePageState extends State<GaragePage> {
   }
 
   // ============================================
-  // VEHICLE CARD (NOUVEAU DESIGN)
+  // VEHICLE CARD (avec logo de la marque)
   // ============================================
 
   Widget _buildVehicleCard(BuildContext context, Vehicle vehicle) {
-    final bool hasPhoto = vehicle.imageUrl.isNotEmpty;
-
     return GestureDetector(
       onTap: () => context.push('/vehicle-details/${vehicle.id}'),
       child: Container(
@@ -260,27 +259,25 @@ class _GaragePageState extends State<GaragePage> {
               ),
               child: Stack(
                 children: [
-                  // FOND NAVY
+                  // Fond navy
                   Container(
-                    height: 180,
+                    height: 160,
                     width: double.infinity,
                     decoration: const BoxDecoration(
                       gradient: AppGradients.navy,
                     ),
                   ),
 
-                  // CONTENU
+                  // LOGO DE LA MARQUE (centré)
                   Positioned.fill(
-                    child: hasPhoto
-                        // === PHOTO UTILISATEUR ===
-                        ? Image.asset(
-                            vehicle.imageUrl,
-                            fit: BoxFit.cover,
-                            alignment: Alignment.center,
-                            errorBuilder: (_, __, ___) => _buildDefaultCard(),
-                          )
-                        // === CARTE PAR DÉFAUT (car_neon) ===
-                        : _buildDefaultCard(),
+                    child: Center(
+                      child: const MarqueImageService().buildMarqueLogo(
+                        marque: vehicle.brand,
+                        width: 100,
+                        height: 100,
+                        borderRadius: 20,
+                      ),
+                    ),
                   ),
 
                   // BADGE SANTÉ
@@ -293,7 +290,8 @@ class _GaragePageState extends State<GaragePage> {
                         vertical: 6,
                       ),
                       decoration: BoxDecoration(
-                        color: _getHealthColor(vehicle.progress),
+                        color: _getHealthColor(vehicle.progress)
+                            .withOpacity(0.9),
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: Text(
@@ -340,11 +338,11 @@ class _GaragePageState extends State<GaragePage> {
                       ),
                     ),
 
-                  // TITRE + SOUS-TITRE + FLÈCHE
+                  // INFOS VÉHICULE (bas)
                   Positioned(
-                    bottom: 14,
-                    left: 14,
-                    right: 14,
+                    bottom: 12,
+                    left: 12,
+                    right: 12,
                     child: Row(
                       children: [
                         Expanded(
@@ -362,11 +360,11 @@ class _GaragePageState extends State<GaragePage> {
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
                               ),
-                              const SizedBox(height: 3),
+                              const SizedBox(height: 2),
                               Text(
                                 '${vehicle.plate} · ${vehicle.year}',
                                 style: TextStyle(
-                                  color: Colors.white.withOpacity(0.75),
+                                  color: Colors.white.withOpacity(0.9),
                                   fontSize: 11,
                                   fontWeight: FontWeight.w500,
                                 ),
@@ -378,8 +376,7 @@ class _GaragePageState extends State<GaragePage> {
                         ),
                         const SizedBox(width: 8),
                         Container(
-                          width: 32,
-                          height: 32,
+                          padding: const EdgeInsets.all(6),
                           decoration: BoxDecoration(
                             color: Colors.white.withOpacity(0.2),
                             shape: BoxShape.circle,
@@ -387,7 +384,7 @@ class _GaragePageState extends State<GaragePage> {
                           child: const Icon(
                             Icons.chevron_right_rounded,
                             color: Colors.white,
-                            size: 20,
+                            size: 18,
                           ),
                         ),
                       ],
@@ -421,25 +418,6 @@ class _GaragePageState extends State<GaragePage> {
               ),
             ),
           ],
-        ),
-      ),
-    );
-  }
-
-  // ============================================
-  // CARTE PAR DÉFAUT (car_neon)
-  // ============================================
-
-  Widget _buildDefaultCard() {
-    return Center(
-      child: Image.asset(
-        'assets/images/car_neon.png',
-        height: 140,
-        fit: BoxFit.contain,
-        errorBuilder: (_, __, ___) => const Icon(
-          Icons.directions_car_rounded,
-          color: AppColors.orange,
-          size: 80,
         ),
       ),
     );
