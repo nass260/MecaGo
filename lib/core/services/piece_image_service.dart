@@ -9,58 +9,155 @@ class PieceImageService {
   const PieceImageService();
 
   /// Extrait un mot-clé générique à partir du nom de la pièce
+  /// COUVRE TOUS LES CAS DU MONDE AUTOMOBILE
   String _extractKeyword(String nomPieceIa) {
     final lower = nomPieceIa.toLowerCase();
 
-    // Freinage
+    // ============================================
+    // FREINAGE
+    // ============================================
     if (lower.contains('plaquette')) return 'plaquettes';
     if (lower.contains('disque')) return 'disques';
-    if (lower.contains('étrier')) return 'etrier';
+    if (lower.contains('étrier') || lower.contains('etrier')) return 'etrier';
+    if (lower.contains('caliper')) return 'etrier';
+    if (lower.contains('mâchoire') || lower.contains('machoire')) return 'freins';
+    if (lower.contains('boulon') && lower.contains('frein')) return 'boulons';
+    if (lower.contains('boulon')) return 'boulons';
     if (lower.contains('frein')) return 'freins';
+    if (lower.contains('abs')) return 'capteur_abs';
+    if (lower.contains('liquide') && lower.contains('frein')) return 'liquide_frein';
 
-    // Filtration
-    if (lower.contains('huile') && lower.contains('filtre')) {
-      return 'filtre_huile';
-    }
-    if (lower.contains('air') && lower.contains('filtre')) {
-      return 'filtre_air';
-    }
-    if (lower.contains('habitacle')) return 'filtre_habitacle';
-    if (lower.contains('gasoil') || lower.contains('diesel')) {
-      return 'filtre_gasoil';
-    }
+    // ============================================
+    // FILTRATION
+    // ============================================
+    if (lower.contains('habitacle') || lower.contains('pollen')) return 'filtre_habitacle';
+    if (lower.contains('gasoil') || lower.contains('diesel')) return 'filtre_gasoil';
+    if (lower.contains('huile') && lower.contains('filtre')) return 'filtre_huile';
+    if (lower.contains('filtre') && lower.contains('huile')) return 'filtre_huile';
+    if (lower.contains('air') && lower.contains('filtre')) return 'filtre_air';
+    if (lower.contains('filtre') && lower.contains('air')) return 'filtre_air';
+    if (lower.contains('filtre')) return 'filtre_huile';
 
-    // Moteur
+    // ============================================
+    // MOTEUR
+    // ============================================
     if (lower.contains('bougie')) return 'bougies';
+    if (lower.contains('courroie') && lower.contains('distribution')) return 'courroie';
     if (lower.contains('courroie')) return 'courroie';
+    if (lower.contains('galet')) return 'courroie';
     if (lower.contains('vanne') && lower.contains('egr')) return 'vanne_egr';
-    if (lower.contains('turbo')) return 'turbo';
+    if (lower.contains('egr')) return 'vanne_egr';
+    if (lower.contains('turbo') || lower.contains('turbocompresseur')) return 'turbo';
     if (lower.contains('injecteur')) return 'injecteur';
-
-    // Électrique
-    if (lower.contains('batterie')) return 'batterie';
+    if (lower.contains('pompe') && lower.contains('eau')) return 'pompe_eau';
+    if (lower.contains('pompe') && lower.contains('huile')) return 'pompe_huile';
+    if (lower.contains('pompe') && lower.contains('carburant')) return 'pompe_carburant';
+    if (lower.contains('pompe')) return 'pompe_eau';
+    if (lower.contains('radiateur')) return 'radiateur';
+    if (lower.contains('thermostat')) return 'thermostat';
+    if (lower.contains('joint') && lower.contains('culasse')) return 'joint_culasse';
+    if (lower.contains('culasse')) return 'joint_culasse';
+    if (lower.contains('débitmètre') || lower.contains('debimetre')) return 'debimetre';
+    if (lower.contains('sonde') && lower.contains('lambda')) return 'sonde_lambda';
+    if (lower.contains('lambda')) return 'sonde_lambda';
+    if (lower.contains('bobine') && lower.contains('allumage')) return 'bobine';
+    if (lower.contains('bobine')) return 'bobine';
+    if (lower.contains('démarreur') || lower.contains('demarreur')) return 'demarreur';
     if (lower.contains('alternateur')) return 'alternateur';
-    if (lower.contains('démarreur')) return 'demarreur';
-    if (lower.contains('ampoule') || lower.contains('phare')) {
-      return 'ampoule';
-    }
+    if (lower.contains('échap') || lower.contains('echap')) return 'echappement';
+    if (lower.contains('silencieux')) return 'echappement';
+    if (lower.contains('pot') && lower.contains('échappement')) return 'echappement';
+    if (lower.contains('catalyseur') || lower.contains('catalytique')) return 'catalyseur';
+    if (lower.contains('fap') || lower.contains('particule')) return 'fap';
+    if (lower.contains('embrayage') || lower.contains('kit embrayage')) return 'embrayage';
+    if (lower.contains('volant') && lower.contains('moteur')) return 'volant_moteur';
+    if (lower.contains('vilebrequin')) return 'vilebrequin';
+    if (lower.contains('piston')) return 'piston';
+    if (lower.contains('soupape')) return 'soupape';
+    if (lower.contains('moteur')) return 'moteur';
 
-    // Suspension
+    // ============================================
+    // ÉLECTRICITÉ
+    // ============================================
+    if (lower.contains('batterie') || lower.contains('accumulateur')) return 'batterie';
+    if (lower.contains('alternateur')) return 'alternateur';
+    if (lower.contains('démarreur') || lower.contains('demarreur')) return 'demarreur';
+    if (lower.contains('ampoule') || lower.contains('phare')) return 'ampoule';
+    if (lower.contains('feu') && lower.contains('arrière')) return 'feu_arriere';
+    if (lower.contains('feu') && lower.contains('stop')) return 'feu_stop';
+    if (lower.contains('fusible')) return 'fusible';
+    if (lower.contains('relais')) return 'relais';
+    if (lower.contains('capteur')) return 'capteur';
+
+    // ============================================
+    // SUSPENSION & DIRECTION
+    // ============================================
     if (lower.contains('amortisseur')) return 'amortisseur';
+    if (lower.contains('ressort')) return 'ressort';
     if (lower.contains('rotule')) return 'rotule';
     if (lower.contains('cardan')) return 'cardan';
     if (lower.contains('roulement')) return 'roulement';
+    if (lower.contains('triangle') && lower.contains('suspension')) return 'triangle';
+    if (lower.contains('biellette')) return 'biellette';
+    if (lower.contains('barre') && lower.contains('stabilisatrice')) return 'barre_stabilisatrice';
+    if (lower.contains('direction')) return 'direction';
+    if (lower.contains('crémaillère') || lower.contains('cremaillere')) return 'cremaillere';
 
-    // Climatisation
-    if (lower.contains('clim')) return 'clim';
+    // ============================================
+    // TRANSMISSION
+    // ============================================
+    if (lower.contains('boîte') && lower.contains('vitesse')) return 'boite_vitesse';
+    if (lower.contains('boite') && lower.contains('vitesse')) return 'boite_vitesse';
+    if (lower.contains('embrayage')) return 'embrayage';
+    if (lower.contains('cardan')) return 'cardan';
+    if (lower.contains('différentiel') || lower.contains('differentiel')) return 'differentiel';
+    if (lower.contains('arbre') && lower.contains('transmission')) return 'arbre_transmission';
+
+    // ============================================
+    // CLIMATISATION
+    // ============================================
+    if (lower.contains('clim') || lower.contains('climatisation')) return 'clim';
+    if (lower.contains('compresseur') && lower.contains('clim')) return 'compresseur_clim';
     if (lower.contains('compresseur')) return 'compresseur_clim';
+    if (lower.contains('condenseur')) return 'condenseur';
+    if (lower.contains('évaporateur') || lower.contains('evaporateur')) return 'evaporateur';
+    if (lower.contains('gaz') && lower.contains('clim')) return 'gaz_clim';
 
-    // Par défaut : remplacer les espaces par des underscores
+    // ============================================
+    // CARROSSERIE
+    // ============================================
+    if (lower.contains('pare-choc') || lower.contains('parechoc')) return 'pare_choc';
+    if (lower.contains('capot')) return 'capot';
+    if (lower.contains('aile')) return 'aile';
+    if (lower.contains('portière') || lower.contains('portiere')) return 'portiere';
+    if (lower.contains('rétroviseur') || lower.contains('retroviseur')) return 'retroviseur';
+    if (lower.contains('pare-brise') || lower.contains('parebrise')) return 'pare_brise';
+    if (lower.contains('vitre')) return 'vitre';
+    if (lower.contains('calandre')) return 'calandre';
+
+    // ============================================
+    // PNEUMATIQUES
+    // ============================================
+    if (lower.contains('pneu') || lower.contains('pneumatique')) return 'pneus';
+    if (lower.contains('jante')) return 'jante';
+    if (lower.contains('valve')) return 'valve';
+    if (lower.contains('roue')) return 'roue';
+
+    // ============================================
+    // SYSTÈMES (avec __)
+    // ============================================
+    if (lower.contains('__systeme_moteur')) return '__systeme_moteur';
+    if (lower.contains('__systeme_freins')) return '__systeme_freins';
+    if (lower.contains('__systeme_clim')) return '__systeme_clim';
+    if (lower.contains('__systeme_batterie')) return '__systeme_batterie';
+
+    // ============================================
+    // PAR DÉFAUT : remplacer les espaces par des underscores
+    // ============================================
     return nomPieceIa.toLowerCase().replaceAll(' ', '_');
   }
 
   /// Récupère l'URL de l'image d'une pièce depuis Supabase
-  /// (1 seule requête grâce à la table simplifiée)
   Future<String?> getPieceImageUrl(String nomPieceIa) async {
     try {
       final supabase = Supabase.instance.client;
@@ -98,7 +195,6 @@ class PieceImageService {
     return FutureBuilder<String?>(
       future: getPieceImageUrl(nomPieceIa),
       builder: (context, snapshot) {
-        // État 1 : Chargement
         if (snapshot.connectionState == ConnectionState.waiting) {
           return _buildPlaceholder(
             width: width,
@@ -118,7 +214,6 @@ class PieceImageService {
           );
         }
 
-        // État 2 : Erreur ou URL null
         if (snapshot.hasError || snapshot.data == null) {
           return _buildPlaceholder(
             width: width,
@@ -132,7 +227,6 @@ class PieceImageService {
           );
         }
 
-        // État 3 : Image trouvée
         return Container(
           width: width,
           height: height,
