@@ -15,6 +15,7 @@ import '../../../features/garage/presentation/pages/vehicle_result_page.dart';
 import '../../../features/scanner/presentation/pages/scanner_page.dart';
 import '../../../features/diagnostic/presentation/pages/diagnostic_page.dart';
 import '../../../features/diagnostic/presentation/pages/tutorial_page.dart';
+import '../../../features/diagnostic/presentation/pages/chat_page.dart';
 import '../../../features/history/presentation/pages/history_page.dart';
 import '../../../features/profile/presentation/pages/profile_page.dart';
 import '../../../features/authentication/presentation/pages/paywall_page.dart';
@@ -83,12 +84,24 @@ class AppRouter {
         path: '/diagnostic',
         builder: (context, state) => const DiagnosticPage(),
       ),
-      // ✅ NOUVELLE ROUTE : Tutoriel détaillé d'une pièce
       GoRoute(
         path: '/tutorial',
         builder: (context, state) {
           final partName = state.uri.queryParameters['part'] ?? 'Pièce';
           return TutorialPage(partName: partName);
+        },
+      ),
+      // ✅ NOUVELLE ROUTE : Chat dédié
+      GoRoute(
+        path: '/chat',
+        builder: (context, state) {
+          final vehicleInfo =
+              state.uri.queryParameters['vehicle'] ?? 'Véhicule';
+          final question = state.uri.queryParameters['question'];
+          return ChatPage(
+            vehicleInfo: vehicleInfo,
+            initialQuestion: question,
+          );
         },
       ),
       StatefulShellRoute.indexedStack(

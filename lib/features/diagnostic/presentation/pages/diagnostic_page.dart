@@ -8,7 +8,6 @@ import '../../../../core/services/global_notifier.dart';
 import '../../../../core/services/marque_image_service.dart';
 import '../../../../core/services/piece_image_service.dart';
 import '../../../home/data/models/vehicle_model.dart';
-import '../widgets/mecago_chat_widget.dart';
 
 /// Niveau de gravité du diagnostic
 enum SeverityLevel {
@@ -898,9 +897,10 @@ class _DiagnosticPageState extends State<DiagnosticPage> {
             ...result.parts.map((part) => _buildPartCard(part)),
             const SizedBox(height: 20),
           ],
-          MecaGoChatWidget(
-            vehicleInfo: '$_brand $_model, $_fuel, $_year',
-          ),
+
+          // ✅ NOUVEAU : Bouton "Demander un conseil à MecaGo"
+          _buildAskAdviceButton(),
+
           const SizedBox(height: 20),
           SizedBox(
             width: double.infinity,
@@ -930,6 +930,101 @@ class _DiagnosticPageState extends State<DiagnosticPage> {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  // ============================================
+  // ✅ BOUTON "DEMANDER UN CONSEIL À MECAGO"
+  // ============================================
+
+  Widget _buildAskAdviceButton() {
+    return GestureDetector(
+      onTap: () {
+        final vehicleInfo = '$_brand $_model, $_fuel, $_year';
+        // Ajoute le symptôme du diagnostic comme question initiale
+        final symptom = _symptomController.text.trim();
+        final question = symptom.isNotEmpty
+            ? Uri.encodeComponent(symptom)
+            : null;
+
+        final query = question != null
+            ? '/chat?vehicle=${Uri.encodeComponent(vehicleInfo)}&question=$question'
+            : '/chat?vehicle=${Uri.encodeComponent(vehicleInfo)}';
+
+        context.push(query);
+      },
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(18),
+        decoration: BoxDecoration(
+          gradient: AppGradients.orange,
+          borderRadius: BorderRadius.circular(18),
+          boxShadow: AppShadows.orangeButton,
+        ),
+        child: Row(
+          children: [
+            // Avatar bot
+            Container(
+              width: 44,
+              height: 44,
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.2),
+                shape: BoxShape.circle,
+                border: Border.all(
+                  color: Colors.white.withOpacity(0.4),
+                  width: 1.5,
+                ),
+              ),
+              child: const Icon(
+                Icons.support_agent_rounded,
+                color: Colors.white,
+                size: 24,
+              ),
+            ),
+            const SizedBox(width: 14),
+            // Texte
+            const Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Demander un conseil à MecaGo',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 15,
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: -0.3,
+                    ),
+                  ),
+                  SizedBox(height: 3),
+                  Text(
+                    'Tutoriel pas à pas • Images • Explications',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 11,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            // Flèche
+            Container(
+              width: 32,
+              height: 32,
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.25),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(
+                Icons.arrow_forward_rounded,
+                color: Colors.white,
+                size: 18,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

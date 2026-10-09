@@ -10,14 +10,15 @@ class AiService {
   final GeminiService _gemini = const GeminiService();
   final GroqService _groq = const GroqService();
 
-  /// Génère un diagnostic en essayant Gemini puis Groq
+  // ============================================
+  // DIAGNOSTIC
+  // ============================================
+
   Future<AiDiagnosisResponse> diagnose({
     required String vehicleInfo,
     required String symptoms,
   }) async {
-    // ============================================
     // ÉTAPE 1 : Essayer Gemini
-    // ============================================
     try {
       debugPrint('🧠 AiService : tentative Gemini...');
       final json = await _gemini.diagnose(
@@ -33,9 +34,7 @@ class AiService {
       debugPrint('⚠️ AiService : Gemini a échoué → $e');
     }
 
-    // ============================================
     // ÉTAPE 2 : Essayer Groq
-    // ============================================
     try {
       debugPrint('🧠 AiService : tentative Groq...');
       final json = await _groq.diagnose(
@@ -51,10 +50,53 @@ class AiService {
       debugPrint('⚠️ AiService : Groq a échoué → $e');
     }
 
-    // ============================================
     // ÉTAPE 3 : Aucun fournisseur n'a fonctionné
-    // ============================================
     debugPrint('❌ AiService : tous les fournisseurs ont échoué');
+    throw Exception('Tous les fournisseurs IA ont échoué');
+  }
+
+  // ============================================
+  // CHAT
+  // ============================================
+
+  Future<AiChatResponse> chat({
+    required String vehicleInfo,
+    required String question,
+  }) async {
+    // ÉTAPE 1 : Essayer Gemini
+    try {
+      debugPrint('💬 AiService : tentative Gemini chat...');
+      final response = await _gemini.chat(
+        vehicleInfo: vehicleInfo,
+        question: question,
+      );
+      debugPrint('✅ AiService : Gemini chat a répondu');
+      return AiChatResponse(
+        text: response,
+        provider: AiProvider.gemini,
+      );
+    } catch (e) {
+      debugPrint('⚠️ AiService : Gemini chat a échoué → $e');
+    }
+
+    // ÉTAPE 2 : Essayer Groq
+    try {
+      debugPrint('💬 AiService : tentative Groq chat...');
+      final response = await _groq.chat(
+        vehicleInfo: vehicleInfo,
+        question: question,
+      );
+      debugPrint('✅ AiService : Groq chat a répondu');
+      return AiChatResponse(
+        text: response,
+        provider: AiProvider.groq,
+      );
+    } catch (e) {
+      debugPrint('⚠️ AiService : Groq chat a échoué → $e');
+    }
+
+    // ÉTAPE 3 : Aucun fournisseur n'a fonctionné
+    debugPrint('❌ AiService : tous les fournisseurs chat ont échoué');
     throw Exception('Tous les fournisseurs IA ont échoué');
   }
 }
@@ -66,7 +108,7 @@ enum AiProvider {
   none,
 }
 
-/// Réponse du service IA unifié
+/// Réponse du service IA unifié (diagnostic)
 class AiDiagnosisResponse {
   final Map<String, dynamic> json;
   final AiProvider provider;
@@ -76,10 +118,8 @@ class AiDiagnosisResponse {
     required this.provider,
   });
 
-  /// Vérifie si la réponse vient d'une IA (Gemini ou Groq)
   bool get isFromAI => provider != AiProvider.none;
 
-  /// Nom du fournisseur pour affichage
   String get providerName {
     switch (provider) {
       case AiProvider.gemini:
@@ -90,4 +130,17 @@ class AiDiagnosisResponse {
         return 'Local';
     }
   }
+}
+
+/// Réponse du service IA unifié (chat)
+class AiChatResponse {
+  final String text;
+  final AiProvider provider;
+
+  const AiChatResponse({
+    required this.text,
+    required this.provider,
+  });
+
+  bool get isFromAI => provider != AiProvider.none;
 }
