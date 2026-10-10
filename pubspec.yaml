@@ -32,6 +32,7 @@ dependencies:
   supabase_flutter: ^2.18.0
   cached_network_image: ^3.4.1
   youtube_player_iframe: ^6.0.2
+  adaptive_network_image: ^0.1.2
 
 dev_dependencies:
   flutter_test:

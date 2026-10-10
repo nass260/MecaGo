@@ -5,6 +5,7 @@ import '../../../../core/theme/app_theme.dart';
 import '../../../../core/services/ai_service.dart';
 import '../../../../core/services/global_notifier.dart';
 import '../../../../core/services/marque_image_service.dart';
+import '../../../../core/services/image_generator_service.dart';
 
 /// Page de chat dédiée à l'Assistant IA MecaGo
 class ChatPage extends StatefulWidget {
@@ -27,10 +28,11 @@ class _ChatPageState extends State<ChatPage> {
   final List<ChatMessage> _messages = [];
   final AiService _aiService = const AiService();
   final MarqueImageService _marqueService = const MarqueImageService();
+  final ImageGeneratorService _imageService = const ImageGeneratorService();
 
   bool _isLoading = false;
 
-  // ✅ Motorisation récupérée depuis le véhicule actif (peut être vide)
+  // ✅ Motorisation récupérée depuis le véhicule actif
   String _fuel = '';
 
   String get _brand {
@@ -47,11 +49,8 @@ class _ChatPageState extends State<ChatPage> {
     return '308';
   }
 
-  /// ✅ Marque + Modèle
   String get _vehicleDisplay => '$_brand $_model';
 
-  /// ✅ Motorisation (ex: "Diesel", "Essence", "Électrique")
-  ///    Si pas dispo → vide (pas affiché)
   String get _motorisationDisplay => _fuel.trim();
 
   bool get _hasMotorisation => _fuel.trim().isNotEmpty;
@@ -72,7 +71,6 @@ class _ChatPageState extends State<ChatPage> {
   void initState() {
     super.initState();
 
-    // ✅ Récupérer la motorisation du véhicule actif
     try {
       final vehicle = GlobalNotifier.instance.activeVehicle;
       if (vehicle != null) {
@@ -401,7 +399,6 @@ Pour vous aider précisément, décrivez-moi :
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          // ✅ Logo marque
           _marqueService.buildMarqueLogo(
             marque: _brand,
             width: 44,
@@ -409,7 +406,6 @@ Pour vous aider précisément, décrivez-moi :
             borderRadius: 12,
           ),
           const SizedBox(width: 12),
-          // Titre + sujet
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -438,18 +434,15 @@ Pour vous aider précisément, décrivez-moi :
             ),
           ),
           const SizedBox(width: 8),
-          // ✅ Carte véhicule (même hauteur que le logo)
           _buildVehicleInfoCard(),
         ],
       ),
     );
   }
 
-  /// Carte véhicule : Marque Modèle + Motorisation
-  /// → Même hauteur que le logo (44px) + centrage vertical
   Widget _buildVehicleInfoCard() {
     return Container(
-      height: 44, // ✅ MÊME HAUTEUR QUE LE LOGO
+      height: 44,
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
       decoration: BoxDecoration(
         color: AppColors.background,
@@ -464,7 +457,6 @@ Pour vous aider précisément, décrivez-moi :
         crossAxisAlignment: CrossAxisAlignment.center,
         mainAxisSize: MainAxisSize.min,
         children: [
-          // Marque + Modèle
           Text(
             _vehicleDisplay,
             style: const TextStyle(
@@ -476,7 +468,6 @@ Pour vous aider précisément, décrivez-moi :
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
           ),
-          // Motorisation (si dispo)
           if (_hasMotorisation) ...[
             const SizedBox(height: 3),
             Text(
@@ -836,6 +827,11 @@ Pour vous aider précisément, décrivez-moi :
     final description = step.description;
     final items = _extractListItems(description);
 
+    // ✅ Largeur disponible réelle pour l'image
+    // (écran - padding horizontal du ListView (32) - padding du Row bot (44))
+    final screenWidth = MediaQuery.of(context).size.width;
+    final imageWidth = screenWidth - 32 - 44 - 8;
+
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       decoration: BoxDecoration(
@@ -850,48 +846,43 @@ Pour vous aider précisément, décrivez-moi :
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // ✅ IMAGE GÉNÉRÉE PAR POLLINATIONS
           ClipRRect(
             borderRadius:
                 const BorderRadius.vertical(top: Radius.circular(18)),
-            child: Container(
-              height: 200,
-              width: double.infinity,
-              decoration: const BoxDecoration(
-                gradient: AppGradients.navy,
-              ),
-              child: Stack(
-                children: [
-                  const Center(
-                    child: Icon(
-                      Icons.image_rounded,
-                      color: Colors.white24,
-                      size: 70,
+            child: Stack(
+              children: [
+                _imageService.buildStepImage(
+                  stepTitle: step.titre,
+                  stepDescription: description,
+                  width: imageWidth, // ✅ Largeur réelle (pas Infinity)
+                  height: 200,
+                  borderRadius: 0,
+                ),
+                // ✅ Badge "Étape X/Y"
+                Positioned(
+                  top: 14,
+                  left: 14,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 12, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: AppColors.orangeMecaGo,
+                      borderRadius: BorderRadius.circular(12),
+                      boxShadow: AppShadows.orangeButton,
                     ),
-                  ),
-                  Positioned(
-                    top: 14,
-                    left: 14,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 12, vertical: 8),
-                      decoration: BoxDecoration(
-                        color: AppColors.orangeMecaGo,
-                        borderRadius: BorderRadius.circular(12),
-                        boxShadow: AppShadows.orangeButton,
-                      ),
-                      child: Text(
-                        'Étape ${step.numero}/$totalSteps',
-                        style: const TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w900,
-                          color: Colors.white,
-                          letterSpacing: 0.5,
-                        ),
+                    child: Text(
+                      'Étape ${step.numero}/$totalSteps',
+                      style: const TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w900,
+                        color: Colors.white,
+                        letterSpacing: 0.5,
                       ),
                     ),
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
           ),
           Padding(
