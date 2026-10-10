@@ -1,9 +1,14 @@
 // lib/core/services/ai_service.dart
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'gemini_service.dart';
 import 'groq_service.dart';
 
 /// Service IA unifié : Gemini en priorité, Groq en fallback
+///
+/// ⚠️ Sur Web : Gemini est SKIP (bug SDK Flutter Web + App Check non supporté)
+///             → on va directement sur Groq
+/// ⚠️ Sur Mobile : Gemini en priorité, Groq en fallback
 class AiService {
   const AiService();
 
@@ -18,7 +23,26 @@ class AiService {
     required String vehicleInfo,
     required String symptoms,
   }) async {
-    // ÉTAPE 1 : Essayer Gemini
+    // ✅ Sur Web : on skip Gemini (bug SDK)
+    if (kIsWeb) {
+      debugPrint('🌐 AiService : Web détecté → skip Gemini, Groq direct');
+      try {
+        final json = await _groq.diagnose(
+          vehicleInfo: vehicleInfo,
+          symptoms: symptoms,
+        );
+        debugPrint('✅ AiService : Groq a répondu');
+        return AiDiagnosisResponse(
+          json: json,
+          provider: AiProvider.groq,
+        );
+      } catch (e) {
+        debugPrint('⚠️ AiService : Groq a échoué → $e');
+        throw Exception('Groq a échoué sur Web');
+      }
+    }
+
+    // ✅ Sur Mobile : Gemini en priorité
     try {
       debugPrint('🧠 AiService : tentative Gemini...');
       final json = await _gemini.diagnose(
@@ -34,7 +58,7 @@ class AiService {
       debugPrint('⚠️ AiService : Gemini a échoué → $e');
     }
 
-    // ÉTAPE 2 : Essayer Groq
+    // Fallback Groq
     try {
       debugPrint('🧠 AiService : tentative Groq...');
       final json = await _groq.diagnose(
@@ -50,7 +74,7 @@ class AiService {
       debugPrint('⚠️ AiService : Groq a échoué → $e');
     }
 
-    // ÉTAPE 3 : Aucun fournisseur n'a fonctionné
+    // Aucun fournisseur n'a fonctionné
     debugPrint('❌ AiService : tous les fournisseurs ont échoué');
     throw Exception('Tous les fournisseurs IA ont échoué');
   }
@@ -63,7 +87,26 @@ class AiService {
     required String vehicleInfo,
     required String question,
   }) async {
-    // ÉTAPE 1 : Essayer Gemini
+    // ✅ Sur Web : on skip Gemini (bug SDK)
+    if (kIsWeb) {
+      debugPrint('🌐 AiService : Web détecté → skip Gemini chat, Groq direct');
+      try {
+        final response = await _groq.chat(
+          vehicleInfo: vehicleInfo,
+          question: question,
+        );
+        debugPrint('✅ AiService : Groq chat a répondu');
+        return AiChatResponse(
+          text: response,
+          provider: AiProvider.groq,
+        );
+      } catch (e) {
+        debugPrint('⚠️ AiService : Groq chat a échoué → $e');
+        throw Exception('Groq chat a échoué sur Web');
+      }
+    }
+
+    // ✅ Sur Mobile : Gemini en priorité
     try {
       debugPrint('💬 AiService : tentative Gemini chat...');
       final response = await _gemini.chat(
@@ -79,7 +122,7 @@ class AiService {
       debugPrint('⚠️ AiService : Gemini chat a échoué → $e');
     }
 
-    // ÉTAPE 2 : Essayer Groq
+    // Fallback Groq
     try {
       debugPrint('💬 AiService : tentative Groq chat...');
       final response = await _groq.chat(
@@ -95,7 +138,7 @@ class AiService {
       debugPrint('⚠️ AiService : Groq chat a échoué → $e');
     }
 
-    // ÉTAPE 3 : Aucun fournisseur n'a fonctionné
+    // Aucun fournisseur n'a fonctionné
     debugPrint('❌ AiService : tous les fournisseurs chat ont échoué');
     throw Exception('Tous les fournisseurs IA ont échoué');
   }

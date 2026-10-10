@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/services/ai_service.dart';
+import '../../../../core/services/global_notifier.dart';
 import '../../../../core/services/marque_image_service.dart';
 
 /// Page de chat dédiée à l'Assistant IA MecaGo
@@ -29,8 +30,9 @@ class _ChatPageState extends State<ChatPage> {
 
   bool _isLoading = false;
 
-  // Extraction des infos véhicule depuis vehicleInfo
-  // Format attendu : "Peugeot 308, Diesel, 2024"
+  // ✅ Motorisation récupérée depuis le véhicule actif (peut être vide)
+  String _fuel = '';
+
   String get _brand {
     final parts = widget.vehicleInfo.split(' ');
     return parts.isNotEmpty ? parts.first : 'Peugeot';
@@ -45,7 +47,14 @@ class _ChatPageState extends State<ChatPage> {
     return '308';
   }
 
+  /// ✅ Marque + Modèle
   String get _vehicleDisplay => '$_brand $_model';
+
+  /// ✅ Motorisation (ex: "Diesel", "Essence", "Électrique")
+  ///    Si pas dispo → vide (pas affiché)
+  String get _motorisationDisplay => _fuel.trim();
+
+  bool get _hasMotorisation => _fuel.trim().isNotEmpty;
 
   String get _sujet {
     if (widget.initialQuestion != null &&
@@ -62,7 +71,17 @@ class _ChatPageState extends State<ChatPage> {
   @override
   void initState() {
     super.initState();
-    // Message de bienvenue
+
+    // ✅ Récupérer la motorisation du véhicule actif
+    try {
+      final vehicle = GlobalNotifier.instance.activeVehicle;
+      if (vehicle != null) {
+        _fuel = vehicle.fuelType.label;
+      }
+    } catch (e) {
+      debugPrint('⚠️ Impossible de récupérer la motorisation : $e');
+    }
+
     _messages.add(ChatMessage(
       text:
           'Bonjour ! Je suis votre assistant MecaGo. Posez-moi toutes vos questions sur votre ${widget.vehicleInfo}.',
@@ -71,7 +90,6 @@ class _ChatPageState extends State<ChatPage> {
       timestamp: DateTime.now(),
     ));
 
-    // Si une question initiale est passée → envoi automatique
     if (widget.initialQuestion != null &&
         widget.initialQuestion!.isNotEmpty) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -155,7 +173,6 @@ class _ChatPageState extends State<ChatPage> {
     }
   }
 
-  /// Détecte si la réponse contient une liste de matériel (✅ ...)
   bool _hasMaterielList(String text) {
     final lines = text.split('\n');
     int checkboxCount = 0;
@@ -240,11 +257,8 @@ Pour vous aider précisément, décrivez-moi :
       body: SafeArea(
         child: Column(
           children: [
-            // ✅ HEADER APP (logo MecaGo + slogan + Premium)
             _buildAppHeader(context),
-            // ✅ HEADER CONVERSATION (carte blanche)
             _buildConversationHeader(),
-            // ✅ MESSAGES
             Expanded(
               child: ListView.builder(
                 controller: _scrollController,
@@ -260,7 +274,6 @@ Pour vous aider précisément, décrivez-moi :
                 },
               ),
             ),
-            // ✅ INPUT
             _buildInput(),
           ],
         ),
@@ -278,7 +291,6 @@ Pour vous aider précisément, décrivez-moi :
       color: Colors.white,
       child: Row(
         children: [
-          // Bouton retour
           GestureDetector(
             onTap: () => context.pop(),
             child: Container(
@@ -290,13 +302,12 @@ Pour vous aider précisément, décrivez-moi :
               ),
               child: const Icon(
                 Icons.arrow_back_rounded,
-                color: AppColors.navy,
+                color: AppColors.navyBlue,
                 size: 20,
               ),
             ),
           ),
           const SizedBox(width: 12),
-          // Logo MecaGo
           Container(
             width: 40,
             height: 40,
@@ -318,7 +329,6 @@ Pour vous aider précisément, décrivez-moi :
             ),
           ),
           const SizedBox(width: 10),
-          // Nom + slogan
           const Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -328,7 +338,7 @@ Pour vous aider précisément, décrivez-moi :
                   style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.w900,
-                    color: AppColors.navy,
+                    color: AppColors.navyBlue,
                     letterSpacing: -0.5,
                   ),
                 ),
@@ -343,14 +353,13 @@ Pour vous aider précisément, décrivez-moi :
               ],
             ),
           ),
-          // Badge Premium
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
             decoration: BoxDecoration(
-              color: AppColors.orange.withOpacity(0.10),
+              color: AppColors.orangeMecaGo.withOpacity(0.10),
               borderRadius: BorderRadius.circular(20),
               border: Border.all(
-                color: AppColors.orange.withOpacity(0.3),
+                color: AppColors.orangeMecaGo.withOpacity(0.3),
                 width: 1,
               ),
             ),
@@ -358,14 +367,14 @@ Pour vous aider précisément, décrivez-moi :
               mainAxisSize: MainAxisSize.min,
               children: const [
                 Icon(Icons.workspace_premium_rounded,
-                    color: AppColors.orange, size: 14),
+                    color: AppColors.orangeMecaGo, size: 14),
                 SizedBox(width: 4),
                 Text(
                   'Premium',
                   style: TextStyle(
                     fontSize: 11,
                     fontWeight: FontWeight.w800,
-                    color: AppColors.orange,
+                    color: AppColors.orangeMecaGo,
                   ),
                 ),
               ],
@@ -377,7 +386,7 @@ Pour vous aider précisément, décrivez-moi :
   }
 
   // ============================================
-  // HEADER CONVERSATION (carte blanche)
+  // HEADER CONVERSATION
   // ============================================
 
   Widget _buildConversationHeader() {
@@ -390,20 +399,14 @@ Pour vous aider précisément, décrivez-moi :
         boxShadow: AppShadows.card,
       ),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          // Icône voiture
-          Container(
+          // ✅ Logo marque
+          _marqueService.buildMarqueLogo(
+            marque: _brand,
             width: 44,
             height: 44,
-            decoration: BoxDecoration(
-              color: AppColors.background,
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: const Icon(
-              Icons.directions_car_rounded,
-              color: AppColors.navy,
-              size: 24,
-            ),
+            borderRadius: 12,
           ),
           const SizedBox(width: 12),
           // Titre + sujet
@@ -416,7 +419,7 @@ Pour vous aider précisément, décrivez-moi :
                   style: TextStyle(
                     fontSize: 15,
                     fontWeight: FontWeight.w900,
-                    color: AppColors.navy,
+                    color: AppColors.navyBlue,
                     letterSpacing: -0.3,
                   ),
                 ),
@@ -435,27 +438,59 @@ Pour vous aider précisément, décrivez-moi :
             ),
           ),
           const SizedBox(width: 8),
-          // Logo marque + plaque
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              _marqueService.buildMarqueLogo(
-                marque: _brand,
-                width: 40,
-                height: 40,
-                borderRadius: 10,
-              ),
-              const SizedBox(height: 4),
-              Text(
-                _vehicleDisplay,
-                style: const TextStyle(
-                  fontSize: 10,
-                  fontWeight: FontWeight.w800,
-                  color: AppColors.navy,
-                ),
-              ),
-            ],
+          // ✅ Carte véhicule (même hauteur que le logo)
+          _buildVehicleInfoCard(),
+        ],
+      ),
+    );
+  }
+
+  /// Carte véhicule : Marque Modèle + Motorisation
+  /// → Même hauteur que le logo (44px) + centrage vertical
+  Widget _buildVehicleInfoCard() {
+    return Container(
+      height: 44, // ✅ MÊME HAUTEUR QUE LE LOGO
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+      decoration: BoxDecoration(
+        color: AppColors.background,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: AppColors.borderBlue,
+          width: 1,
+        ),
+      ),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.center,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // Marque + Modèle
+          Text(
+            _vehicleDisplay,
+            style: const TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w800,
+              color: AppColors.navyBlue,
+              height: 1,
+            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
           ),
+          // Motorisation (si dispo)
+          if (_hasMotorisation) ...[
+            const SizedBox(height: 3),
+            Text(
+              _motorisationDisplay,
+              style: const TextStyle(
+                fontSize: 10,
+                fontWeight: FontWeight.w600,
+                color: AppColors.textSecondary,
+                height: 1,
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ],
         ],
       ),
     );
@@ -484,7 +519,7 @@ Pour vous aider précisément, décrivez-moi :
                 bottomRight: Radius.circular(18),
               ),
               border: Border.all(
-                color: AppColors.border.withOpacity(0.5),
+                color: AppColors.borderBlue,
                 width: 1,
               ),
               boxShadow: AppShadows.card,
@@ -497,7 +532,7 @@ Pour vous aider précisément, décrivez-moi :
                   child: CircularProgressIndicator(
                     strokeWidth: 2,
                     valueColor:
-                        AlwaysStoppedAnimation<Color>(AppColors.orange),
+                        AlwaysStoppedAnimation<Color>(AppColors.orangeMecaGo),
                   ),
                 ),
                 SizedBox(width: 10),
@@ -531,7 +566,6 @@ Pour vous aider précisément, décrivez-moi :
     return _buildBotBubble(msg);
   }
 
-  /// Bulle utilisateur (navy foncé, à droite)
   Widget _buildUserBubble(ChatMessage msg) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 12, top: 8),
@@ -544,7 +578,7 @@ Pour vous aider précisément, décrivez-moi :
               padding:
                   const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               decoration: BoxDecoration(
-                color: const Color(0xFF0A0F1C),
+                color: AppColors.navyBubble,
                 borderRadius: const BorderRadius.only(
                   topLeft: Radius.circular(18),
                   topRight: Radius.circular(18),
@@ -553,7 +587,7 @@ Pour vous aider précisément, décrivez-moi :
                 ),
                 boxShadow: [
                   BoxShadow(
-                    color: const Color(0xFF0A0F1C).withOpacity(0.2),
+                    color: AppColors.navyBubble.withOpacity(0.25),
                     blurRadius: 12,
                     offset: const Offset(0, 4),
                   ),
@@ -576,7 +610,7 @@ Pour vous aider précisément, décrivez-moi :
                     _formatTime(msg.timestamp),
                     style: TextStyle(
                       fontSize: 10,
-                      color: Colors.white.withOpacity(0.55),
+                      color: Colors.white.withOpacity(0.6),
                       fontWeight: FontWeight.w500,
                     ),
                   ),
@@ -590,9 +624,7 @@ Pour vous aider précisément, décrivez-moi :
             height: 36,
             decoration: const BoxDecoration(
               shape: BoxShape.circle,
-              gradient: LinearGradient(
-                colors: [Color(0xFF1E293B), Color(0xFF0A0F1C)],
-              ),
+              color: AppColors.navyBubble,
             ),
             child: const Center(
               child: Icon(
@@ -627,7 +659,7 @@ Pour vous aider précisément, décrivez-moi :
                   bottomRight: Radius.circular(18),
                 ),
                 border: Border.all(
-                  color: AppColors.border.withOpacity(0.5),
+                  color: AppColors.borderBlue,
                   width: 1,
                 ),
                 boxShadow: AppShadows.card,
@@ -639,7 +671,7 @@ Pour vous aider précisément, décrivez-moi :
                     msg.text,
                     style: const TextStyle(
                       fontSize: 15,
-                      color: AppColors.navy,
+                      color: AppColors.navyBlue,
                       height: 1.5,
                     ),
                   ),
@@ -677,7 +709,6 @@ Pour vous aider précisément, décrivez-moi :
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Intro
                 Container(
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
@@ -689,7 +720,7 @@ Pour vous aider précisément, décrivez-moi :
                       bottomRight: Radius.circular(18),
                     ),
                     border: Border.all(
-                      color: AppColors.border.withOpacity(0.5),
+                      color: AppColors.borderBlue,
                       width: 1,
                     ),
                     boxShadow: AppShadows.card,
@@ -701,11 +732,10 @@ Pour vous aider précisément, décrivez-moi :
                         _getIntroductionText(msg.text),
                         style: const TextStyle(
                           fontSize: 15,
-                          color: AppColors.navy,
+                          color: AppColors.navyBlue,
                           height: 1.5,
                         ),
                       ),
-                      // ✅ Bouton "Voir la liste complète du matériel"
                       if (msg.hasMaterielList) ...[
                         const SizedBox(height: 12),
                         _buildMaterielButton(),
@@ -714,7 +744,6 @@ Pour vous aider précisément, décrivez-moi :
                   ),
                 ),
                 const SizedBox(height: 14),
-                // Étapes
                 ...msg.steps.asMap().entries.map((entry) {
                   final isLast = entry.key == msg.steps.length - 1;
                   return _buildStepCard(
@@ -734,14 +763,13 @@ Pour vous aider précisément, décrivez-moi :
     );
   }
 
-  /// Bouton pilule bleu clair "Voir la liste complète du matériel"
   Widget _buildMaterielButton() {
     return GestureDetector(
       onTap: () {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: const Text('📋 Liste complète du matériel'),
-            backgroundColor: AppColors.orange,
+            backgroundColor: AppColors.orangeMecaGo,
             behavior: SnackBarBehavior.floating,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(12),
@@ -797,7 +825,6 @@ Pour vous aider précisément, décrivez-moi :
     return intro.join(' ');
   }
 
-  /// Carte d'étape (image + titre + liste + timestamp + bouton Suivant)
   Widget _buildStepCard(
     ChatStep step,
     int index,
@@ -806,7 +833,6 @@ Pour vous aider précisément, décrivez-moi :
     bool isLast,
     List<ChatStep> allSteps,
   ) {
-    // Extraire les items de la description (lignes qui commencent par - ou •)
     final description = step.description;
     final items = _extractListItems(description);
 
@@ -816,7 +842,7 @@ Pour vous aider précisément, décrivez-moi :
         color: Colors.white,
         borderRadius: BorderRadius.circular(18),
         border: Border.all(
-          color: AppColors.border.withOpacity(0.5),
+          color: AppColors.borderBlue,
           width: 1,
         ),
         boxShadow: AppShadows.card,
@@ -824,7 +850,6 @@ Pour vous aider précisément, décrivez-moi :
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // ✅ IMAGE (placeholder pour Étape 4)
           ClipRRect(
             borderRadius:
                 const BorderRadius.vertical(top: Radius.circular(18)),
@@ -843,7 +868,6 @@ Pour vous aider précisément, décrivez-moi :
                       size: 70,
                     ),
                   ),
-                  // Badge "Étape X/Y"
                   Positioned(
                     top: 14,
                     left: 14,
@@ -851,7 +875,7 @@ Pour vous aider précisément, décrivez-moi :
                       padding: const EdgeInsets.symmetric(
                           horizontal: 12, vertical: 8),
                       decoration: BoxDecoration(
-                        color: AppColors.orange,
+                        color: AppColors.orangeMecaGo,
                         borderRadius: BorderRadius.circular(12),
                         boxShadow: AppShadows.orangeButton,
                       ),
@@ -870,28 +894,24 @@ Pour vous aider précisément, décrivez-moi :
               ),
             ),
           ),
-          // ✅ CONTENU
           Padding(
             padding: const EdgeInsets.all(18),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Titre
                 Text(
                   '${step.numero}. ${step.titre}',
                   style: const TextStyle(
                     fontSize: 17,
                     fontWeight: FontWeight.w900,
-                    color: AppColors.navy,
+                    color: AppColors.navyBlue,
                     letterSpacing: -0.3,
                   ),
                 ),
                 const SizedBox(height: 12),
-                // Liste numérotée OU description
                 if (items.isNotEmpty)
                   ...items.asMap().entries.map((e) {
-                    return _buildNumberedItem(
-                        e.key + 1, e.value);
+                    return _buildNumberedItem(e.key + 1, e.value);
                   })
                 else if (description.isNotEmpty)
                   Text(
@@ -903,7 +923,6 @@ Pour vous aider précisément, décrivez-moi :
                     ),
                   ),
                 const SizedBox(height: 14),
-                // Timestamp
                 Text(
                   _formatTime(timestamp),
                   style: const TextStyle(
@@ -912,7 +931,6 @@ Pour vous aider précisément, décrivez-moi :
                     fontWeight: FontWeight.w500,
                   ),
                 ),
-                // ✅ Bouton "Suivant : [étape suivante]"
                 if (allSteps.length > 1) ...[
                   const SizedBox(height: 14),
                   _buildNextButton(index, allSteps),
@@ -925,7 +943,6 @@ Pour vous aider précisément, décrivez-moi :
     );
   }
 
-  /// Item numéroté (1. texte)
   Widget _buildNumberedItem(int number, String text) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
@@ -939,7 +956,7 @@ Pour vous aider précisément, décrivez-moi :
               style: const TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.w800,
-                color: AppColors.navy,
+                color: AppColors.navyBlue,
               ),
             ),
           ),
@@ -958,10 +975,8 @@ Pour vous aider précisément, décrivez-moi :
     );
   }
 
-  /// Bouton "Suivant : [titre étape suivante]"
   Widget _buildNextButton(int currentIndex, List<ChatStep> allSteps) {
     if (currentIndex >= allSteps.length - 1) {
-      // Dernière étape → bouton "Terminer"
       return GestureDetector(
         onTap: () {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -1012,7 +1027,7 @@ Pour vous aider précisément, décrivez-moi :
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('➡️ Étape suivante : $nextTitle'),
-            backgroundColor: AppColors.orange,
+            backgroundColor: AppColors.orangeMecaGo,
             behavior: SnackBarBehavior.floating,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(12),
@@ -1052,7 +1067,6 @@ Pour vous aider précisément, décrivez-moi :
     );
   }
 
-  /// Extrait les items d'une description (lignes commençant par -, •, ou numérotées)
   List<String> _extractListItems(String text) {
     final items = <String>[];
     final lines = text.split('\n');
@@ -1060,12 +1074,10 @@ Pour vous aider précisément, décrivez-moi :
       final trimmed = line.trim();
       if (trimmed.isEmpty) continue;
 
-      // Supprimer les puces
       String cleaned = trimmed;
       if (cleaned.startsWith('- ')) cleaned = cleaned.substring(2);
       if (cleaned.startsWith('• ')) cleaned = cleaned.substring(2);
       if (cleaned.startsWith('✅ ')) cleaned = cleaned.substring(2);
-      // Supprimer numérotation "1. ", "2. ", etc.
       cleaned = cleaned.replaceFirst(RegExp(r'^\d+\.\s*'), '');
 
       if (cleaned.isNotEmpty) {

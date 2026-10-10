@@ -2,9 +2,13 @@
 import 'dart:convert';
 import 'package:firebase_ai/firebase_ai.dart';
 import 'package:firebase_app_check/firebase_app_check.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 
 /// Service de diagnostic IA via Gemini (Firebase AI Logic)
+///
+/// ⚠️ Gemini est UNIQUEMENT utilisé sur mobile.
+///    Sur Web, ce service n'est jamais appelé (voir ai_service.dart).
 class GeminiService {
   const GeminiService();
 
@@ -18,6 +22,11 @@ class GeminiService {
     required String vehicleInfo,
     required String symptoms,
   }) async {
+    // ✅ Sécurité : Gemini non supporté sur Web
+    if (kIsWeb) {
+      throw Exception('Gemini n\'est pas supporté sur Web (utiliser Groq)');
+    }
+
     try {
       debugPrint('🧠 Gemini : analyse en cours...');
 
@@ -57,6 +66,11 @@ class GeminiService {
     required String vehicleInfo,
     required String question,
   }) async {
+    // ✅ Sécurité : Gemini non supporté sur Web
+    if (kIsWeb) {
+      throw Exception('Gemini n\'est pas supporté sur Web (utiliser Groq)');
+    }
+
     try {
       debugPrint('💬 Gemini Chat : analyse en cours...');
 

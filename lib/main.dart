@@ -1,7 +1,9 @@
 // lib/main.dart
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_app_check/firebase_app_check.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'firebase_options.dart';
 import 'core/navigation/app_router.dart';
@@ -25,8 +27,8 @@ void main() async {
   try {
     await Supabase.initialize(
       url: 'https://rpuhqomualtsfwpldtdw.supabase.co',
-      anonKey:
-          'sb_publishable_Pnoa31QZWalX2gufPXYEAg_Yy3dphZj', // ⚠️ Remplace par TA clé complète
+      // ⚠️ REMPLACE PAR TA CLÉ COMPLÈTE (anon public)
+      anonKey: 'sb_publishable_Pnoa31QZWalX2gufPXYEAg_Yy3dphZj',
     );
     debugPrint('✅ Supabase initialisé');
   } catch (e) {
@@ -41,6 +43,21 @@ void main() async {
     debugPrint('✅ Firebase initialisé');
   } catch (e) {
     debugPrint('❌ Erreur Firebase : $e');
+  }
+
+  // ✅ 2bis. Activer Firebase App Check (UNIQUEMENT sur mobile)
+  if (!kIsWeb) {
+    try {
+      await FirebaseAppCheck.instance.activate(
+        androidProvider: AndroidProvider.playIntegrity,
+        appleProvider: AppleProvider.deviceCheck,
+      );
+      debugPrint('✅ Firebase App Check activé (mobile)');
+    } catch (e) {
+      debugPrint('⚠️ App Check non activé : $e');
+    }
+  } else {
+    debugPrint('ℹ️ App Check ignoré sur Web (non supporté)');
   }
 
   // ✅ 3. Initialiser le reste

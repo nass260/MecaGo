@@ -6,8 +6,16 @@ class AppColors {
   static const Color orangeDark = Color(0xFFFF5A00);
   static const Color orangeLight = Color(0xFFFFB380);
 
+  // ✅ NOUVEAU : Orange MecaGo (maquette)
+  static const Color orangeMecaGo = Color(0xFFFF6500);
+
   static const Color navy = Color(0xFF0A0F1C);
   static const Color navyLight = Color(0xFF1E293B);
+
+  // ✅ NOUVEAU : Bleu marine maquette (texte + bulles)
+  static const Color navyBlue = Color(0xFF16335C); // Texte principal
+  static const Color navyBubble = Color(0xFF173054); // Bulle utilisateur
+  static const Color borderBlue = Color(0xFFE0E7F1); // Bordure bulle IA
 
   static const Color textSecondary = Color(0xFF64748B);
   static const Color textLight = Color(0xFF94A3B8);
