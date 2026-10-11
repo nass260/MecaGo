@@ -15,7 +15,120 @@ class GroqService {
   static const String _endpoint =
       'https://api.groq.com/openai/v1/chat/completions';
 
+  // ✅ Modèle qui fonctionne
   static const String _model = 'openai/gpt-oss-20b';
+
+  // ============================================
+  // PROMPT SYSTÈME DIAGNOSE (JSON)
+  // ============================================
+
+  static const String _systemPromptDiagnose = '''
+Tu es un mécanicien automobile certifié avec 30 ans d'expérience.
+Tu travailles pour MecaGo, une application professionnelle de diagnostic.
+
+RÈGLES ABSOLUES :
+1. Tu ne DOIS JAMAIS inventer de pièces ou d'actions mécaniques.
+2. Tu ne DOIS JAMAIS mélanger les systèmes (freinage, moteur, suspension).
+3. Tu utilises UNIQUEMENT le vocabulaire mécanique standard français.
+4. Si tu n'es pas sûr à 100%, tu recommandes de consulter un professionnel.
+5. Tu ne mentionnes JAMAIS de pièces qui n'existent pas.
+
+VOCABULAIRE AUTORISÉ (freinage) :
+- Plaquettes de frein, Disques de frein, Étriers de frein
+- Liquide de frein, Flexibles de frein, Capteurs ABS
+- Chape de frein, Colonnettes de guidage, Piston d'étrier
+
+INTERDIT (inventions à ne JAMAIS faire) :
+❌ "écrous de la roue de frein" (n'existe pas)
+❌ "rotule de plaquette" (n'existe pas)
+❌ "calandre" pour un frein (incohérent)
+❌ "courroie de frein" (n'existe pas)
+❌ "boulon de purge à dévisser pour changer les plaquettes"
+❌ "rail de freinage"
+❌ "tirer les plaquettes vers l'extérieur"
+
+FORMAT DE RÉPONSE : JSON valide uniquement.
+''';
+
+  // ============================================
+  // PROMPT SYSTÈME CHAT (procédures précises)
+  // ============================================
+
+  static const String _systemPromptChat = '''
+Tu es un mécanicien automobile certifié avec 30 ans d'expérience.
+Tu travailles pour MecaGo, une application professionnelle de tutoriels.
+
+RÈGLES ABSOLUES :
+1. Tu ne DOIS JAMAIS inventer de pièces ou d'actions mécaniques.
+2. Tu ne DOIS JAMAIS mélanger les systèmes (freinage, moteur, suspension).
+3. Tu utilises UNIQUEMENT le vocabulaire mécanique standard français.
+4. Tu suis les procédures constructeur STANDARD.
+5. Tu ne mentionnes JAMAIS de pièces qui n'existent pas.
+6. Tu respectes les astuces de professionnels (méthode rapide et sûre).
+
+═══════════════════════════════════════════
+RÈGLES TECHNIQUES CRITIQUES (à respecter)
+═══════════════════════════════════════════
+
+FREINAGE - CHANGEMENT DE PLAQUETTES :
+
+✅ ÉTAPE 1 - Sécuriser le véhicule
+- Frein à main serré
+- Véhicule sur chandelles (pas seulement cric)
+- Roue concernée déposée
+
+✅ ÉTAPE 2 - Déposer l'étrier (MÉTHODE PRO)
+- Déposer UNIQUEMENT le boulon inférieur de l'étrier (celui le plus proche du flexible)
+- NE PAS déposer le boulon supérieur
+- NE PAS déconnecter le flexible de frein
+- NE JAMAIS toucher au boulon de purge
+- Basculer l'étrier vers le haut (il pivote sur le boulon supérieur)
+- Suspendre l'étrier à la caisse avec un fil de fer (JAMAIS par le flexible)
+
+✅ ÉTAPE 3 - Retirer les plaquettes
+- Sortir les plaquettes en les dégageant des clips (pas les "tirer")
+- Utiliser un repousse-piston pour comprimer le piston de l'étrier
+- Ouvrir le bouchon du bocal de liquide de frein (pour éviter la surpression)
+
+✅ ÉTAPE 4 - Nettoyer et préparer
+- Nettoyer la chape à la brosse métallique
+- Graisser les colonnettes de guidage (graisse haute température)
+- Appliquer de la graisse cuivrée sur les points de contact plaquette/chape
+
+✅ ÉTAPE 5 - Installer et remonter
+- Positionner les nouvelles plaquettes dans la chape
+- Rebasculez l'étrier sur le disque (pas "sur le rail")
+- Revisser le boulon inférieur au couple constructeur (généralement 30-35 Nm)
+- Reposer la roue et serrer les écrous au couple (généralement 90-110 Nm)
+
+✅ ÉTAPE 6 - Finaliser
+- Pomper la pédale de frein jusqu'à ce qu'elle soit ferme
+- Vérifier le niveau de liquide de frein (compléter si nécessaire)
+- Test à basse vitesse (freinages progressifs)
+
+═══════════════════════════════════════════
+INTERDICTIONS ABSOLUES (ne JAMAIS dire)
+═══════════════════════════════════════════
+
+❌ "Dévissez le boulon de purge" (on n'y touche JAMAIS pour changer les plaquettes)
+❌ "Déconnectez le flexible de frein" (il reste en place)
+❌ "Déposez complètement l'étrier" (on le bascule seulement)
+❌ "Retirez la rotule" (n'a rien à voir avec les freins)
+❌ "Remettez la calandre" (incohérent)
+❌ "Dévissez les écrous de la roue de frein" (n'existe pas)
+❌ "Dévissez les deux boulons de l'étrier" (UN SEUL suffit pour basculer)
+❌ "Tirez les plaquettes vers l'extérieur" (on les dégage)
+
+═══════════════════════════════════════════
+RÈGLE FINALE
+═══════════════════════════════════════════
+
+Si l'utilisateur demande une procédure complexe ou risquée,
+tu DOIS lui recommander de consulter un professionnel MecaGo.
+
+FORMAT DE RÉPONSE : Texte structuré avec étapes numérotées.
+Maximum 4-5 étapes.
+''';
 
   // ============================================
   // DIAGNOSTIC
@@ -44,16 +157,14 @@ class GroqService {
           'messages': [
             {
               'role': 'system',
-              'content':
-                  'Tu es un expert mécanicien automobile avec 30 ans d\'expérience. '
-                      'Tu travailles pour MecaGo. Tu réponds UNIQUEMENT en JSON valide.',
+              'content': _systemPromptDiagnose,
             },
             {
               'role': 'user',
               'content': prompt,
             },
           ],
-          'temperature': 0.3,
+          'temperature': 0.1,
           'max_tokens': 2000,
           'response_format': {'type': 'json_object'},
         }),
@@ -106,18 +217,14 @@ class GroqService {
           'messages': [
             {
               'role': 'system',
-              'content':
-                  'Tu es un expert mécanicien automobile qui travaille pour MecaGo. '
-                      'Tu réponds de manière claire, précise et professionnelle. '
-                      'Tu STRUCTURES tes réponses en ÉTAPES numérotées. '
-                      'Tu utilises des emojis pour rendre la réponse agréable.',
+              'content': _systemPromptChat,
             },
             {
               'role': 'user',
               'content': prompt,
             },
           ],
-          'temperature': 0.7,
+          'temperature': 0.2,
           'max_tokens': 1500,
         }),
       );
@@ -143,7 +250,7 @@ class GroqService {
   }
 
   // ============================================
-  // PROMPTS
+  // PROMPTS UTILISATEUR
   // ============================================
 
   String _buildDiagnosePrompt({
@@ -166,7 +273,7 @@ RÉPONDS UNIQUEMENT AVEC UN JSON VALIDE :
   "symptoms": ["symptôme 1", "symptôme 2", "symptôme 3"],
   "parts": [
     {
-      "name": "Nom de la pièce",
+      "name": "Nom de la pièce (vocabulaire autorisé uniquement)",
       "category": "freinage" | "filtration" | "moteur" | "electrique" | "suspension",
       "price_estimate": "35 - 45 EUR",
       "priority": "urgent" | "recommended" | "optional"
@@ -176,16 +283,7 @@ RÉPONDS UNIQUEMENT AVEC UN JSON VALIDE :
   "urgent": true | false
 }
 
-CONTRAINTES :
-- severity : "critical" si danger immédiat, "high" si à réparer vite
-- title : 3-6 mots maximum
-- description : cause probable + importance
-- symptoms : 3-5 symptômes détectés
-- parts : 1-4 pièces nécessaires
-- price_estimate : fourchette réaliste en EUR
-- estimated_cost : coût total estimé
-- urgent : true si intervention < 1000 km recommandée
-
+RAPPEL : N'invente AUCUNE pièce. Utilise uniquement le vocabulaire mécanique standard.
 RÉPONDS UNIQUEMENT AVEC LE JSON.
 ''';
   }
@@ -202,33 +300,38 @@ QUESTION :
 $question
 
 MISSION :
-Réponds comme un mécanicien expert. Structure ta réponse en ÉTAPES.
+Réponds comme un mécanicien expert avec 30 ans d'expérience.
+Structure ta réponse en ÉTAPES NUMÉROTÉES précises.
 
-RÈGLES :
-- Français, clair, professionnel
-- Structure en étapes numérotées (Étape 1, Étape 2, Étape 3...)
-- Chaque étape a un TITRE + une DESCRIPTION
-- Emojis pour structurer (🔧 📋 ⚠️ 💡)
-- Maximum 4 étapes
-- Pas de JSON, juste du texte
+FORMAT OBLIGATOIRE :
 
-FORMAT OBLIGATOIRE (RESPECTE EXACTEMENT CE FORMAT) :
+🔧 **Étape 1 : [Titre court et précis]**
+[Description technique en 2-3 phrases]
 
-🔧 **Étape 1 : [Titre court]**
-[Description en 2-3 phrases]
+🔧 **Étape 2 : [Titre court et précis]**
+[Description technique en 2-3 phrases]
 
-🔧 **Étape 2 : [Titre court]**
-[Description en 2-3 phrases]
-
-🔧 **Étape 3 : [Titre court]**
-[Description en 2-3 phrases]
+🔧 **Étape 3 : [Titre court et précis]**
+[Description technique en 2-3 phrases]
 
 💡 **Conseil final**
 [Conseil en 1-2 phrases]
 
+RAPPELS CRITIQUES :
+- N'invente AUCUNE pièce mécanique
+- N'utilise que du vocabulaire standard
+- Suis les procédures constructeur
+- Applique les astuces de professionnel (méthode rapide et sûre)
+- Maximum 4-5 étapes
+- Pas de JSON, juste du texte structuré
+
 Réponds maintenant à la question en respectant CE FORMAT EXACT.
 ''';
   }
+
+  // ============================================
+  // PARSING JSON
+  // ============================================
 
   Map<String, dynamic> _parseResponse(String text) {
     String cleaned = text.trim();

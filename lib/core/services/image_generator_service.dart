@@ -3,43 +3,207 @@ import 'package:flutter/material.dart';
 import 'package:adaptive_network_image/adaptive_network_image.dart';
 import '../theme/app_theme.dart';
 
-/// Service de génération d'images via Pollinations.ai (gratuit)
+/// Service de génération d'images via Edge Function Supabase
+/// (qui appelle Pollinations.ai côté serveur — contourne CORS)
 ///
-/// ⚠️ IMPORTANT : ces images sont des ILLUSTRATIONS génériques générées par IA.
-/// Elles ne remplacent PAS les procédures mécaniques vérifiées (couples de
-/// serrage, points de levage, etc.) qui doivent venir d'une base fiable.
+/// ✅ Stratégie "Scène d'atelier" :
+///   Au lieu de gros plans de pièces (qui échouent avec Pollinations),
+///   on génère des SCÈNES D'ATELIER cohérentes et fiables.
 class ImageGeneratorService {
   const ImageGeneratorService();
 
-  static const String _baseUrl = 'https://image.pollinations.ai/prompt';
+  static const String _proxyUrl =
+      'https://rpuhqomualtsfwpldtdw.supabase.co/functions/v1/pollinations-proxy';
 
   // ============================================
-  // CONSTRUCTION DE L'INVITE PRO
+  // TABLE 1 — ACTIONS DÉTECTÉES
   // ============================================
 
-  /// Construit une invite professionnelle pour illustrer une étape
-  /// de réparation automobile.
+  /// Chaque action → une description de scène d'atelier
+  static const List<Map<String, dynamic>> _actionScenes = [
+    {
+      'keywords': ['préparer', 'preparer', 'sécuriser', 'securiser',
+                   'lever', 'caler', 'sécurité'],
+      'scene':
+          'modern car on a lift in a bright automotive workshop, '
+          'tools organized on a workbench, safety equipment visible',
+    },
+    {
+      'keywords': ['vérifier', 'verifier', 'contrôler', 'controler',
+                   'examiner', 'inspecter', 'observer', 'état', 'usure'],
+      'scene':
+          'professional mechanic inspecting car parts under the car, '
+          'flashlight in hand, focused expression, workshop in background',
+    },
+    {
+      'keywords': ['retirer', 'enlever', 'déposer', 'deposer', 'dévisser',
+                   'devisser', 'ôter', 'oter', 'sortir', 'démonter'],
+      'scene':
+          'professional mechanic with wrench removing a car part, '
+          'hands focused on the work, car on lift, clean workshop',
+    },
+    {
+      'keywords': ['nettoyer', 'brosser', 'dégraisser', 'degreaser',
+                   'laver', 'purger'],
+      'scene':
+          'professional mechanic cleaning car parts with a wire brush, '
+          'workshop bench, focused hands, clean environment',
+    },
+    {
+      'keywords': ['installer', 'poser', 'monter', 'remettre', 'fixer',
+                   'remplacement', 'remplacer', 'changer', 'neuf'],
+      'scene':
+          'professional mechanic installing a new car part, '
+          'hands fitting the part, car on lift, workshop lighting',
+    },
+    {
+      'keywords': ['serrer', 'visser', 'bloquer', 'couple'],
+      'scene':
+          'professional mechanic using a torque wrench on car parts, '
+          'precise work, workshop background, technical atmosphere',
+    },
+    {
+      'keywords': ['mesurer', 'dimension', 'épaisseur', 'epaisseur'],
+      'scene':
+          'professional mechanic measuring car parts with a caliper, '
+          'precision tools, clean workshop bench, focused',
+    },
+    {
+      'keywords': ['vidanger', 'écouler', 'ecouler', 'drainer'],
+      'scene':
+          'professional mechanic draining oil from a car, '
+          'drain pan below the car, clean workshop',
+    },
+    {
+      'keywords': ['remplir', 'ajouter', 'niveau'],
+      'scene':
+          'professional mechanic filling fluids in a car engine bay, '
+          'funnel in hand, clean workshop',
+    },
+    {
+      'keywords': ['tester', 'essayer', 'fonctionnement'],
+      'scene':
+          'professional mechanic testing a car, '
+          'dashboard visible, modern workshop, confident',
+    },
+    {
+      'keywords': ['terminer', 'finaliser', 'remonter'],
+      'scene':
+          'professional mechanic finishing work on a car, '
+          'tools being put away, car ready, clean workshop',
+    },
+  ];
+
+  // ============================================
+  // TABLE 2 — CONTEXTE MÉCANIQUE (rappel visuel)
+  // ============================================
+
+  /// Détecte le système mécanique concerné → ajoute un indice visuel
+  static const List<Map<String, dynamic>> _systemHints = [
+    {
+      'keywords': ['plaquette', 'disque', 'frein', 'étrier', 'caliper',
+                   'freinage'],
+      'hint': 'brake system parts visible on the car',
+    },
+    {
+      'keywords': ['huile', 'vidange', 'filtre à huile'],
+      'hint': 'engine oil and drain plug visible',
+    },
+    {
+      'keywords': ['filtre à air', 'filtre air', 'admission'],
+      'hint': 'air filter housing visible under the hood',
+    },
+    {
+      'keywords': ['courroie', 'distribution', 'galet'],
+      'hint': 'engine bay with belts and pulleys visible',
+    },
+    {
+      'keywords': ['bougie', 'allumage', 'bobine'],
+      'hint': 'engine with spark plugs area visible',
+    },
+    {
+      'keywords': ['amortisseur', 'suspension', 'ressort'],
+      'hint': 'suspension and wheel visible under the car',
+    },
+    {
+      'keywords': ['rotule', 'direction', 'cardan', 'transmission'],
+      'hint': 'steering and drive components under the car',
+    },
+    {
+      'keywords': ['batterie', 'alternateur', 'démarreur'],
+      'hint': 'battery and electrical components in engine bay',
+    },
+    {
+      'keywords': ['pneu', 'roue', 'jante'],
+      'hint': 'wheel being worked on, tire visible',
+    },
+    {
+      'keywords': ['clim', 'climatisation', 'compresseur'],
+      'hint': 'A/C compressor and hoses visible',
+    },
+  ];
+
+  // ============================================
+  // DÉTECTION
+  // ============================================
+
+  String _detectActionScene(String text) {
+    final lower = text.toLowerCase();
+
+    for (final action in _actionScenes) {
+      final keywords = action['keywords'] as List<String>;
+      for (final keyword in keywords) {
+        if (lower.contains(keyword)) {
+          return action['scene'] as String;
+        }
+      }
+    }
+
+    // Fallback : vue générale d'atelier
+    return 'professional mechanic working on a car in a clean workshop';
+  }
+
+  String _detectSystemHint(String text) {
+    final lower = text.toLowerCase();
+
+    for (final system in _systemHints) {
+      final keywords = system['keywords'] as List<String>;
+      for (final keyword in keywords) {
+        if (lower.contains(keyword)) {
+          return system['hint'] as String;
+        }
+      }
+    }
+
+    return 'car parts being worked on';
+  }
+
+  // ============================================
+  // CONSTRUCTION DU PROMPT
+  // ============================================
+
   String buildRepairPrompt({
     required String stepTitle,
     required String stepDescription,
   }) {
-    final cleanTitle = _cleanForPrompt(stepTitle);
-    final cleanDesc = _cleanForPrompt(stepDescription);
+    final fullText = '$stepTitle $stepDescription';
+    final cleanText = _cleanForPrompt(fullText);
 
-    final shortDesc = cleanDesc.length > 150
-        ? '${cleanDesc.substring(0, 150)}...'
-        : cleanDesc;
+    // ✅ Détection action + système
+    final actionScene = _detectActionScene(cleanText);
+    final systemHint = _detectSystemHint(cleanText);
 
-    return 'Professional automotive repair tutorial illustration, '
-        'close-up shot, clean workshop environment, '
-        'realistic lighting, high resolution, '
-        'detailed mechanical parts, '
-        'no text, no watermark, no logo. '
-        'Subject: $cleanTitle. '
-        'Context: $shortDesc';
+    // ✅ Prompt final : scène + hint + garde-fous anti-texte
+    return 'Professional automotive workshop photography, '
+        '$actionScene, '
+        '$systemHint, '
+        'bright and clean environment, realistic lighting, '
+        'sharp focus, photorealistic, 4k, '
+        'NO TEXT, NO LETTERS, NO NUMBERS, NO WRITING, '
+        'NO SYMBOLS, NO LABELS, NO LOGOS, NO WATERMARKS, '
+        'no close-up on isolated parts';
   }
 
-  /// Nettoie un texte pour l'invite (supprime emojis + caractères spéciaux)
   String _cleanForPrompt(String text) {
     return text
         .replaceAll(RegExp(r'[\u{1F300}-\u{1F9FF}]', unicode: true), '')
@@ -56,24 +220,25 @@ class ImageGeneratorService {
   // URL DE GÉNÉRATION
   // ============================================
 
-  /// Construit l'URL Pollinations à partir d'une description
   String buildImageUrl({
     required String description,
     int width = 800,
     int height = 400,
-    bool noLogo = true,
     String model = 'flux',
   }) {
     final encoded = Uri.encodeComponent(description);
-    return '$_baseUrl/$encoded'
-        '?width=$width'
-        '&height=$height'
-        '&nologo=$noLogo'
-        '&model=$model'
-        '&seed=${description.hashCode.abs() % 1000000}';
+    final buffer = StringBuffer();
+
+    buffer.write('$_proxyUrl');
+    buffer.write('?prompt=$encoded');
+    buffer.write('&width=$width');
+    buffer.write('&height=$height');
+    buffer.write('&model=$model');
+    buffer.write('&seed=${description.hashCode.abs() % 1000000}');
+
+    return buffer.toString();
   }
 
-  /// Construit l'URL pour une étape de tutoriel
   String buildStepImageUrl({
     required String stepTitle,
     required String stepDescription,
@@ -95,13 +260,6 @@ class ImageGeneratorService {
   // WIDGET POUR AFFICHER L'IMAGE GÉNÉRÉE
   // ============================================
 
-  /// Widget qui affiche une image générée par Pollinations
-  /// avec loading + gestion d'erreur propres.
-  ///
-  /// ✅ API adaptive_network_image 0.1.2 :
-  ///    - imageUrl (pas url)
-  ///    - placeholder : WidgetBuilder (context)
-  ///    - errorWidget : (context, error)
   Widget buildGeneratedImage({
     required String description,
     double width = 400,
@@ -120,7 +278,6 @@ class ImageGeneratorService {
       height: height,
       fit: BoxFit.cover,
       borderRadius: BorderRadius.circular(borderRadius),
-      // ✅ Placeholder : WidgetBuilder → 1 seul paramètre (context)
       placeholder: (context) {
         return Container(
           width: width,
@@ -155,7 +312,6 @@ class ImageGeneratorService {
           ),
         );
       },
-      // ✅ Erreur : (context, error) — 2 paramètres (API 0.1.2)
       errorWidget: (context, error) {
         return Container(
           width: width,
@@ -175,7 +331,6 @@ class ImageGeneratorService {
     );
   }
 
-  /// Widget qui affiche l'image d'une étape de tutoriel
   Widget buildStepImage({
     required String stepTitle,
     required String stepDescription,
