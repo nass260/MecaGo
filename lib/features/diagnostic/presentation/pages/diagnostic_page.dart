@@ -461,10 +461,6 @@ class _DiagnosticPageState extends State<DiagnosticPage> {
     );
   }
 
-  // ============================================
-  // CARTE VÉHICULE (cliquable → bottom sheet)
-  // ============================================
-
   Widget _buildVehicleCard() {
     return GestureDetector(
       onTap: _showVehicleSelector,
@@ -479,7 +475,6 @@ class _DiagnosticPageState extends State<DiagnosticPage> {
           borderRadius: BorderRadius.circular(20),
           child: Stack(
             children: [
-              // LOGO DE LA MARQUE (centré)
               Positioned.fill(
                 child: Center(
                   child: _marqueImageService.buildMarqueLogo(
@@ -490,8 +485,6 @@ class _DiagnosticPageState extends State<DiagnosticPage> {
                   ),
                 ),
               ),
-
-              // BADGE "CHANGER" en haut à droite
               Positioned(
                 top: 12,
                 right: 12,
@@ -524,8 +517,6 @@ class _DiagnosticPageState extends State<DiagnosticPage> {
                   ),
                 ),
               ),
-
-              // CONTENU (badge santé + infos)
               Positioned(
                 left: 18,
                 top: 18,
@@ -596,10 +587,6 @@ class _DiagnosticPageState extends State<DiagnosticPage> {
     );
   }
 
-  // ============================================
-  // BOTTOM SHEET — Sélecteur de véhicule
-  // ============================================
-
   void _showVehicleSelector() {
     final vehicles = GlobalNotifier.instance.vehicles;
 
@@ -646,7 +633,6 @@ class _DiagnosticPageState extends State<DiagnosticPage> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                // Poignée
                 Container(
                   margin: const EdgeInsets.only(top: 12),
                   width: 40,
@@ -657,7 +643,6 @@ class _DiagnosticPageState extends State<DiagnosticPage> {
                   ),
                 ),
                 const SizedBox(height: 20),
-                // Titre
                 const Padding(
                   padding: EdgeInsets.symmetric(horizontal: 20),
                   child: Row(
@@ -677,7 +662,6 @@ class _DiagnosticPageState extends State<DiagnosticPage> {
                   ),
                 ),
                 const SizedBox(height: 16),
-                // Liste des véhicules
                 Flexible(
                   child: ListView.builder(
                     shrinkWrap: true,
@@ -711,7 +695,6 @@ class _DiagnosticPageState extends State<DiagnosticPage> {
                           ),
                           child: Row(
                             children: [
-                              // Logo de la marque
                               _marqueImageService.buildMarqueLogo(
                                 marque: vehicle.brand,
                                 width: 44,
@@ -898,7 +881,6 @@ class _DiagnosticPageState extends State<DiagnosticPage> {
             const SizedBox(height: 20),
           ],
 
-          // ✅ NOUVEAU : Bouton "Demander un conseil à MecaGo"
           _buildAskAdviceButton(),
 
           const SizedBox(height: 20),
@@ -934,15 +916,10 @@ class _DiagnosticPageState extends State<DiagnosticPage> {
     );
   }
 
-  // ============================================
-  // ✅ BOUTON "DEMANDER UN CONSEIL À MECAGO"
-  // ============================================
-
   Widget _buildAskAdviceButton() {
     return GestureDetector(
       onTap: () {
         final vehicleInfo = '$_brand $_model, $_fuel, $_year';
-        // Ajoute le symptôme du diagnostic comme question initiale
         final symptom = _symptomController.text.trim();
         final question = symptom.isNotEmpty
             ? Uri.encodeComponent(symptom)
@@ -964,7 +941,6 @@ class _DiagnosticPageState extends State<DiagnosticPage> {
         ),
         child: Row(
           children: [
-            // Avatar bot
             Container(
               width: 44,
               height: 44,
@@ -983,7 +959,6 @@ class _DiagnosticPageState extends State<DiagnosticPage> {
               ),
             ),
             const SizedBox(width: 14),
-            // Texte
             const Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -1009,7 +984,6 @@ class _DiagnosticPageState extends State<DiagnosticPage> {
                 ],
               ),
             ),
-            // Flèche
             Container(
               width: 32,
               height: 32,
@@ -1319,10 +1293,6 @@ class _DiagnosticPageState extends State<DiagnosticPage> {
     );
   }
 
-  // ============================================
-  // CARTE PIÈCE (avec image Supabase - SIMPLIFIÉE)
-  // ============================================
-
   Widget _buildPartCard(PartSuggestion part) {
     return Container(
       margin: const EdgeInsets.only(bottom: 10),
@@ -1334,7 +1304,6 @@ class _DiagnosticPageState extends State<DiagnosticPage> {
       ),
       child: Row(
         children: [
-          // ✅ Image de la pièce depuis Supabase (1 seule requête)
           _pieceImageService.buildPieceImage(
             nomPieceIa: part.name,
             width: 44,
@@ -1464,11 +1433,18 @@ class _DiagnosticPageState extends State<DiagnosticPage> {
     });
 
     final symptom = _symptomController.text.trim();
-    final vehicleInfo = '$_brand $_model';
+
+    // ✅ Construire le contexte véhicule complet
+    final vehicleContext = _aiService.buildVehicleContext(
+      brand: _brand,
+      model: _model,
+      year: _year,
+      fuel: _fuel,
+    );
 
     try {
       final response = await _aiService.diagnose(
-        vehicleInfo: vehicleInfo,
+        vehicleContext: vehicleContext,
         symptoms: symptom,
       );
       final result = _mapJsonToResult(
