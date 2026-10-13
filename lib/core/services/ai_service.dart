@@ -4,25 +4,27 @@ import 'package:flutter/material.dart';
 import 'gemini_service.dart';
 import 'gemini_flash_service.dart';
 import 'groq_service.dart';
+import 'procedure_service.dart';
 
 /// Service IA unifié MecaGo
 ///
 /// Cascade intelligente :
-/// 1. Gemini Flash-Lite (gratuit, prioritaire) → JSON structuré
-/// 2. Groq (fallback gratuit) → texte simple
-/// 3. Gemini Firebase (Android uniquement)
+/// 0. Supabase (procédures vérifiées) — Priorité 0
+/// 1. Gemini Flash-Lite (gratuit, prioritaire) — Priorité 1
+/// 2. Groq (fallback gratuit) — Priorité 2
+/// 3. Gemini Firebase (Android uniquement) — Priorité 3
 class AiService {
   const AiService();
 
   final GeminiFlashService _geminiFlash = const GeminiFlashService();
   final GroqService _groq = const GroqService();
   final GeminiService _gemini = const GeminiService();
+  final ProcedureService _procedureService = const ProcedureService();
 
   // ============================================
   // CONSTRUCTION DU CONTEXTE VÉHICULE COMPLET
   // ============================================
 
-  /// Construit un contexte véhicule COMPLET pour Gemini
   String buildVehicleContext({
     required String brand,
     required String model,
@@ -53,6 +55,17 @@ class AiService {
     }
 
     return buffer.toString();
+  }
+
+  /// Extrait une valeur du contexte véhicule
+  String _extractFromContext(String context, String key) {
+    final lines = context.split('\n');
+    for (final line in lines) {
+      if (line.startsWith('$key :')) {
+        return line.substring('$key :'.length).trim();
+      }
+    }
+    return '';
   }
 
   // ============================================
@@ -118,19 +131,47 @@ class AiService {
   }
 
   // ============================================
-  // CHAT (retourne JSON : procedure | reponse_simple | emplacement_piece)
+  // CHAT (retourne JSON complet + historique)
   // ============================================
 
   Future<AiChatResponse> chat({
     required String vehicleContext,
     required String question,
+    required List<Map<String, String>> conversationHistory,
   }) async {
-    // ✅ PRIORITÉ 1 : Gemini Flash-Lite (JSON structuré complet)
+    // ✅ PRIORITÉ 0 : Chercher dans Supabase (procédures vérifiées)
+    try {
+      debugPrint('📚 AiService : recherche dans Supabase...');
+
+      // Extraire marque/modèle du contexte
+      final marque = _extractFromContext(vehicleContext, 'Marque');
+      final modele = _extractFromContext(vehicleContext, 'Modèle');
+
+      final procedure = await _procedureService.findProcedure(
+        question: question,
+        marque: marque,
+        modele: modele,
+      );
+
+      if (procedure != null) {
+        debugPrint('✅ AiService : procédure trouvée dans Supabase');
+        return AiChatResponse(
+          json: procedure,
+          provider: AiProvider.geminiFlash, // On marque comme vérifié
+        );
+      }
+      debugPrint('⚠️ AiService : aucune procédure dans Supabase → IA');
+    } catch (e) {
+      debugPrint('⚠️ AiService : Supabase a échoué → $e');
+    }
+
+    // ✅ PRIORITÉ 1 : Gemini Flash-Lite
     try {
       debugPrint('💬 AiService : tentative Gemini Flash-Lite chat...');
       final json = await _geminiFlash.chat(
         vehicleContext: vehicleContext,
         question: question,
+        conversationHistory: conversationHistory,
       );
       debugPrint('✅ AiService : Gemini Flash-Lite chat a répondu');
       return AiChatResponse(
@@ -141,33 +182,17 @@ class AiService {
       debugPrint('⚠️ AiService : Gemini Flash-Lite chat a échoué → $e');
     }
 
-    // ✅ PRIORITÉ 2 : Groq (fallback texte → transformé en JSON procédure)
+    // ✅ PRIORITÉ 2 : Groq
     try {
       debugPrint('💬 AiService : tentative Groq chat...');
-      final response = await _groq.chat(
-        vehicleInfo: vehicleContext,
+      final json = await _groq.chat(
+        vehicleContext: vehicleContext,
         question: question,
+        conversationHistory: conversationHistory,
       );
       debugPrint('✅ AiService : Groq chat a répondu');
-
       return AiChatResponse(
-        json: {
-          'type': 'procedure',
-          'titre': 'Procédure MecaGo',
-          'vehicule': vehicleContext.split('\n').first,
-          'duree_estimee': 'Non communiquée',
-          'difficulte': 'intermediaire',
-          'niveau_danger': 'moyen',
-          'public_cible': 'tous',
-          'formation_requise': 'Aucune',
-          'outils': [],
-          'pieces': [],
-          'avertissements_securite': [],
-          'avertissements_legaux': [],
-          'etapes': _parseGroqTextToEtapes(response),
-          'conseil_final': '',
-          'sources': ['Fallback Groq'],
-        },
+        json: json,
         provider: AiProvider.groq,
       );
     } catch (e) {
@@ -198,7 +223,7 @@ class AiService {
             'pieces': [],
             'avertissements_securite': [],
             'avertissements_legaux': [],
-            'etapes': _parseGroqTextToEtapes(response),
+            'etapes': _parseTextToEtapes(response),
             'conseil_final': '',
             'sources': ['Fallback Gemini Firebase'],
           },
@@ -214,10 +239,10 @@ class AiService {
   }
 
   // ============================================
-  // FALLBACK : texte Groq → étapes JSON
+  // FALLBACK : texte → étapes JSON
   // ============================================
 
-  List<Map<String, dynamic>> _parseGroqTextToEtapes(String text) {
+  List<Map<String, dynamic>> _parseTextToEtapes(String text) {
     final etapes = <Map<String, dynamic>>[];
     final lines = text.split('\n');
     String? currentTitre;

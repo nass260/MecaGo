@@ -30,8 +30,6 @@ class _ChatPageState extends State<ChatPage> {
   final ImageGeneratorService _imageService = const ImageGeneratorService();
 
   bool _isLoading = false;
-
-  // ✅ Contexte véhicule complet (construit à partir de GlobalNotifier)
   String _vehicleContext = '';
   String _brand = 'Peugeot';
   String _model = '308';
@@ -41,8 +39,6 @@ class _ChatPageState extends State<ChatPage> {
   @override
   void initState() {
     super.initState();
-
-    // ✅ Récupérer TOUT le contexte véhicule
     try {
       final vehicle = GlobalNotifier.instance.activeVehicle;
       if (vehicle != null) {
@@ -58,17 +54,15 @@ class _ChatPageState extends State<ChatPage> {
           plate: vehicle.plate,
         );
       } else {
-        // Fallback : parser vehicleInfo
         _vehicleContext = widget.vehicleInfo;
       }
     } catch (e) {
-      debugPrint('⚠️ Erreur contexte véhicule : $e');
+      debugPrint('⚠️ Erreur contexte : $e');
       _vehicleContext = widget.vehicleInfo;
     }
 
     _messages.add(ChatMessage(
-      text:
-          'Bonjour ! Je suis votre assistant MecaGo. Posez-moi toutes vos questions sur votre $_brand $_model.',
+      text: 'Bonjour ! Je suis votre assistant MecaGo. Posez-moi toutes vos questions sur votre $_brand $_model.',
       isUser: false,
       type: MessageType.text,
       timestamp: DateTime.now(),
@@ -103,9 +97,44 @@ class _ChatPageState extends State<ChatPage> {
     }
   }
 
+  /// ✅ Construit l'historique de la conversation pour l'IA
+  List<Map<String, String>> _buildHistory() {
+    final history = <Map<String, String>>[];
+
+    for (final msg in _messages) {
+      if (msg.isUser && msg.text.isNotEmpty) {
+        history.add({'role': 'user', 'content': msg.text});
+      } else if (msg.type == MessageType.simpleAnswer &&
+          msg.simpleAnswer != null) {
+        history.add({
+          'role': 'assistant',
+          'content': '${msg.simpleAnswer!.titre} : ${msg.simpleAnswer!.reponse}',
+        });
+      } else if (msg.type == MessageType.procedure && msg.procedure != null) {
+        history.add({
+          'role': 'assistant',
+          'content': 'Procédure : ${msg.procedure!.titre}',
+        });
+      } else if (msg.type == MessageType.emplacement &&
+          msg.emplacement != null) {
+        history.add({
+          'role': 'assistant',
+          'content': 'Emplacement : ${msg.emplacement!.piece}',
+        });
+      } else if (msg.type == MessageType.text && msg.text.isNotEmpty) {
+        history.add({'role': 'assistant', 'content': msg.text});
+      }
+    }
+
+    return history;
+  }
+
   Future<void> _sendMessage() async {
     final text = _controller.text.trim();
     if (text.isEmpty || _isLoading) return;
+
+    // ✅ Construire l'historique AVANT d'ajouter le nouveau message
+    final history = _buildHistory();
 
     setState(() {
       _messages.add(ChatMessage(
@@ -123,6 +152,7 @@ class _ChatPageState extends State<ChatPage> {
       final response = await _aiService.chat(
         vehicleContext: _vehicleContext,
         question: text,
+        conversationHistory: history,
       );
 
       final type = response.json['type'] as String? ?? 'procedure';
@@ -161,8 +191,7 @@ class _ChatPageState extends State<ChatPage> {
       if (!mounted) return;
       setState(() {
         _messages.add(ChatMessage(
-          text:
-              'Désolé, je n\'ai pas pu traiter votre question. Reformulez-la.',
+          text: 'Désolé, je n\'ai pas pu traiter votre question. Reformulez-la.',
           isUser: false,
           type: MessageType.text,
           timestamp: DateTime.now(),
@@ -191,8 +220,7 @@ class _ChatPageState extends State<ChatPage> {
             Expanded(
               child: ListView.builder(
                 controller: _scrollController,
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                 itemCount: _messages.length + (_isLoading ? 1 : 0),
                 itemBuilder: (context, index) {
                   if (index == _messages.length && _isLoading) {
@@ -459,8 +487,7 @@ class _ChatPageState extends State<ChatPage> {
         children: [
           Flexible(
             child: Container(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               decoration: BoxDecoration(
                 color: AppColors.navyBubble,
                 borderRadius: const BorderRadius.only(
@@ -581,7 +608,6 @@ class _ChatPageState extends State<ChatPage> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // ✅ Bandeau de danger (selon niveau)
                 if (procedure.niveauDanger == 'critique' ||
                     procedure.niveauDanger == 'eleve')
                   _buildDangerBanner(procedure),
@@ -645,10 +671,6 @@ class _ChatPageState extends State<ChatPage> {
       ),
     );
   }
-
-  // ============================================
-  // BANDEAU DE DANGER (4 niveaux)
-  // ============================================
 
   Widget _buildDangerBanner(ProcedureData p) {
     final isCritique = p.niveauDanger == 'critique';
@@ -788,10 +810,6 @@ class _ChatPageState extends State<ChatPage> {
     }
   }
 
-  // ============================================
-  // AVERTISSEMENTS LÉGAUX
-  // ============================================
-
   Widget _buildAvertissementsLegaux(List<String> avertissements) {
     return Container(
       padding: const EdgeInsets.all(14),
@@ -831,10 +849,6 @@ class _ChatPageState extends State<ChatPage> {
       ),
     );
   }
-
-  // ============================================
-  // AVERTISSEMENTS SÉCURITÉ
-  // ============================================
 
   Widget _buildAvertissementsSection(List<String> avertissements) {
     return Container(
@@ -881,10 +895,6 @@ class _ChatPageState extends State<ChatPage> {
       ),
     );
   }
-
-  // ============================================
-  // OUTILS
-  // ============================================
 
   Widget _buildOutilsSection(List<OutilItem> outils) {
     return Container(
@@ -942,10 +952,6 @@ class _ChatPageState extends State<ChatPage> {
       ),
     );
   }
-
-  // ============================================
-  // ÉTAPE
-  // ============================================
 
   Widget _buildEtapeCard(
     EtapeItem etape,
@@ -1112,10 +1118,6 @@ class _ChatPageState extends State<ChatPage> {
     );
   }
 
-  // ============================================
-  // PIÈCES (MULTI-VARIANTES)
-  // ============================================
-
   Widget _buildPiecesSection(List<PieceItem> pieces) {
     return Container(
       padding: const EdgeInsets.all(14),
@@ -1149,7 +1151,6 @@ class _ChatPageState extends State<ChatPage> {
   }
 
   Widget _buildPieceCard(PieceItem p) {
-    // ✅ Si plusieurs variantes → afficher toutes
     if (p.variantes.length > 1) {
       return Container(
         margin: const EdgeInsets.only(bottom: 12),
@@ -1195,7 +1196,6 @@ class _ChatPageState extends State<ChatPage> {
       );
     }
 
-    // ✅ Une seule variante → affichage simple
     final v = p.variantes.isNotEmpty ? p.variantes.first : null;
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
@@ -1367,10 +1367,6 @@ class _ChatPageState extends State<ChatPage> {
     );
   }
 
-  // ============================================
-  // RÉPONSE SIMPLE (TYPE A)
-  // ============================================
-
   Widget _buildSimpleAnswerResponse(ChatMessage msg) {
     final answer = msg.simpleAnswer!;
     return Padding(
@@ -1478,10 +1474,6 @@ class _ChatPageState extends State<ChatPage> {
       ),
     );
   }
-
-  // ============================================
-  // EMPLACEMENT PIÈCE (TYPE C)
-  // ============================================
 
   Widget _buildEmplacementResponse(ChatMessage msg) {
     final e = msg.emplacement!;
@@ -1605,10 +1597,6 @@ class _ChatPageState extends State<ChatPage> {
     );
   }
 
-  // ============================================
-  // CONSEIL FINAL
-  // ============================================
-
   Widget _buildConseilFinal(String conseil) {
     return Container(
       padding: const EdgeInsets.all(14),
@@ -1643,10 +1631,6 @@ class _ChatPageState extends State<ChatPage> {
       ),
     );
   }
-
-  // ============================================
-  // SOURCES
-  // ============================================
 
   Widget _buildSources(List<String> sources) {
     return Container(
@@ -1701,10 +1685,6 @@ class _ChatPageState extends State<ChatPage> {
           const Icon(Icons.smart_toy_rounded, color: Colors.white, size: 20),
     );
   }
-
-  // ============================================
-  // INPUT
-  // ============================================
 
   Widget _buildInput() {
     return Container(
@@ -1801,7 +1781,6 @@ class ChatMessage {
   });
 }
 
-/// Réponse simple (TYPE A)
 class SimpleAnswerData {
   final String titre;
   final String reponse;
@@ -1831,7 +1810,6 @@ class SimpleAnswerData {
   }
 }
 
-/// Emplacement pièce (TYPE C)
 class EmplacementData {
   final String piece;
   final String vehicule;
@@ -1870,7 +1848,6 @@ class EmplacementData {
   }
 }
 
-/// Procédure complète (TYPE B)
 class ProcedureData {
   final String titre;
   final String vehicule;
@@ -1957,7 +1934,6 @@ class OutilItem {
   }
 }
 
-/// Pièce avec multi-variantes
 class PieceItem {
   final String nom;
   final List<PieceVariante> variantes;
@@ -1974,7 +1950,6 @@ class PieceItem {
   factory PieceItem.fromJson(Map<String, dynamic> json) {
     final variantesJson = json['variantes'] as List<dynamic>?;
 
-    // Si structure multi-variantes
     if (variantesJson != null) {
       return PieceItem(
         nom: json['nom'] as String? ?? '',
@@ -1988,7 +1963,6 @@ class PieceItem {
       );
     }
 
-    // Structure simple (fallback) : nom, ref, prix
     return PieceItem(
       nom: json['nom'] as String? ?? '',
       variantes: [
