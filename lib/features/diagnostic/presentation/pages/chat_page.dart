@@ -31,35 +31,17 @@ class _ChatPageState extends State<ChatPage> {
 
   bool _isLoading = false;
   String _vehicleContext = '';
-  String _brand = 'Peugeot';
-  String _model = '308';
+  String _brand = '';
+  String _model = '';
   String _fuel = '';
   int _year = 2020;
 
   @override
   void initState() {
     super.initState();
-    try {
-      final vehicle = GlobalNotifier.instance.activeVehicle;
-      if (vehicle != null) {
-        _brand = vehicle.brand;
-        _model = vehicle.model;
-        _fuel = vehicle.fuelType.label;
-        _year = vehicle.year;
-        _vehicleContext = _aiService.buildVehicleContext(
-          brand: _brand,
-          model: _model,
-          year: _year,
-          fuel: _fuel,
-          plate: vehicle.plate,
-        );
-      } else {
-        _vehicleContext = widget.vehicleInfo;
-      }
-    } catch (e) {
-      debugPrint('⚠️ Erreur contexte : $e');
-      _vehicleContext = widget.vehicleInfo;
-    }
+    
+    // On utilise le vehicleInfo envoyé par le diagnostic pour être sûr
+    _parseVehicleInfoFromText(widget.vehicleInfo);
 
     _messages.add(ChatMessage(
       text: 'Bonjour ! Je suis votre assistant MecaGo. Posez-moi toutes vos questions sur votre $_brand $_model.',
@@ -74,6 +56,25 @@ class _ChatPageState extends State<ChatPage> {
         _sendMessage();
       });
     }
+  }
+
+  void _parseVehicleInfoFromText(String text) {
+    final parts = text.trim().split(' ');
+    if (parts.isNotEmpty) _brand = parts[0];
+    if (parts.length > 1) _model = parts[1];
+
+    final lowerText = text.toLowerCase();
+    if (lowerText.contains('diesel')) _fuel = 'Diesel';
+    else if (lowerText.contains('essence')) _fuel = 'Essence';
+    else if (lowerText.contains('hybride')) _fuel = 'Hybride';
+    else if (lowerText.contains('electrique') || lowerText.contains('électrique')) _fuel = 'Électrique';
+
+    _vehicleContext = _aiService.buildVehicleContext(
+      brand: _brand,
+      model: _model,
+      year: _year,
+      fuel: _fuel,
+    );
   }
 
   @override
@@ -97,15 +98,13 @@ class _ChatPageState extends State<ChatPage> {
     }
   }
 
-  /// ✅ Construit l'historique de la conversation pour l'IA
   List<Map<String, String>> _buildHistory() {
     final history = <Map<String, String>>[];
 
     for (final msg in _messages) {
       if (msg.isUser && msg.text.isNotEmpty) {
         history.add({'role': 'user', 'content': msg.text});
-      } else if (msg.type == MessageType.simpleAnswer &&
-          msg.simpleAnswer != null) {
+      } else if (msg.type == MessageType.simpleAnswer && msg.simpleAnswer != null) {
         history.add({
           'role': 'assistant',
           'content': '${msg.simpleAnswer!.titre} : ${msg.simpleAnswer!.reponse}',
@@ -115,8 +114,7 @@ class _ChatPageState extends State<ChatPage> {
           'role': 'assistant',
           'content': 'Procédure : ${msg.procedure!.titre}',
         });
-      } else if (msg.type == MessageType.emplacement &&
-          msg.emplacement != null) {
+      } else if (msg.type == MessageType.emplacement && msg.emplacement != null) {
         history.add({
           'role': 'assistant',
           'content': 'Emplacement : ${msg.emplacement!.piece}',
@@ -133,7 +131,6 @@ class _ChatPageState extends State<ChatPage> {
     final text = _controller.text.trim();
     if (text.isEmpty || _isLoading) return;
 
-    // ✅ Construire l'historique AVANT d'ajouter le nouveau message
     final history = _buildHistory();
 
     setState(() {
@@ -589,10 +586,6 @@ class _ChatPageState extends State<ChatPage> {
       ),
     );
   }
-
-  // ============================================
-  // RÉPONSE PROCÉDURE (TYPE B)
-  // ============================================
 
   Widget _buildProcedureResponse(ChatMessage msg) {
     final procedure = msg.procedure!;

@@ -143,28 +143,64 @@ class AiService {
     try {
       debugPrint('📚 AiService : recherche dans Supabase...');
 
-      // Extraire marque/modèle du contexte
       final marque = _extractFromContext(vehicleContext, 'Marque');
       final modele = _extractFromContext(vehicleContext, 'Modèle');
+      final moteur = _extractFromContext(vehicleContext, 'Moteur');
+      final carburant = _extractFromContext(vehicleContext, 'Carburant');
 
       final procedure = await _procedureService.findProcedure(
         question: question,
         marque: marque,
         modele: modele,
+        moteur: moteur,
+        carburant: carburant,
       );
 
       if (procedure != null) {
-        debugPrint('✅ AiService : procédure trouvée dans Supabase');
-        return AiChatResponse(
-          json: procedure,
-          provider: AiProvider.geminiFlash, // On marque comme vérifié
-        );
+        final notes = procedure['notes_specifiques'];
+
+        if (notes != null && notes.toString().isNotEmpty) {
+          debugPrint('✅ AiService : procédure + spécificités trouvées. Appel IA pour enrichissement...');
+          
+          final enrichedQuestion = """
+          Question : $question
+          
+          SPÉCIFICITÉS CONSTRUCTEUR À INTÉGRER OBLIGATOIREMENT :
+          $notes
+          
+          CONSIGNES STRICTES :
+          1. Utilise TOUTES les informations ci-dessus. Ne résume pas.
+          2. Ajoute une étape spécifique (ex: "Réinitialiser le compteur d'entretien") qui détaille EXACTEMENT la méthode de reset fournie dans les spécificités.
+          3. Dans le tableau "astuces", recopie les astuces et pièges du constructeur.
+          4. Sois PRÉCIS sur les couples de serrage et le type d'huile.
+          5. Pour les pièces, donne la référence OEM et 1 équivalent avec un prix.
+          6. Ne génère pas de texte avant ou après le JSON.
+          """;
+
+          return _callAiChat(vehicleContext, enrichedQuestion, conversationHistory, procedure);
+        } else {
+          debugPrint('⚠️ Procédure trouvée mais sans notes spécifiques. Appel IA...');
+          return _callAiChat(vehicleContext, question, conversationHistory, procedure);
+        }
       }
       debugPrint('⚠️ AiService : aucune procédure dans Supabase → IA');
     } catch (e) {
       debugPrint('⚠️ AiService : Supabase a échoué → $e');
     }
 
+    return _callAiChat(vehicleContext, question, conversationHistory, null);
+  }
+
+  // ============================================
+  // CASCADE IA (Appelé par chat)
+  // ============================================
+
+  Future<AiChatResponse> _callAiChat(
+    String vehicleContext,
+    String question,
+    List<Map<String, String>> conversationHistory,
+    Map<String, dynamic>? procedure,
+  ) async {
     // ✅ PRIORITÉ 1 : Gemini Flash-Lite
     try {
       debugPrint('💬 AiService : tentative Gemini Flash-Lite chat...');
@@ -174,6 +210,12 @@ class AiService {
         conversationHistory: conversationHistory,
       );
       debugPrint('✅ AiService : Gemini Flash-Lite chat a répondu');
+      
+      if (procedure != null && json['etapes'] == null) {
+         json['etapes'] = procedure['etapes'];
+         json['titre'] = procedure['titre'];
+      }
+      
       return AiChatResponse(
         json: json,
         provider: AiProvider.geminiFlash,
@@ -191,6 +233,12 @@ class AiService {
         conversationHistory: conversationHistory,
       );
       debugPrint('✅ AiService : Groq chat a répondu');
+      
+      if (procedure != null && json['etapes'] == null) {
+         json['etapes'] = procedure['etapes'];
+         json['titre'] = procedure['titre'];
+      }
+
       return AiChatResponse(
         json: json,
         provider: AiProvider.groq,

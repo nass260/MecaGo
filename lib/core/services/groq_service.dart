@@ -336,7 +336,7 @@ pour donner la réponse COMPLÈTE (ne repose PAS la même question).
           'model': _model,
           'messages': messages,
           'temperature': 0.1,
-          'max_tokens': 4000,
+          'max_tokens': 8192,
           'response_format': {'type': 'json_object'},
         }),
       );
