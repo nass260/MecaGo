@@ -919,6 +919,11 @@ class _DiagnosticPageState extends State<DiagnosticPage> {
   Widget _buildAskAdviceButton() {
     return GestureDetector(
       onTap: () {
+        // ✅ Correction ici : on utilise setActiveVehicle
+        if (_selectedVehicle != null) {
+          GlobalNotifier.instance.setActiveVehicle(_selectedVehicle!);
+        }
+
         final vehicleInfo = '$_brand $_model, $_fuel, $_year';
         final symptom = _symptomController.text.trim();
         final question = symptom.isNotEmpty

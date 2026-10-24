@@ -132,29 +132,10 @@ class HomeNotifier with ChangeNotifier {
     await addVehicle(newVehicle);
   }
 
+  /// Délègue la détection du carburant au modèle pour garantir 
+  /// une source unique de vérité dans toute l'application.
   FuelType _getFuelType(String engine) {
-    final lower = engine.toLowerCase();
-    if (lower.contains('électrique') || lower.contains('electric')) {
-      return FuelType.electrique;
-    }
-    if (lower.contains('hybride')) {
-      return FuelType.hybride;
-    }
-    if (lower.contains('diesel') ||
-        lower.contains('dci') ||
-        lower.contains('hdi') ||
-        lower.contains('tdi') ||
-        lower.contains('bluehdi') ||
-        lower.contains('ecoblue')) {
-      return FuelType.diesel;
-    }
-    if (lower.contains('gpl')) {
-      return FuelType.gpl;
-    }
-    if (lower.contains('e85')) {
-      return FuelType.e85;
-    }
-    return FuelType.essence;
+    return FuelType.fromString(engine);
   }
 
   TransmissionType _getTransmission(String engine) {
@@ -173,7 +154,6 @@ class HomeNotifier with ChangeNotifier {
   String _getVehicleImage(String brand, String model) {
     final key = '${brand.toLowerCase()}_${model.toLowerCase()}';
     final images = <String, String>{
-      // ✅ Chemin corrigé : ressources/ au lieu de assets/
       'tesla_model 3': 'assets/images/tesla_model_3.jpg',
     };
     return images[key] ?? '';
@@ -211,5 +191,12 @@ class HomeNotifier with ChangeNotifier {
 
   Future<void> refresh() async {
     await loadDashboardData();
+  }
+
+  /// ✅ NOUVELLE MÉTHODE : Définit le véhicule actif depuis n'importe quelle page
+  void setActiveVehicle(Vehicle vehicle) {
+    _activeVehicle = vehicle;
+    notifyListeners();
+    debugPrint('✅ Véhicule actif mis à jour : ${vehicle.brand} ${vehicle.model}');
   }
 }

@@ -1,6 +1,7 @@
 // lib/features/garage/presentation/pages/vehicle_result_page.dart
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/services/mvdb_service.dart';
 import '../../../../core/services/global_notifier.dart';
@@ -31,6 +32,10 @@ class _VehicleResultPageState extends State<VehicleResultPage> {
   bool _isAdding = false;
   bool _addToGarage = true;
 
+  // Valeurs lues dans ta base Supabase (table vehicules)
+  FuelType? _dbFuel;
+  TransmissionType? _dbTransmission;
+
   @override
   void initState() {
     super.initState();
@@ -43,23 +48,91 @@ class _VehicleResultPageState extends State<VehicleResultPage> {
       model: widget.model,
       engine: widget.engine,
     );
+    await _loadFromCatalog();
+    if (!mounted) return;
     setState(() {
       _details = details;
       _isLoading = false;
     });
   }
 
+  /// ✅ Lit le vrai carburant et la vraie boîte dans ta table `vehicules`
+  /// (au lieu de les deviner d'après le nom du moteur).
+  Future<void> _loadFromCatalog() async {
+    try {
+      final rows = await Supabase.instance.client
+          .from('vehicules')
+          .select('moteur, carburant, boite')
+          .ilike('marque', widget.brand)
+          .ilike('modele', widget.model);
+
+      final list = List<Map<String, dynamic>>.from(rows);
+      if (list.isEmpty) {
+        debugPrint(
+            'ℹ️ ${widget.brand} ${widget.model} absent du catalogue : valeurs devinées');
+        return;
+      }
+
+      // On préfère les lignes dont le moteur correspond exactement
+      final engine = widget.engine.toLowerCase().trim();
+      final exact = list
+          .where((r) =>
+              (r['moteur'] ?? '').toString().toLowerCase().trim() == engine)
+          .toList();
+      final pool = exact.isNotEmpty ? exact : list;
+
+      // Carburant : on le retient seulement s'il est le même partout
+      final fuels = pool
+          .where((r) => (r['carburant'] ?? '').toString().trim().isNotEmpty)
+          .map((r) => FuelType.fromString(r['carburant'].toString()))
+          .toSet();
+      if (fuels.length == 1) _dbFuel = fuels.first;
+
+      // Boîte : pareil
+      final boxes = pool
+          .map((r) => _parseTransmission(r['boite']?.toString()))
+          .whereType<TransmissionType>()
+          .toSet();
+      if (boxes.length == 1) _dbTransmission = boxes.first;
+
+      debugPrint('✅ Catalogue : carburant=$_dbFuel, boîte=$_dbTransmission');
+    } catch (e) {
+      debugPrint('⚠️ Lecture du catalogue impossible : $e');
+    }
+  }
+
+  TransmissionType? _parseTransmission(String? value) {
+    final v = (value ?? '').toLowerCase();
+    if (v.isEmpty) return null;
+    if (v.contains('semi')) return TransmissionType.semiAutomatique;
+    if (v.contains('auto')) return TransmissionType.automatique;
+    if (v.contains('manu')) return TransmissionType.manuelle;
+    return null;
+  }
+
+  /// Carburant final : catalogue d'abord, sinon on devine
+  FuelType _resolvedFuel() => _dbFuel ?? _guessFuelType(widget.engine);
+
+  /// Boîte finale : catalogue d'abord, sinon on devine
+  TransmissionType _resolvedTransmission() {
+    if (_dbTransmission != null) return _dbTransmission!;
+    // Une voiture électrique a toujours une boîte automatique
+    if (_resolvedFuel() == FuelType.electrique) {
+      return TransmissionType.automatique;
+    }
+    return _guessTransmission(widget.engine);
+  }
+
   String _getVehicleImage() {
     final key =
         '${widget.brand.toLowerCase()}_${widget.model.toLowerCase()}';
     final images = <String, String>{
-      // ✅ Chemin corrigé : ressources/ au lieu de assets/
       'tesla_model 3': 'assets/images/tesla_model_3.jpg',
     };
     return images[key] ?? '';
   }
 
-  /// ✅ AJOUTE LE VÉHICULE VIA LE NOTIFIER GLOBAL
+  /// AJOUTE LE VÉHICULE VIA LE NOTIFIER GLOBAL
   Future<void> _addVehicle() async {
     setState(() => _isAdding = true);
 
@@ -71,14 +144,13 @@ class _VehicleResultPageState extends State<VehicleResultPage> {
         plate: 'À DÉFINIR',
         year: widget.year,
         mileage: 0,
-        fuelType: _getFuelType(widget.engine),
-        transmission: _getTransmission(widget.engine),
+        fuelType: _resolvedFuel(),
+        transmission: _resolvedTransmission(),
         progress: 1.0,
         isAlert: false,
         imageUrl: _getVehicleImage(),
       );
 
-      // ✅ Ajout via le notifier global (qui sauvegarde + notifie)
       await notifier.addVehicle(newVehicle);
 
       debugPrint(
@@ -88,7 +160,6 @@ class _VehicleResultPageState extends State<VehicleResultPage> {
 
       setState(() => _isAdding = false);
 
-      // Message de succès
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Row(
@@ -111,7 +182,6 @@ class _VehicleResultPageState extends State<VehicleResultPage> {
         ),
       );
 
-      // Retour au garage
       await Future.delayed(const Duration(milliseconds: 800));
       if (mounted) {
         context.go('/garage');
@@ -130,12 +200,19 @@ class _VehicleResultPageState extends State<VehicleResultPage> {
     }
   }
 
-  FuelType _getFuelType(String engine) {
+  /// Dernier recours : deviner d'après le nom du moteur
+  FuelType _guessFuelType(String engine) {
     final lower = engine.toLowerCase();
+
+    // Marques 100 % électriques
+    if (widget.brand.toLowerCase().trim() == 'tesla') {
+      return FuelType.electrique;
+    }
+
     if (lower.contains('électrique') || lower.contains('electric')) {
       return FuelType.electrique;
     }
-    if (lower.contains('hybride')) {
+    if (lower.contains('hybride') || lower.contains('hybrid')) {
       return FuelType.hybride;
     }
     if (lower.contains('diesel') ||
@@ -155,7 +232,7 @@ class _VehicleResultPageState extends State<VehicleResultPage> {
     return FuelType.essence;
   }
 
-  TransmissionType _getTransmission(String engine) {
+  TransmissionType _guessTransmission(String engine) {
     final lower = engine.toLowerCase();
     if (lower.contains('automatique') ||
         lower.contains('auto') ||
@@ -290,13 +367,12 @@ class _VehicleResultPageState extends State<VehicleResultPage> {
                             ),
                           ),
                           const SizedBox(height: 24),
-                          if (_details != null) ...[
+                          if (_details != null || _dbFuel != null) ...[
                             _buildDetailRow('Année', '${widget.year}'),
                             _buildDetailRow('Motorisation', widget.engine),
-                            _buildDetailRow('Énergie',
-                                _getFuelType(widget.engine).label),
+                            _buildDetailRow('Énergie', _resolvedFuel().label),
                             _buildDetailRow('Transmission',
-                                _getTransmission(widget.engine).label),
+                                _resolvedTransmission().label),
                           ],
                           const SizedBox(height: 20),
                           Container(

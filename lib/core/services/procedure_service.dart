@@ -1,210 +1,458 @@
 // lib/core/services/procedure_service.dart
+import 'dart:convert';
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+// ============================================
+// OUTILS DE TEXTE (partagés)
+// ============================================
+
+/// Minuscules, sans accents, apostrophes simples.
+String _norm(String s) {
+  const from = 'àâäéèêëîïôöùûüçœ’';
+  const to = 'aaaeeeeiioouuuco\'';
+  final buf = StringBuffer();
+  for (final ch in s.toLowerCase().split('')) {
+    final i = from.indexOf(ch);
+    if (i == -1) {
+      buf.write(ch);
+    } else if (ch == 'œ') {
+      buf.write('oe');
+    } else {
+      buf.write(to[i]);
+    }
+  }
+  return buf.toString();
+}
+
+/// Petits mots sans intérêt pour la recherche
+const Set<String> _stopWords = {
+  'les', 'une', 'des', 'aux', 'mais', 'donc', 'car', 'pas', 'plus', 'dans',
+  'sur', 'sous', 'par', 'pour', 'avec', 'sans', 'chez', 'vers', 'mon', 'mes',
+  'ton', 'tes', 'son', 'ses', 'notre', 'votre', 'leur', 'leurs', 'ces', 'cet',
+  'cette', 'elle', 'nous', 'vous', 'ils', 'elles', 'que', 'qui', 'quoi',
+  'quand', 'comment', 'pourquoi', 'quel', 'quelle', 'quels', 'quelles', 'est',
+  'suis', 'sommes', 'etes', 'sont', 'etait', 'ete', 'etre', 'avoir', 'avons',
+  'avez', 'ont', 'fait', 'faire', 'tout', 'tous', 'toute', 'toutes', 'tres',
+  'bien', 'mal', 'comme', 'meme', 'aussi', 'lorsque', 'alors', 'apres',
+  'avant', 'pendant', 'depuis', 'encore', 'deja', 'toujours', 'jamais', 'rien',
+  'seul', 'seule', 'voiture', 'vehicule', 'auto', 'entends', 'entend', 'sens',
+  'sent', 'remarque', 'constate', 'moins', 'peu', 'trop', 'beaucoup', 'cela',
+  'ceci', 'faut', 'peut', 'peux', 'dois', 'doit', 'veux', 'veut', 'voudrais',
+  'besoin', 'svp', 'merci', 'bonjour', 'salut', 'lors',
+};
+
+/// Découpe un texte en mots utiles (sans accents, sans petits mots)
+List<String> _tokens(String text) {
+  final n = _norm(text).replaceAll("'", ' ');
+  return n
+      .split(RegExp(r'[^a-z0-9]+'))
+      .where((w) => w.length >= 3 && !_stopWords.contains(w))
+      .toList();
+}
+
+/// Deux mots sont "les mêmes" s'ils sont égaux ou presque
+/// (pluriel, conjugaison : frein / freine / freinage, vibre / vibrations...)
+bool _same(String a, String b) {
+  if (a == b) return true;
+  final minLen = a.length < b.length ? a.length : b.length;
+  if (minLen < 4) return false; // les mots très courts doivent être identiques
+  var i = 0;
+  while (i < minLen && a.codeUnitAt(i) == b.codeUnitAt(i)) {
+    i++;
+  }
+  final need = (minLen * 0.75).ceil();
+  return i >= (need < 4 ? 4 : need);
+}
+
+/// Quelques équivalences pour les réparations
+const Map<String, List<String>> _synonyms = {
+  'huile': ['vidange'],
+  'gazole': ['carburant'],
+  'gasoil': ['carburant'],
+  'accessoire': ['courroie'],
+  'accessoires': ['courroie'],
+  'volant': ['direction'],
+  'etrier': ['freinage'],
+  'clim': ['climatisation'],
+};
+
+// ============================================
+// INDEX LÉGER DES FICHES (titre + mots-clés)
+// ============================================
+
+class _IndexEntry {
+  final String id;
+  final String titre;
+  final String normTitre;
+  final String type;
+  final List<String> carburantsExclus;
+  final List<String> titleTokens;
+  final List<String> keyTokens;
+
+  _IndexEntry({
+    required this.id,
+    required this.titre,
+    required this.normTitre,
+    required this.type,
+    required this.carburantsExclus,
+    required this.titleTokens,
+    required this.keyTokens,
+  });
+
+  bool matches(String token) =>
+      titleTokens.any((t) => _same(t, token)) ||
+      keyTokens.any((t) => _same(t, token));
+}
+
+class _Scored {
+  final _IndexEntry entry;
+  final double score;
+  final double coverage;
+  _Scored(this.entry, this.score, this.coverage);
+}
+
 class ProcedureService {
   const ProcedureService();
+
+  static List<_IndexEntry> _index = [];
+  static DateTime? _indexAt;
+
+  /// Charge (et garde 5 minutes en mémoire) la liste des fiches VÉRIFIÉES.
+  Future<List<_IndexEntry>> _loadIndex() async {
+    final now = DateTime.now();
+    if (_index.isNotEmpty &&
+        _indexAt != null &&
+        now.difference(_indexAt!).inMinutes < 5) {
+      return _index;
+    }
+
+    final rows = await Supabase.instance.client
+        .from('procedures')
+        .select('id, titre, type, mots_cles, carburants_exclus')
+        .eq('statut', 'verifie');
+
+    final list = <_IndexEntry>[];
+    for (final r in rows) {
+      final titre = (r['titre'] ?? '').toString();
+      if (titre.isEmpty) continue;
+
+      final mots = r['mots_cles'] is List
+          ? (r['mots_cles'] as List).map((e) => e.toString()).toList()
+          : <String>[];
+      final exclus = r['carburants_exclus'] is List
+          ? (r['carburants_exclus'] as List).map((e) => e.toString()).toList()
+          : <String>[];
+
+      list.add(_IndexEntry(
+        id: r['id'].toString(),
+        titre: titre,
+        normTitre:
+            _norm(titre).replaceAll(RegExp(r'\s+'), ' ').trim(),
+        type: (r['type'] ?? 'reparation').toString(),
+        carburantsExclus: exclus,
+        titleTokens: _tokens(titre),
+        keyTokens: mots.expand((m) => _tokens(m)).toList(),
+      ));
+    }
+
+    _index = list;
+    _indexAt = now;
+    debugPrint('📇 Index des fiches vérifiées chargé : ${list.length}');
+    return list;
+  }
 
   Future<Map<String, dynamic>?> findProcedure({
     required String question,
     required String marque,
     required String modele,
     String? moteur,
-    String? carburant, // <-- AJOUTÉ ICI
+    String? carburant,
   }) async {
     try {
-      final supabase = Supabase.instance.client;
-
-      final keywords = _extractKeywords(question);
-      debugPrint('🔍 Recherche procédure : $keywords');
-
-      if (keywords.isEmpty) {
-        debugPrint('⚠️ Aucun mot-clé détecté');
+      final index = await _loadIndex();
+      if (index.isEmpty) {
+        debugPrint('ℹ️ Aucune fiche vérifiée dans Supabase → IA');
         return null;
       }
 
-      final response = await supabase
-          .from('procedures')
-          .select()
-          .or(keywords.map((k) => 'mots_cles.cs.{${k}}').join(','));
-
-      if (response.isEmpty) {
-        debugPrint('⚠️ Aucune procédure trouvée');
-        return null;
-      }
-
-      final scored = <MapEntry<Map<String, dynamic>, int>>[];
-      for (final proc in response) {
-        final score = _calculateScore(proc, keywords);
-        scored.add(MapEntry(proc, score));
-      }
-
-      scored.sort((a, b) => b.value.compareTo(a.value));
-      final best = scored.first;
-      debugPrint('✅ Procédure trouvée : ${best.key['titre']} (score: ${best.value})');
-
-      if (best.value < 2) {
-        debugPrint('⚠️ Score trop faible (${best.value})');
-        return null;
-      }
-
-      String? notesSpecifiques;
-      if (marque.isNotEmpty && modele.isNotEmpty) {
-        try {
-          // Nettoyage du modèle (enlever les chiffres romains)
-          final modeleClean = modele.replaceAll(RegExp(r'\s+(I|II|III|IV|V|VI|VII|VIII|IX|X)$', caseSensitive: false), '').trim();
-
-          // 1. On cherche le véhicule AVEC le carburant !
-          var vQuery = supabase
-              .from('vehicules')
-              .select('id')
-              .ilike('marque', '%$marque%')
-              .ilike('modele', '%$modeleClean%');
-          
-          if (carburant != null && carburant.isNotEmpty) {
-            vQuery = vQuery.ilike('carburant', '%$carburant%'); // Filtre crucial !
-          }
-
-          final vehiculeData = await vQuery.limit(1).maybeSingle();
-
-          if (vehiculeData != null) {
-            final vehiculeId = vehiculeData['id'];
-            
-            final pvResponse = await supabase
-                .from('procedures_vehicules')
-                .select('notes_specifiques')
-                .eq('procedure_id', best.key['id'])
-                .eq('vehicule_id', vehiculeId)
-                .maybeSingle();
-
-            if (pvResponse != null && pvResponse['notes_specifiques'] != null) {
-              notesSpecifiques = pvResponse['notes_specifiques'];
-              debugPrint('✅ NOTES SPÉCIFIQUES TROUVÉES !');
-            } else {
-              debugPrint('⚠️ Liaison trouvée mais notes vides dans Supabase.');
-            }
-          } else {
-            debugPrint('⚠️ Véhicule $marque $modeleClean ($carburant) introuvable.');
-          }
-        } catch (e) {
-          debugPrint('⚠️ Erreur récupération notes_specifiques : $e');
+      // 1. TITRE EXACT (clic sur un bouton de diagnostic, par exemple)
+      final cleaned = question
+          .trim()
+          .replaceFirst(RegExp(r'^diagnostic\s*:\s*', caseSensitive: false), '');
+      final nq = _norm(cleaned).replaceAll(RegExp(r'\s+'), ' ').trim();
+      for (final e in index) {
+        if (e.normTitre == nq) {
+          debugPrint('🎯 Titre exact trouvé : "${e.titre}"');
+          return await _loadFull(e.id, marque, modele, carburant);
         }
       }
 
-      return {
-        'type': 'procedure',
-        'titre': best.key['titre'],
-        'vehicule': '$marque $modele',
-        'duree_estimee': best.key['duree_estimee'] ?? 'Non communiquée',
-        'difficulte': best.key['difficulte'] ?? 'intermediaire',
-        'niveau_danger': best.key['niveau_danger'] ?? 'faible',
-        'public_cible': best.key['public_cible'] ?? 'tous',
-        'formation_requise': best.key['formation_requise'] ?? 'Aucune',
-        'outils': best.key['outils'] ?? [],
-        'pieces': best.key['pieces'] ?? [],
-        'avertissements_securite': best.key['avertissements_securite'] ?? [],
-        'avertissements_legaux': best.key['avertissements_legaux'] ?? [],
-        'etapes': best.key['etapes'] ?? [],
-        'alternative_nettoyage': best.key['alternative_nettoyage'],
-        'conseil_final': best.key['conseil_final'] ?? '',
-        'sources': best.key['sources'] ?? ['MecaGo'],
-        'notes_specifiques': notesSpecifiques,
-      };
+      // 2. INTENTION (simple bonus, ne bloque plus la recherche)
+      final intent = _detectIntent(question);
+      debugPrint('🎯 Intention détectée : $intent');
+
+      // 3. MOTS DE LA QUESTION
+      final raw = _tokens(question);
+      if (intent == 'reparation') {
+        final hasFrein = raw.any((t) => t.startsWith('frein'));
+        for (final t in List<String>.from(raw)) {
+          final extra = _synonyms[t];
+          if (extra == null) continue;
+          if (t == 'huile' && hasFrein) continue;
+          raw.addAll(extra);
+        }
+      }
+      final qTokens = <String>[];
+      for (final t in raw) {
+        if (!qTokens.any((e) => _same(e, t))) qTokens.add(t);
+      }
+
+      // 4. POIDS DES MOTS : un mot rare dans ta base compte plus qu'un mot courant
+      final n = index.length;
+      final weights = <String, double>{};
+      final unknown = <String>[];
+      for (final t in qTokens) {
+        final df = index.where((e) => e.matches(t)).length;
+        if (df == 0) {
+          unknown.add(t);
+          continue;
+        }
+        weights[t] = math.log(1 + n / df);
+      }
+      debugPrint('🧩 Mots compris : ${weights.keys.toList()} | inconnus : $unknown');
+
+      if (weights.isEmpty) {
+        debugPrint('ℹ️ Aucun mot de la question ne correspond à ta base → IA');
+        return null;
+      }
+
+      final total = weights.values.fold<double>(0, (a, b) => a + b);
+      final floor = 0.45 * math.log(1 + n);
+
+      // 5. SCORE DE CHAQUE FICHE (+ sécurité carburant)
+      final fuel = _fuelKey(carburant ?? '');
+      final scored = <_Scored>[];
+      for (final e in index) {
+        if (fuel.isNotEmpty && e.carburantsExclus.contains(fuel)) continue;
+
+        var score = 0.0;
+        var covered = 0.0;
+        weights.forEach((t, w) {
+          if (e.titleTokens.any((x) => _same(x, t))) {
+            score += w;
+            covered += w;
+          } else if (e.keyTokens.any((x) => _same(x, t))) {
+            score += w * 0.8;
+            covered += w;
+          }
+        });
+        if (covered == 0) continue;
+        if (e.type == intent) score *= 1.1;
+        scored.add(_Scored(e, score, covered / total));
+      }
+
+      if (scored.isEmpty) {
+        debugPrint('ℹ️ Aucune fiche ne correspond → IA');
+        return null;
+      }
+
+      scored.sort((a, b) => b.score.compareTo(a.score));
+      for (var i = 0; i < scored.length && i < 3; i++) {
+        final s = scored[i];
+        debugPrint(
+            '🏆 ${i + 1}. "${s.entry.titre}" (${s.entry.type}) score=${s.score.toStringAsFixed(1)} couverture=${(s.coverage * 100).round()}%');
+      }
+
+      final best = scored.first;
+      if (best.coverage < 0.6 || best.score < floor) {
+        debugPrint('ℹ️ Meilleure fiche trop incertaine → IA prendra le relais');
+        return null;
+      }
+
+      return await _loadFull(best.entry.id, marque, modele, carburant);
     } catch (e) {
       debugPrint('❌ Erreur ProcedureService : $e');
       return null;
     }
   }
 
-  int _calculateScore(Map<String, dynamic> procedure, List<String> keywords) {
-    int score = 0;
-    final motsCles = List<String>.from(procedure['mots_cles'] ?? []);
-    final titre = (procedure['titre'] ?? '').toString().toLowerCase();
+  // ============================================
+  // CHARGEMENT DE LA FICHE COMPLÈTE
+  // ============================================
 
-    for (final keyword in keywords) {
-      if (motsCles.contains(keyword)) score += 3;
-      if (titre.contains(keyword)) score += 2;
+  Future<Map<String, dynamic>?> _loadFull(
+    String id,
+    String marque,
+    String modele,
+    String? carburant,
+  ) async {
+    final supabase = Supabase.instance.client;
+
+    final row =
+        await supabase.from('procedures').select().eq('id', id).maybeSingle();
+    if (row == null) return null;
+    final proc = Map<String, dynamic>.from(row);
+
+    String? notes;
+    if ((proc['type'] ?? 'reparation') == 'reparation' &&
+        marque.isNotEmpty &&
+        modele.isNotEmpty) {
+      notes = await _loadNotes(proc['id'], marque, modele, carburant);
     }
-    return score;
+
+    return <String, dynamic>{
+      'type': proc['type'] ?? 'reparation',
+      'titre': proc['titre'],
+      'vehicule': '$marque $modele',
+      'duree_estimee': proc['duree_estimee'] ?? 'Non communiquée',
+      'difficulte': proc['difficulte'] ?? 'intermediaire',
+      'niveau_danger': proc['niveau_danger'] ?? 'faible',
+      'public_cible': proc['public_cible'] ?? 'tous',
+      'formation_requise': proc['formation_requise'] ?? 'Aucune',
+      'outils': proc['outils'] ?? [],
+      'pieces': proc['pieces'] ?? [],
+      'avertissements_securite': proc['avertissements_securite'] ?? [],
+      'avertissements_legaux': proc['avertissements_legaux'] ?? [],
+      'etapes': proc['etapes'] ?? [],
+      'conseil_final': proc['conseil_final'] ?? '',
+      'sources': proc['sources'] ?? ['MecaGo'],
+      'notes_specifiques': notes,
+      'options_diagnostic': proc['options_diagnostic'],
+    };
   }
 
-  List<String> _extractKeywords(String question) {
-    final lower = question.toLowerCase();
-    final keywords = <String>{};
+  /// Notes propres au véhicule (uniquement celles marquées "verifie")
+  Future<String?> _loadNotes(
+    dynamic procedureId,
+    String marque,
+    String modele,
+    String? carburant,
+  ) async {
+    try {
+      final supabase = Supabase.instance.client;
 
-    if (lower.contains('plaquette')) keywords.add('plaquettes');
-    if (lower.contains('disque')) keywords.add('disques');
-    if (lower.contains('purge') || lower.contains('purg')) keywords.add('purge');
-    if (lower.contains('étrier') || lower.contains('etrier')) keywords.add('freinage');
-    if (lower.contains('frein') || lower.contains('freinage')) keywords.add('freinage');
+      final modeleClean = modele
+          .replaceAll(
+              RegExp(r'\s+(I|II|III|IV|V|VI|VII|VIII|IX|X)$',
+                  caseSensitive: false),
+              '')
+          .trim();
 
-    if (lower.contains('vidange')) keywords.add('vidange');
-    if (lower.contains('huile') && !lower.contains('frein')) keywords.add('vidange');
-    if (lower.contains('filtre')) keywords.add('filtre');
-    if (lower.contains('habitacle')) keywords.add('habitacle');
-    if (lower.contains('carburant') || lower.contains('gazole') || lower.contains('gasoil')) keywords.add('carburant');
-    if (lower.contains('bougie')) keywords.add('bougie');
-    if (lower.contains('batterie')) keywords.add('batterie');
-    if (lower.contains('courroie')) keywords.add('courroie');
-    if (lower.contains('accessoire')) keywords.add('courroie');
+      var vQuery = supabase
+          .from('vehicules')
+          .select('id')
+          .ilike('marque', '%${_loose(marque)}%')
+          .ilike('modele', '%${_loose(modeleClean)}%');
 
-    if (lower.contains('rotule')) keywords.add('rotule');
-    if (lower.contains('biellette')) keywords.add('biellette');
-    if (lower.contains('crémaillère') || lower.contains('cremaillere')) keywords.add('crémaillère');
-    if (lower.contains('direction')) keywords.add('direction');
-    if (lower.contains('volant')) keywords.add('direction');
-
-    if (lower.contains('injecteur')) keywords.add('injecteur');
-    if (lower.contains('injection')) keywords.add('injection');
-    if (lower.contains('turbo')) keywords.add('turbo');
-    if (lower.contains('egr')) keywords.add('EGR');
-    if (lower.contains('fap')) keywords.add('FAP');
-    if (lower.contains('pompe') && lower.contains('injection')) keywords.add('pompe');
-    if (lower.contains('courroie') && lower.contains('distribution')) keywords.add('distribution');
-    if (lower.contains('distribution')) keywords.add('distribution');
-    if (lower.contains('pompe') && lower.contains('eau')) keywords.add('pompe à eau');
-    if (lower.contains('thermostat')) keywords.add('thermostat');
-    if (lower.contains('radiateur')) keywords.add('radiateur');
-    if (lower.contains('culasse')) keywords.add('culasse');
-    if (lower.contains('joint') && lower.contains('culasse')) keywords.add('culasse');
-
-    if (lower.contains('embrayage')) keywords.add('embrayage');
-    if (lower.contains('cardan')) keywords.add('cardan');
-    if (lower.contains('boîte') || lower.contains('boite')) keywords.add('boîte');
-    if (lower.contains('différentiel') || lower.contains('differentiel')) keywords.add('différentiel');
-    if (lower.contains('roulement')) keywords.add('roulement');
-
-    if (lower.contains('silencieux')) keywords.add('silencieux');
-    if (lower.contains('catalyseur')) keywords.add('catalyseur');
-    if (lower.contains('lambda')) keywords.add('lambda');
-    if (lower.contains('collecteur')) keywords.add('collecteur');
-    if (lower.contains('tube') && lower.contains('échappement')) keywords.add('tube');
-
-    if (lower.contains('clim')) keywords.add('clim');
-    if (lower.contains('compresseur')) keywords.add('compresseur');
-    if (lower.contains('condenseur')) keywords.add('condenseur');
-    if (lower.contains('évaporateur') || lower.contains('evaporateur')) keywords.add('évaporateur');
-    if (lower.contains('déshydrateur') || lower.contains('deshydrateur')) keywords.add('déshydrateur');
-
-    if (lower.contains('obd')) keywords.add('OBD');
-    if (lower.contains('compression')) keywords.add('compression');
-    if (lower.contains('multimètre') || lower.contains('multimetre')) keywords.add('multimètre');
-    if (lower.contains('allumage')) keywords.add('allumage');
-
-    if (lower.contains('rétroviseur') || lower.contains('retroviseur')) keywords.add('rétroviseur');
-    if (lower.contains('pare-chocs') || lower.contains('parechoc')) keywords.add('pare-chocs');
-    if (lower.contains('phare')) keywords.add('phare');
-    if (lower.contains('essuie')) keywords.add('essuie-glaces');
-    if (lower.contains('garniture')) keywords.add('garniture');
-
-    if (keywords.isEmpty) {
-      if (lower.contains('changer') || lower.contains('comment') || lower.contains('remplacer')) {
-         keywords.add('vidange');
+      if (carburant != null && carburant.isNotEmpty) {
+        vQuery = vQuery.ilike('carburant', '%${_loose(carburant)}%');
       }
-      final words = lower.split(RegExp(r'[\s,;.!?]+')).where((w) => w.length > 3).toList();
-      keywords.addAll(words.take(3));
-    }
 
-    return keywords.toList();
+      final vehiculeData = await vQuery.limit(1).maybeSingle();
+      if (vehiculeData == null) return null;
+
+      final pv = await supabase
+          .from('procedures_vehicules')
+          .select('notes_specifiques')
+          .eq('procedure_id', procedureId)
+          .eq('vehicule_id', vehiculeData['id'])
+          .eq('statut', 'verifie')
+          .maybeSingle();
+
+      final v = pv?['notes_specifiques'];
+      if (v == null) return null;
+      debugPrint('✅ Notes spécifiques constructeur vérifiées trouvées !');
+      return v is String ? v : jsonEncode(v);
+    } catch (e) {
+      debugPrint('⚠️ Erreur récupération notes_specifiques : $e');
+      return null;
+    }
+  }
+
+  // ============================================
+  // INTENTION : DIAGNOSTIC (symptôme) OU RÉPARATION (je veux faire X)
+  // Sert seulement de petit bonus au classement.
+  // ============================================
+
+  String _detectIntent(String question) {
+    final text = _norm(question);
+    final words =
+        text.split(RegExp(r'[^a-z0-9]+')).where((w) => w.isNotEmpty).toList();
+
+    bool start(String p) => words.any((w) => w.startsWith(p));
+    bool exact(String w) => words.contains(w);
+    bool phrase(String p) => text.contains(p);
+
+    final strong = start('bruit') ||
+        start('grincement') ||
+        start('claquement') ||
+        start('cliquet') ||
+        start('raclement') ||
+        start('ronronn') ||
+        start('cogne') ||
+        start('petarad') ||
+        start('emball') ||
+        start('patine') ||
+        start('sifflement') ||
+        start('couinement') ||
+        start('vibr') ||
+        start('tremble') ||
+        start('broute') ||
+        start('fume') ||
+        exact('panne') ||
+        exact('pannes') ||
+        exact('cale') ||
+        exact('coule') ||
+        phrase('perte de puissance') ||
+        phrase('difficile a demarrer') ||
+        phrase('ne demarre pas');
+    if (strong) return 'diagnostic';
+
+    final weak = start('voyant') ||
+        start('message') ||
+        start('erreur') ||
+        start('odeur') ||
+        start('surchauffe') ||
+        start('clignot') ||
+        start('mollesse') ||
+        start('bip') ||
+        exact('chauffe') ||
+        exact('allume') ||
+        exact('mou') ||
+        exact('molle') ||
+        exact('dur') ||
+        exact('dure');
+
+    final repairVerb = start('remplac') ||
+        start('chang') ||
+        start('demont') ||
+        start('install') ||
+        start('vidang') ||
+        start('purg') ||
+        start('nettoy') ||
+        start('regl') ||
+        start('depos') ||
+        start('reinit');
+
+    if (weak && !repairVerb) return 'diagnostic';
+    return 'reparation';
+  }
+
+  // ============================================
+  // OUTILS
+  // ============================================
+
+  // Remplace chaque lettre accentuée par "_" (joker d'un caractère)
+  String _loose(String s) => s.replaceAll(RegExp(r'[^\x00-\x7F]'), '_');
+
+  String _fuelKey(String fuel) {
+    final f = fuel.toLowerCase().replaceAll('é', 'e').replaceAll('è', 'e');
+    if (f.contains('hybrid')) return 'hybride';
+    if (f.contains('electri')) return 'electrique';
+    if (f.contains('diesel') || f.contains('gazole')) return 'diesel';
+    if (f.contains('essence')) return 'essence';
+    return f.trim();
   }
 }

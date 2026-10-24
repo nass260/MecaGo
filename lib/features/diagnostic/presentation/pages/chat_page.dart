@@ -31,17 +31,35 @@ class _ChatPageState extends State<ChatPage> {
 
   bool _isLoading = false;
   String _vehicleContext = '';
-  String _brand = '';
-  String _model = '';
+  String _brand = 'Peugeot';
+  String _model = '308';
   String _fuel = '';
   int _year = 2020;
 
   @override
   void initState() {
     super.initState();
-    
-    // On utilise le vehicleInfo envoyé par le diagnostic pour être sûr
-    _parseVehicleInfoFromText(widget.vehicleInfo);
+    try {
+      final vehicle = GlobalNotifier.instance.activeVehicle;
+      if (vehicle != null) {
+        _brand = vehicle.brand;
+        _model = vehicle.model;
+        _fuel = vehicle.fuelType.label;
+        _year = vehicle.year;
+        _vehicleContext = _aiService.buildVehicleContext(
+          brand: _brand,
+          model: _model,
+          year: _year,
+          fuel: _fuel,
+          plate: vehicle.plate,
+        );
+      } else {
+        _vehicleContext = widget.vehicleInfo;
+      }
+    } catch (e) {
+      debugPrint('⚠️ Erreur contexte : $e');
+      _vehicleContext = widget.vehicleInfo;
+    }
 
     _messages.add(ChatMessage(
       text: 'Bonjour ! Je suis votre assistant MecaGo. Posez-moi toutes vos questions sur votre $_brand $_model.',
@@ -56,25 +74,6 @@ class _ChatPageState extends State<ChatPage> {
         _sendMessage();
       });
     }
-  }
-
-  void _parseVehicleInfoFromText(String text) {
-    final parts = text.trim().split(' ');
-    if (parts.isNotEmpty) _brand = parts[0];
-    if (parts.length > 1) _model = parts[1];
-
-    final lowerText = text.toLowerCase();
-    if (lowerText.contains('diesel')) _fuel = 'Diesel';
-    else if (lowerText.contains('essence')) _fuel = 'Essence';
-    else if (lowerText.contains('hybride')) _fuel = 'Hybride';
-    else if (lowerText.contains('electrique') || lowerText.contains('électrique')) _fuel = 'Électrique';
-
-    _vehicleContext = _aiService.buildVehicleContext(
-      brand: _brand,
-      model: _model,
-      year: _year,
-      fuel: _fuel,
-    );
   }
 
   @override
@@ -100,30 +99,19 @@ class _ChatPageState extends State<ChatPage> {
 
   List<Map<String, String>> _buildHistory() {
     final history = <Map<String, String>>[];
-
     for (final msg in _messages) {
       if (msg.isUser && msg.text.isNotEmpty) {
         history.add({'role': 'user', 'content': msg.text});
       } else if (msg.type == MessageType.simpleAnswer && msg.simpleAnswer != null) {
-        history.add({
-          'role': 'assistant',
-          'content': '${msg.simpleAnswer!.titre} : ${msg.simpleAnswer!.reponse}',
-        });
+        history.add({'role': 'assistant', 'content': '${msg.simpleAnswer!.titre} : ${msg.simpleAnswer!.reponse}'});
       } else if (msg.type == MessageType.procedure && msg.procedure != null) {
-        history.add({
-          'role': 'assistant',
-          'content': 'Procédure : ${msg.procedure!.titre}',
-        });
+        history.add({'role': 'assistant', 'content': 'Procédure : ${msg.procedure!.titre}'});
       } else if (msg.type == MessageType.emplacement && msg.emplacement != null) {
-        history.add({
-          'role': 'assistant',
-          'content': 'Emplacement : ${msg.emplacement!.piece}',
-        });
+        history.add({'role': 'assistant', 'content': 'Emplacement : ${msg.emplacement!.piece}'});
       } else if (msg.type == MessageType.text && msg.text.isNotEmpty) {
         history.add({'role': 'assistant', 'content': msg.text});
       }
     }
-
     return history;
   }
 
@@ -153,6 +141,10 @@ class _ChatPageState extends State<ChatPage> {
       );
 
       final type = response.json['type'] as String? ?? 'procedure';
+      
+      // ✅ Extraction des options de diagnostic
+      final optionsJson = response.json['options_diagnostic'] as List<dynamic>?;
+      final options = optionsJson?.map((o) => DiagnosticOption.fromJson(Map<String, dynamic>.from(o))).toList();
 
       if (!mounted) return;
       setState(() {
@@ -178,6 +170,7 @@ class _ChatPageState extends State<ChatPage> {
             isUser: false,
             type: MessageType.procedure,
             procedure: ProcedureData.fromJson(response.json),
+            optionsDiagnostic: options,
             timestamp: DateTime.now(),
           ));
         }
@@ -245,7 +238,7 @@ class _ChatPageState extends State<ChatPage> {
             child: Container(
               width: 40,
               height: 40,
-              decoration: BoxDecoration(
+              decoration: const BoxDecoration(
                 color: AppColors.background,
                 shape: BoxShape.circle,
               ),
@@ -324,8 +317,7 @@ class _ChatPageState extends State<ChatPage> {
   }
 
   Widget _buildConversationHeader() {
-    final sujet = widget.initialQuestion != null &&
-            widget.initialQuestion!.isNotEmpty
+    final sujet = widget.initialQuestion != null && widget.initialQuestion!.isNotEmpty
         ? (widget.initialQuestion!.length > 30
             ? '${widget.initialQuestion!.substring(0, 30)}...'
             : widget.initialQuestion!)
@@ -442,8 +434,7 @@ class _ChatPageState extends State<ChatPage> {
                   height: 16,
                   child: CircularProgressIndicator(
                     strokeWidth: 2,
-                    valueColor:
-                        AlwaysStoppedAnimation<Color>(AppColors.orangeMecaGo),
+                    valueColor: AlwaysStoppedAnimation<Color>(AppColors.orangeMecaGo),
                   ),
                 ),
                 SizedBox(width: 10),
@@ -589,6 +580,7 @@ class _ChatPageState extends State<ChatPage> {
 
   Widget _buildProcedureResponse(ChatMessage msg) {
     final procedure = msg.procedure!;
+    final hasOptions = msg.optionsDiagnostic != null && msg.optionsDiagnostic!.isNotEmpty;
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 12, top: 8),
@@ -601,48 +593,78 @@ class _ChatPageState extends State<ChatPage> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                if (procedure.niveauDanger == 'critique' ||
-                    procedure.niveauDanger == 'eleve')
+                if (procedure.niveauDanger == 'critique' || procedure.niveauDanger == 'eleve')
                   _buildDangerBanner(procedure),
 
                 const SizedBox(height: 8),
                 _buildProcedureHeader(procedure),
 
-                if (procedure.avertissementsLegaux.isNotEmpty) ...[
-                  const SizedBox(height: 12),
-                  _buildAvertissementsLegaux(procedure.avertissementsLegaux),
-                ],
-
-                if (procedure.avertissementsSecurite.isNotEmpty) ...[
-                  const SizedBox(height: 12),
-                  _buildAvertissementsSection(procedure.avertissementsSecurite),
-                ],
-
-                if (procedure.outils.isNotEmpty) ...[
-                  const SizedBox(height: 12),
-                  _buildOutilsSection(procedure.outils),
-                ],
-
-                const SizedBox(height: 14),
-                ...procedure.etapes.asMap().entries.map((entry) {
-                  final isLast = entry.key == procedure.etapes.length - 1;
-                  return _buildEtapeCard(
-                    entry.value,
-                    entry.key,
-                    procedure.etapes.length,
-                    msg.timestamp,
-                    isLast,
-                  );
-                }),
-
-                if (procedure.pieces.isNotEmpty) ...[
-                  const SizedBox(height: 12),
-                  _buildPiecesSection(procedure.pieces),
-                ],
-
-                if (procedure.conseilFinal.isNotEmpty) ...[
-                  const SizedBox(height: 12),
-                  _buildConseilFinal(procedure.conseilFinal),
+                if (hasOptions) ...[
+                  if (procedure.conseilFinal.isNotEmpty) ...[
+                    const SizedBox(height: 12),
+                    _buildConseilFinal(procedure.conseilFinal),
+                  ],
+                  const SizedBox(height: 16),
+                  ...msg.optionsDiagnostic!.map((opt) => Padding(
+                    padding: const EdgeInsets.only(bottom: 8),
+                    child: OutlinedButton(
+                      onPressed: () {
+                        _controller.text = opt.targetTitre;
+                        _sendMessage();
+                      },
+                      style: OutlinedButton.styleFrom(
+                        side: const BorderSide(color: AppColors.borderBlue),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
+                        backgroundColor: Colors.white,
+                        minimumSize: const Size(double.infinity, 0),
+                      ),
+                      child: Row(
+                        children: [
+                          const Icon(Icons.arrow_forward_ios_rounded, size: 14, color: AppColors.orangeMecaGo),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              opt.label,
+                              style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: AppColors.navyBlue),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  )),
+                ] else ...[
+                  if (procedure.avertissementsLegaux.isNotEmpty) ...[
+                    const SizedBox(height: 12),
+                    _buildAvertissementsLegaux(procedure.avertissementsLegaux),
+                  ],
+                  if (procedure.avertissementsSecurite.isNotEmpty) ...[
+                    const SizedBox(height: 12),
+                    _buildAvertissementsSection(procedure.avertissementsSecurite),
+                  ],
+                  if (procedure.outils.isNotEmpty) ...[
+                    const SizedBox(height: 12),
+                    _buildOutilsSection(procedure.outils),
+                  ],
+                  const SizedBox(height: 14),
+                  ...procedure.etapes.asMap().entries.map((entry) {
+                    final isLast = entry.key == procedure.etapes.length - 1;
+                    return _buildEtapeCard(
+                      entry.value,
+                      entry.key,
+                      procedure.etapes.length,
+                      msg.timestamp,
+                      isLast,
+                    );
+                  }),
+                  if (procedure.pieces.isNotEmpty) ...[
+                    const SizedBox(height: 12),
+                    _buildPiecesSection(procedure.pieces),
+                  ],
+                  if (procedure.conseilFinal.isNotEmpty) ...[
+                    const SizedBox(height: 12),
+                    _buildConseilFinal(procedure.conseilFinal),
+                  ],
                 ],
 
                 if (procedure.sources.isNotEmpty) ...[
@@ -667,10 +689,8 @@ class _ChatPageState extends State<ChatPage> {
 
   Widget _buildDangerBanner(ProcedureData p) {
     final isCritique = p.niveauDanger == 'critique';
-    final bgColor =
-        isCritique ? const Color(0xFFFEF2F2) : const Color(0xFFFFF7ED);
-    final borderColor =
-        isCritique ? const Color(0xFFFECACA) : const Color(0xFFFED7AA);
+    final bgColor = isCritique ? const Color(0xFFFEF2F2) : const Color(0xFFFFF7ED);
+    final borderColor = isCritique ? const Color(0xFFFECACA) : const Color(0xFFFED7AA);
     final textColor = isCritique ? AppColors.danger : AppColors.orangeMecaGo;
     final icon = isCritique ? '🚨' : '⚠️';
     final label = isCritique ? 'DANGER CRITIQUE' : 'PROCÉDURE À RISQUE';
@@ -790,16 +810,11 @@ class _ChatPageState extends State<ChatPage> {
 
   String _difficulteLabel(String difficulte) {
     switch (difficulte.toLowerCase()) {
-      case 'facile':
-        return 'Facile';
-      case 'intermediaire':
-        return 'Intermédiaire';
-      case 'avance':
-        return 'Avancé';
-      case 'expert':
-        return 'Expert';
-      default:
-        return difficulte;
+      case 'facile': return 'Facile';
+      case 'intermediaire': return 'Intermédiaire';
+      case 'avance': return 'Avancé';
+      case 'expert': return 'Expert';
+      default: return difficulte;
     }
   }
 
@@ -919,11 +934,8 @@ class _ChatPageState extends State<ChatPage> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Icon(
-                      o.obligatoire
-                          ? Icons.check_circle_rounded
-                          : Icons.circle_outlined,
-                      color:
-                          o.obligatoire ? AppColors.success : AppColors.textLight,
+                      o.obligatoire ? Icons.check_circle_rounded : Icons.circle_outlined,
+                      color: o.obligatoire ? AppColors.success : AppColors.textLight,
                       size: 16,
                     ),
                     const SizedBox(width: 8),
@@ -933,9 +945,7 @@ class _ChatPageState extends State<ChatPage> {
                             fontSize: 13,
                             color: AppColors.navyBlue,
                             height: 1.4,
-                            fontWeight: o.obligatoire
-                                ? FontWeight.w600
-                                : FontWeight.w400,
+                            fontWeight: o.obligatoire ? FontWeight.w600 : FontWeight.w400,
                           )),
                     ),
                   ],
@@ -982,8 +992,7 @@ class _ChatPageState extends State<ChatPage> {
                   top: 14,
                   left: 14,
                   child: Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                     decoration: BoxDecoration(
                       color: AppColors.orangeMecaGo,
                       borderRadius: BorderRadius.circular(12),
@@ -1027,16 +1036,14 @@ class _ChatPageState extends State<ChatPage> {
                     decoration: BoxDecoration(
                       color: const Color(0xFFFFF7ED),
                       borderRadius: BorderRadius.circular(10),
-                      border:
-                          Border.all(color: const Color(0xFFFED7AA), width: 1),
+                      border: Border.all(color: const Color(0xFFFED7AA), width: 1),
                     ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Row(
                           children: const [
-                            Icon(Icons.settings_rounded,
-                                color: AppColors.orangeMecaGo, size: 14),
+                            Icon(Icons.settings_rounded, color: AppColors.orangeMecaGo, size: 14),
                             SizedBox(width: 6),
                             Text('Couples de serrage',
                                 style: TextStyle(
@@ -1052,18 +1059,23 @@ class _ChatPageState extends State<ChatPage> {
                               child: Row(
                                 children: [
                                   Expanded(
+                                    flex: 2,
                                     child: Text(c.boulon,
+                                        style: const TextStyle(fontSize: 12, color: AppColors.navyBlue),
+                                        overflow: TextOverflow.ellipsis,
+                                        maxLines: 2),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Expanded(
+                                    flex: 1,
+                                    child: Text(c.valeur,
+                                        textAlign: TextAlign.right,
                                         style: const TextStyle(
-                                          fontSize: 12,
-                                          color: AppColors.navyBlue,
+                                          fontSize: 13,
+                                          fontWeight: FontWeight.w900,
+                                          color: AppColors.orangeMecaGo,
                                         )),
                                   ),
-                                  Text(c.valeur,
-                                      style: const TextStyle(
-                                        fontSize: 13,
-                                        fontWeight: FontWeight.w900,
-                                        color: AppColors.orangeMecaGo,
-                                      )),
                                 ],
                               ),
                             )),
@@ -1078,13 +1090,11 @@ class _ChatPageState extends State<ChatPage> {
                     runSpacing: 6,
                     children: etape.outils
                         .map((o) => Container(
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 8, vertical: 4),
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                               decoration: BoxDecoration(
                                 color: AppColors.background,
                                 borderRadius: BorderRadius.circular(8),
-                                border: Border.all(
-                                    color: AppColors.borderBlue, width: 1),
+                                border: Border.all(color: AppColors.borderBlue, width: 1),
                               ),
                               child: Text(o,
                                   style: const TextStyle(
@@ -1125,8 +1135,7 @@ class _ChatPageState extends State<ChatPage> {
         children: [
           Row(
             children: const [
-              Icon(Icons.shopping_cart_rounded,
-                  color: AppColors.orangeMecaGo, size: 18),
+              Icon(Icons.shopping_cart_rounded, color: AppColors.orangeMecaGo, size: 18),
               SizedBox(width: 8),
               Text('Pièces recommandées',
                   style: TextStyle(
@@ -1158,8 +1167,7 @@ class _ChatPageState extends State<ChatPage> {
           children: [
             Row(
               children: [
-                const Icon(Icons.warning_amber_rounded,
-                    color: AppColors.orangeMecaGo, size: 16),
+                const Icon(Icons.warning_amber_rounded, color: AppColors.orangeMecaGo, size: 16),
                 const SizedBox(width: 6),
                 Expanded(
                   child: Text('${p.nom} - ${p.variantes.length} variantes',
@@ -1240,8 +1248,7 @@ class _ChatPageState extends State<ChatPage> {
           Row(
             children: [
               Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                 decoration: BoxDecoration(
                   color: AppColors.orangeMecaGo,
                   borderRadius: BorderRadius.circular(6),
@@ -1322,8 +1329,7 @@ class _ChatPageState extends State<ChatPage> {
         children: [
           Row(
             children: const [
-              Icon(Icons.help_outline_rounded,
-                  color: Color(0xFF3B82F6), size: 14),
+              Icon(Icons.help_outline_rounded, color: Color(0xFF3B82F6), size: 14),
               SizedBox(width: 6),
               Text('Comment choisir',
                   style: TextStyle(
@@ -1340,10 +1346,7 @@ class _ChatPageState extends State<ChatPage> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     const Text('• ',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Color(0xFF1E40AF),
-                        )),
+                        style: TextStyle(fontSize: 12, color: Color(0xFF1E40AF))),
                     Expanded(
                       child: Text(e.value,
                           style: const TextStyle(
@@ -1406,16 +1409,14 @@ class _ChatPageState extends State<ChatPage> {
                       decoration: BoxDecoration(
                         color: const Color(0xFFF0FDF4),
                         borderRadius: BorderRadius.circular(10),
-                        border: Border.all(
-                            color: const Color(0xFFBBF7D0), width: 1),
+                        border: Border.all(color: const Color(0xFFBBF7D0), width: 1),
                       ),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Row(
                             children: const [
-                              Icon(Icons.lightbulb_rounded,
-                                  color: AppColors.success, size: 16),
+                              Icon(Icons.lightbulb_rounded, color: AppColors.success, size: 16),
                               SizedBox(width: 6),
                               Text('À savoir',
                                   style: TextStyle(
@@ -1431,8 +1432,7 @@ class _ChatPageState extends State<ChatPage> {
                                 child: Row(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    const Text('• ',
-                                        style: TextStyle(fontSize: 13)),
+                                    const Text('• ', style: TextStyle(fontSize: 13)),
                                     Expanded(
                                       child: Text(d,
                                           style: const TextStyle(
@@ -1496,8 +1496,7 @@ class _ChatPageState extends State<ChatPage> {
                 children: [
                   Row(
                     children: const [
-                      Icon(Icons.location_on_rounded,
-                          color: AppColors.orangeMecaGo, size: 20),
+                      Icon(Icons.location_on_rounded, color: AppColors.orangeMecaGo, size: 20),
                       SizedBox(width: 8),
                       Text('Emplacement',
                           style: TextStyle(
@@ -1528,16 +1527,14 @@ class _ChatPageState extends State<ChatPage> {
                       decoration: BoxDecoration(
                         color: const Color(0xFFEFF6FF),
                         borderRadius: BorderRadius.circular(10),
-                        border: Border.all(
-                            color: const Color(0xFFBFDBFE), width: 1),
+                        border: Border.all(color: const Color(0xFFBFDBFE), width: 1),
                       ),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Row(
                             children: const [
-                              Icon(Icons.visibility_rounded,
-                                  color: Color(0xFF3B82F6), size: 16),
+                              Icon(Icons.visibility_rounded, color: Color(0xFF3B82F6), size: 16),
                               SizedBox(width: 6),
                               Text('Repères visuels',
                                   style: TextStyle(
@@ -1553,8 +1550,7 @@ class _ChatPageState extends State<ChatPage> {
                                 child: Row(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    const Text('• ',
-                                        style: TextStyle(fontSize: 13)),
+                                    const Text('• ', style: TextStyle(fontSize: 13)),
                                     Expanded(
                                       child: Text(r,
                                           style: const TextStyle(
@@ -1638,8 +1634,7 @@ class _ChatPageState extends State<ChatPage> {
         children: [
           Row(
             children: const [
-              Icon(Icons.verified_rounded,
-                  color: AppColors.textSecondary, size: 12),
+              Icon(Icons.verified_rounded, color: AppColors.textSecondary, size: 12),
               SizedBox(width: 6),
               Text('Sources',
                   style: TextStyle(
@@ -1674,8 +1669,7 @@ class _ChatPageState extends State<ChatPage> {
         shape: BoxShape.circle,
         boxShadow: AppShadows.orangeButton,
       ),
-      child:
-          const Icon(Icons.smart_toy_rounded, color: Colors.white, size: 20),
+      child: const Icon(Icons.smart_toy_rounded, color: Colors.white, size: 20),
     );
   }
 
@@ -1703,8 +1697,7 @@ class _ChatPageState extends State<ChatPage> {
               ),
               child: Row(
                 children: [
-                  const Icon(Icons.add_rounded,
-                      color: AppColors.textSecondary, size: 22),
+                  const Icon(Icons.add_rounded, color: AppColors.textSecondary, size: 22),
                   const SizedBox(width: 8),
                   Expanded(
                     child: TextField(
@@ -1738,8 +1731,7 @@ class _ChatPageState extends State<ChatPage> {
                 shape: BoxShape.circle,
                 boxShadow: AppShadows.orangeButton,
               ),
-              child: const Icon(Icons.send_rounded,
-                  color: Colors.white, size: 22),
+              child: const Icon(Icons.send_rounded, color: Colors.white, size: 22),
             ),
           ),
         ],
@@ -1754,6 +1746,20 @@ class _ChatPageState extends State<ChatPage> {
 
 enum MessageType { text, procedure, simpleAnswer, emplacement }
 
+class DiagnosticOption {
+  final String label;
+  final String targetTitre;
+
+  const DiagnosticOption({required this.label, required this.targetTitre});
+
+  factory DiagnosticOption.fromJson(Map<String, dynamic> json) {
+    return DiagnosticOption(
+      label: json['label'] as String? ?? '',
+      targetTitre: json['target_titre'] as String? ?? '',
+    );
+  }
+}
+
 class ChatMessage {
   final String text;
   final bool isUser;
@@ -1761,6 +1767,7 @@ class ChatMessage {
   final ProcedureData? procedure;
   final SimpleAnswerData? simpleAnswer;
   final EmplacementData? emplacement;
+  final List<DiagnosticOption>? optionsDiagnostic;
   final DateTime timestamp;
 
   const ChatMessage({
@@ -1770,6 +1777,7 @@ class ChatMessage {
     this.procedure,
     this.simpleAnswer,
     this.emplacement,
+    this.optionsDiagnostic,
     required this.timestamp,
   });
 }
@@ -1791,14 +1799,8 @@ class SimpleAnswerData {
     return SimpleAnswerData(
       titre: json['titre'] as String? ?? 'Réponse',
       reponse: json['reponse'] as String? ?? '',
-      details: (json['details'] as List<dynamic>?)
-              ?.map((d) => d.toString())
-              .toList() ??
-          [],
-      sources: (json['sources'] as List<dynamic>?)
-              ?.map((s) => s.toString())
-              .toList() ??
-          [],
+      details: (json['details'] as List<dynamic>?)?.map((d) => d.toString()).toList() ?? [],
+      sources: (json['sources'] as List<dynamic>?)?.map((s) => s.toString()).toList() ?? [],
     );
   }
 }
@@ -1825,18 +1827,9 @@ class EmplacementData {
       piece: json['piece'] as String? ?? '',
       vehicule: json['vehicule'] as String? ?? '',
       description: json['description'] as String? ?? '',
-      reperes: (json['reperes'] as List<dynamic>?)
-              ?.map((r) => r.toString())
-              .toList() ??
-          [],
-      outils: (json['outils'] as List<dynamic>?)
-              ?.map((o) => o.toString())
-              .toList() ??
-          [],
-      sources: (json['sources'] as List<dynamic>?)
-              ?.map((s) => s.toString())
-              .toList() ??
-          [],
+      reperes: (json['reperes'] as List<dynamic>?)?.map((r) => r.toString()).toList() ?? [],
+      outils: (json['outils'] as List<dynamic>?)?.map((o) => o.toString()).toList() ?? [],
+      sources: (json['sources'] as List<dynamic>?)?.map((s) => s.toString()).toList() ?? [],
     );
   }
 }
@@ -1875,6 +1868,27 @@ class ProcedureData {
   });
 
   factory ProcedureData.fromJson(Map<String, dynamic> json) {
+    List<EtapeItem> parsedEtapes = [];
+    if (json['etapes'] != null) {
+      for (var e in json['etapes']) {
+        try { parsedEtapes.add(EtapeItem.fromJson(Map<String, dynamic>.from(e))); } catch (_) {}
+      }
+    }
+
+    List<PieceItem> parsedPieces = [];
+    if (json['pieces'] != null) {
+      for (var p in json['pieces']) {
+        try { parsedPieces.add(PieceItem.fromJson(Map<String, dynamic>.from(p))); } catch (_) {}
+      }
+    }
+
+    List<OutilItem> parsedOutils = [];
+    if (json['outils'] != null) {
+      for (var o in json['outils']) {
+        try { parsedOutils.add(OutilItem.fromJson(Map<String, dynamic>.from(o))); } catch (_) {}
+      }
+    }
+
     return ProcedureData(
       titre: json['titre'] as String? ?? 'Procédure MecaGo',
       vehicule: json['vehicule'] as String? ?? '',
@@ -1883,32 +1897,13 @@ class ProcedureData {
       niveauDanger: json['niveau_danger'] as String? ?? 'faible',
       publicCible: json['public_cible'] as String? ?? 'tous',
       formationRequise: json['formation_requise'] as String? ?? 'Aucune',
-      outils: (json['outils'] as List<dynamic>?)
-              ?.map((o) => OutilItem.fromJson(o as Map<String, dynamic>))
-              .toList() ??
-          [],
-      pieces: (json['pieces'] as List<dynamic>?)
-              ?.map((p) => PieceItem.fromJson(p as Map<String, dynamic>))
-              .toList() ??
-          [],
-      avertissementsSecurite:
-          (json['avertissements_securite'] as List<dynamic>?)
-                  ?.map((a) => a.toString())
-                  .toList() ??
-              [],
-      avertissementsLegaux: (json['avertissements_legaux'] as List<dynamic>?)
-                  ?.map((a) => a.toString())
-                  .toList() ??
-              [],
-      etapes: (json['etapes'] as List<dynamic>?)
-              ?.map((e) => EtapeItem.fromJson(e as Map<String, dynamic>))
-              .toList() ??
-          [],
+      outils: parsedOutils,
+      pieces: parsedPieces,
+      avertissementsSecurite: (json['avertissements_securite'] as List<dynamic>?)?.map((a) => a.toString()).toList() ?? [],
+      avertissementsLegaux: (json['avertissements_legaux'] as List<dynamic>?)?.map((a) => a.toString()).toList() ?? [],
+      etapes: parsedEtapes,
       conseilFinal: json['conseil_final'] as String? ?? '',
-      sources: (json['sources'] as List<dynamic>?)
-              ?.map((s) => s.toString())
-              .toList() ??
-          [],
+      sources: (json['sources'] as List<dynamic>?)?.map((s) => s.toString()).toList() ?? [],
     );
   }
 }
@@ -1941,37 +1936,31 @@ class PieceItem {
   });
 
   factory PieceItem.fromJson(Map<String, dynamic> json) {
-    final variantesJson = json['variantes'] as List<dynamic>?;
+    List<PieceVariante> parsedVariantes = [];
+    if (json['variantes'] != null) {
+      for (var v in json['variantes']) {
+        try { parsedVariantes.add(PieceVariante.fromJson(Map<String, dynamic>.from(v))); } catch (_) {}
+      }
+    }
 
-    if (variantesJson != null) {
-      return PieceItem(
-        nom: json['nom'] as String? ?? '',
-        variantes: variantesJson
-            .map((v) => PieceVariante.fromJson(v as Map<String, dynamic>))
-            .toList(),
-        guideChoix: (json['guide_choix'] as Map<String, dynamic>?)
-                ?.map((k, v) => MapEntry(k, v.toString())) ??
-            {},
-        avertissement: json['avertissement'] as String? ?? '',
-      );
+    if (parsedVariantes.isEmpty) {
+      parsedVariantes.add(PieceVariante(
+        numero: 1,
+        ref: json['ref'] as String? ?? '',
+        equivalents: [],
+        criteres: '',
+        difference: '',
+        prix: json['prix'] as String? ?? '',
+        source: json['source'] as String? ?? '',
+        confiance: 'moyenne',
+      ));
     }
 
     return PieceItem(
       nom: json['nom'] as String? ?? '',
-      variantes: [
-        PieceVariante(
-          numero: 1,
-          ref: json['ref'] as String? ?? '',
-          equivalents: [],
-          criteres: '',
-          difference: '',
-          prix: json['prix'] as String? ?? '',
-          source: json['source'] as String? ?? '',
-          confiance: 'moyenne',
-        ),
-      ],
-      guideChoix: {},
-      avertissement: '',
+      variantes: parsedVariantes,
+      guideChoix: (json['guide_choix'] as Map<String, dynamic>?)?.map((k, v) => MapEntry(k, v.toString())) ?? {},
+      avertissement: json['avertissement'] as String? ?? '',
     );
   }
 }
@@ -2001,10 +1990,7 @@ class PieceVariante {
     return PieceVariante(
       numero: json['numero'] as int? ?? 1,
       ref: json['ref'] as String? ?? '',
-      equivalents: (json['equivalents'] as List<dynamic>?)
-              ?.map((e) => e.toString())
-              .toList() ??
-          [],
+      equivalents: (json['equivalents'] as List<dynamic>?)?.map((e) => e.toString()).toList() ?? [],
       criteres: json['criteres'] as String? ?? '',
       difference: json['difference'] as String? ?? '',
       prix: json['prix'] as String? ?? '',
@@ -2030,18 +2016,19 @@ class EtapeItem {
   });
 
   factory EtapeItem.fromJson(Map<String, dynamic> json) {
+    List<CoupleItem> parsedCouples = [];
+    if (json['couples'] != null) {
+      for (var c in json['couples']) {
+        try { parsedCouples.add(CoupleItem.fromJson(Map<String, dynamic>.from(c))); } catch (_) {}
+      }
+    }
+
     return EtapeItem(
       numero: json['numero'] as int? ?? 1,
       titre: json['titre'] as String? ?? '',
       description: json['description'] as String? ?? '',
-      outils: (json['outils'] as List<dynamic>?)
-              ?.map((o) => o.toString())
-              .toList() ??
-          [],
-      couples: (json['couples'] as List<dynamic>?)
-              ?.map((c) => CoupleItem.fromJson(c as Map<String, dynamic>))
-              .toList() ??
-          [],
+      outils: (json['outils'] as List<dynamic>?)?.map((o) => o.toString()).toList() ?? [],
+      couples: parsedCouples,
     );
   }
 }
