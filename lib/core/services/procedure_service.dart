@@ -45,11 +45,27 @@ const Set<String> _stopWords = {
 
 /// Découpe un texte en mots utiles (sans accents, sans petits mots)
 List<String> _tokens(String text) {
-  final n = _norm(text).replaceAll("'", ' ');
-  return n
+  final words = _norm(text)
+      .replaceAll("'", ' ')
       .split(RegExp(r'[^a-z0-9]+'))
-      .where((w) => w.length >= 3 && !_stopWords.contains(w))
+      .where((w) => w.isNotEmpty)
       .toList();
+
+  final out = <String>[];
+  for (var i = 0; i < words.length; i++) {
+    final w = words[i];
+
+    // ✅ "sans freiner" devient UN seul mot ("sans_freiner") :
+    // il ne doit pas être confondu avec "freiner"
+    if (w == 'sans' && i + 1 < words.length && words[i + 1].length >= 3) {
+      out.add('sans_${words[i + 1]}');
+      i++;
+      continue;
+    }
+
+    if (w.length >= 3 && !_stopWords.contains(w)) out.add(w);
+  }
+  return out;
 }
 
 /// Deux mots sont "les mêmes" s'ils sont égaux ou presque
@@ -110,7 +126,12 @@ class _Scored {
   final _IndexEntry entry;
   final double score;
   final double coverage;
-  _Scored(this.entry, this.score, this.coverage);
+  final double precision;
+  _Scored(this.entry, this.score, this.coverage, this.precision);
+
+  /// Classement : le score, plus un petit bonus pour la fiche dont le titre
+  /// ressemble le plus à la question (départage les égalités)
+  double get rank => score + 0.5 * precision;
 }
 
 class ProcedureService {
@@ -239,10 +260,13 @@ class ProcedureService {
 
         var score = 0.0;
         var covered = 0.0;
+        final matchedTitleTokens = <String>{};
         weights.forEach((t, w) {
-          if (e.titleTokens.any((x) => _same(x, t))) {
+          final inTitle = e.titleTokens.where((x) => _same(x, t)).toList();
+          if (inTitle.isNotEmpty) {
             score += w;
             covered += w;
+            matchedTitleTokens.addAll(inTitle);
           } else if (e.keyTokens.any((x) => _same(x, t))) {
             score += w * 0.8;
             covered += w;
@@ -250,7 +274,13 @@ class ProcedureService {
         });
         if (covered == 0) continue;
         if (e.type == intent) score *= 1.1;
-        scored.add(_Scored(e, score, covered / total));
+
+        // Part des mots du titre qui se retrouvent dans la question
+        final titleSize = e.titleTokens.toSet().length;
+        final precision =
+            titleSize == 0 ? 0.0 : matchedTitleTokens.length / titleSize;
+
+        scored.add(_Scored(e, score, covered / total, precision));
       }
 
       if (scored.isEmpty) {
@@ -258,11 +288,11 @@ class ProcedureService {
         return null;
       }
 
-      scored.sort((a, b) => b.score.compareTo(a.score));
+      scored.sort((a, b) => b.rank.compareTo(a.rank));
       for (var i = 0; i < scored.length && i < 3; i++) {
         final s = scored[i];
         debugPrint(
-            '🏆 ${i + 1}. "${s.entry.titre}" (${s.entry.type}) score=${s.score.toStringAsFixed(1)} couverture=${(s.coverage * 100).round()}%');
+            '🏆 ${i + 1}. "${s.entry.titre}" (${s.entry.type}) score=${s.score.toStringAsFixed(1)} couverture=${(s.coverage * 100).round()}% precision=${(s.precision * 100).round()}%');
       }
 
       final best = scored.first;
@@ -320,6 +350,7 @@ class ProcedureService {
       'sources': proc['sources'] ?? ['MecaGo'],
       'notes_specifiques': notes,
       'options_diagnostic': proc['options_diagnostic'],
+      'actions_reparation': proc['actions_reparation'],
     };
   }
 

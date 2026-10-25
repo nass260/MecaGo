@@ -1,4 +1,5 @@
 // lib/features/diagnostic/presentation/pages/chat_page.dart
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/theme/app_theme.dart';
@@ -115,6 +116,26 @@ class _ChatPageState extends State<ChatPage> {
     return history;
   }
 
+  /// ✅ Lit la liste "actions_reparation" (boutons "Passer à la réparation")
+  List<RepairAction>? _parseRepairActions(dynamic raw) {
+    try {
+      dynamic data = raw;
+      if (data is String && data.trim().isNotEmpty) data = jsonDecode(data);
+      if (data is! List) return null;
+
+      final list = data
+          .whereType<Map>()
+          .map((a) => RepairAction.fromJson(Map<String, dynamic>.from(a)))
+          .where((a) => a.label.isNotEmpty)
+          .toList();
+
+      return list.isEmpty ? null : list;
+    } catch (e) {
+      debugPrint('⚠️ actions_reparation illisibles : $e');
+      return null;
+    }
+  }
+
   Future<void> _sendMessage() async {
     final text = _controller.text.trim();
     if (text.isEmpty || _isLoading) return;
@@ -141,10 +162,13 @@ class _ChatPageState extends State<ChatPage> {
       );
 
       final type = response.json['type'] as String? ?? 'procedure';
-      
-      // ✅ Extraction des options de diagnostic
+
+      // Extraction des options de diagnostic
       final optionsJson = response.json['options_diagnostic'] as List<dynamic>?;
       final options = optionsJson?.map((o) => DiagnosticOption.fromJson(Map<String, dynamic>.from(o))).toList();
+
+      // ✅ Extraction des boutons de réparation
+      final actions = _parseRepairActions(response.json['actions_reparation']);
 
       if (!mounted) return;
       setState(() {
@@ -171,6 +195,7 @@ class _ChatPageState extends State<ChatPage> {
             type: MessageType.procedure,
             procedure: ProcedureData.fromJson(response.json),
             optionsDiagnostic: options,
+            actionsReparation: actions,
             timestamp: DateTime.now(),
           ));
         }
@@ -581,6 +606,7 @@ class _ChatPageState extends State<ChatPage> {
   Widget _buildProcedureResponse(ChatMessage msg) {
     final procedure = msg.procedure!;
     final hasOptions = msg.optionsDiagnostic != null && msg.optionsDiagnostic!.isNotEmpty;
+    final hasActions = msg.actionsReparation != null && msg.actionsReparation!.isNotEmpty;
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 12, top: 8),
@@ -667,6 +693,12 @@ class _ChatPageState extends State<ChatPage> {
                   ],
                 ],
 
+                // ✅ Boutons "Passer à la réparation"
+                if (hasActions) ...[
+                  const SizedBox(height: 12),
+                  _buildRepairActions(msg.actionsReparation!),
+                ],
+
                 if (procedure.sources.isNotEmpty) ...[
                   const SizedBox(height: 12),
                   _buildSources(procedure.sources),
@@ -683,6 +715,142 @@ class _ChatPageState extends State<ChatPage> {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  // ============================================
+  // ✅ BOUTONS "PASSER À LA RÉPARATION"
+  // ============================================
+
+  /// Enlève les émojis du texte (ils s'affichent mal sur certains appareils)
+  String _cleanActionLabel(String s) {
+    return s
+        .replaceAll(
+            RegExp(r'[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}\u{FE0F}]',
+                unicode: true),
+            '')
+        .trim();
+  }
+
+  Widget _buildRepairActions(List<RepairAction> actions) {
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: const Color(0xFFFFF7ED),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFFFED7AA), width: 1),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: const [
+              Icon(Icons.build_circle_rounded,
+                  color: AppColors.orangeMecaGo, size: 20),
+              SizedBox(width: 8),
+              Expanded(
+                child: Text('Passer à la réparation',
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w900,
+                      color: AppColors.navyBlue,
+                    )),
+              ),
+            ],
+          ),
+          const SizedBox(height: 4),
+          const Text(
+            'Choisissez la réparation qui correspond à votre diagnostic.',
+            style: TextStyle(
+              fontSize: 12,
+              color: AppColors.textSecondary,
+              height: 1.4,
+            ),
+          ),
+          const SizedBox(height: 12),
+          ...actions.map(_buildRepairActionButton),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildRepairActionButton(RepairAction action) {
+    final label = _cleanActionLabel(action.label);
+
+    // Simple conseil (par exemple "Faire contrôler en garage") : pas de clic
+    if (!action.isClickable) {
+      return Container(
+        margin: const EdgeInsets.only(bottom: 8),
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: AppColors.borderBlue, width: 1),
+        ),
+        child: Row(
+          children: [
+            const Icon(Icons.engineering_rounded,
+                color: AppColors.navyBlue, size: 20),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                label,
+                style: const TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.navyBlue,
+                  height: 1.4,
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    // Bouton qui ouvre la fiche de réparation
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(14),
+          onTap: _isLoading
+              ? null
+              : () {
+                  _controller.text = action.targetTitre;
+                  _sendMessage();
+                },
+          child: Ink(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+            decoration: BoxDecoration(
+              gradient: AppGradients.orange,
+              borderRadius: BorderRadius.circular(14),
+              boxShadow: AppShadows.orangeButton,
+            ),
+            child: Row(
+              children: [
+                const Icon(Icons.build_rounded, color: Colors.white, size: 18),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    label,
+                    style: const TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w800,
+                      color: Colors.white,
+                      height: 1.3,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                const Icon(Icons.arrow_forward_rounded,
+                    color: Colors.white, size: 18),
+              ],
+            ),
+          ),
+        ),
       ),
     );
   }
@@ -1760,6 +1928,30 @@ class DiagnosticOption {
   }
 }
 
+/// ✅ Un bouton "Passer à la réparation" (ou un simple conseil, type "garage")
+class RepairAction {
+  final String label;
+  final String targetTitre;
+  final String type;
+
+  const RepairAction({
+    required this.label,
+    required this.targetTitre,
+    required this.type,
+  });
+
+  /// Un bouton cliquable doit avoir un titre cible et ne pas être de type "garage"
+  bool get isClickable => targetTitre.isNotEmpty && type != 'garage';
+
+  factory RepairAction.fromJson(Map<String, dynamic> json) {
+    return RepairAction(
+      label: (json['label'] ?? '').toString().trim(),
+      targetTitre: (json['target_titre'] ?? json['titre'] ?? '').toString().trim(),
+      type: (json['type'] ?? 'reparation').toString().trim().toLowerCase(),
+    );
+  }
+}
+
 class ChatMessage {
   final String text;
   final bool isUser;
@@ -1768,6 +1960,7 @@ class ChatMessage {
   final SimpleAnswerData? simpleAnswer;
   final EmplacementData? emplacement;
   final List<DiagnosticOption>? optionsDiagnostic;
+  final List<RepairAction>? actionsReparation;
   final DateTime timestamp;
 
   const ChatMessage({
@@ -1778,6 +1971,7 @@ class ChatMessage {
     this.simpleAnswer,
     this.emplacement,
     this.optionsDiagnostic,
+    this.actionsReparation,
     required this.timestamp,
   });
 }

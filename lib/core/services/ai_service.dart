@@ -64,15 +64,50 @@ class AiService {
     return f.contains('electri') && !f.contains('hybrid');
   }
 
+  /// Question réservée au moteur thermique ?
+  /// ✅ On compare des MOTS entiers : avant, "dégradé" ou "intégré" étaient pris
+  /// pour "egr" et une électrique répondait "pas de vidange".
   bool _isThermalOnlyQuestion(String q) {
-    final t = q.toLowerCase().replaceAll('é', 'e').replaceAll('è', 'e').replaceAll('ê', 'e');
-    const words = [
-      'vidange', 'huile moteur', 'filtre a huile', 'bougie',
-      'courroie de distribution', 'kit de distribution', 'filtre a gasoil',
-      'filtre a carburant', 'injecteur', 'turbo', 'fap', 'egr',
-      'echappement', 'catalyseur', 'embrayage',
+    final t = q
+        .toLowerCase()
+        .replaceAll('é', 'e')
+        .replaceAll('è', 'e')
+        .replaceAll('ê', 'e');
+    final words =
+        t.split(RegExp(r'[^a-z0-9]+')).where((w) => w.isNotEmpty).toList();
+
+    const phrases = [
+      'huile moteur',
+      'filtre a huile',
+      'courroie de distribution',
+      'kit de distribution',
+      'filtre a gasoil',
+      'filtre a carburant',
     ];
-    return words.any(t.contains);
+    const stems = [
+      'vidang',
+      'bougie',
+      'injecteur',
+      'turbo',
+      'echappement',
+      'catalyseur',
+      'embrayage',
+    ];
+    const exacts = ['fap', 'egr'];
+
+    if (phrases.any(t.contains)) return true;
+    if (words.any((w) => stems.any((s) => w.startsWith(s)))) return true;
+    return words.any(exacts.contains);
+  }
+
+  /// Vrai si la valeur contient quelque chose (liste non vide ou texte non vide)
+  bool _hasContent(dynamic v) {
+    if (v is List) return v.isNotEmpty;
+    if (v is String) {
+      final t = v.trim();
+      return t.isNotEmpty && t != '[]' && t != 'null';
+    }
+    return false;
   }
 
   Future<AiDiagnosisResponse> diagnose({
@@ -144,10 +179,11 @@ class AiService {
     }
 
     if (procedure != null) {
-      // ✅ CORRECTION : On affiche la fiche directe si elle a des options de diagnostic
-      final options = procedure['options_diagnostic'];
-      if (options != null && options is List && options.isNotEmpty) {
-        debugPrint('✅ AiService : fiche diagnostic (options) affichée directement (sans IA)');
+      // Fiche avec boutons (diagnostic) ou avec boutons de réparation :
+      // on l'affiche directement, sans IA
+      if (_hasContent(procedure['options_diagnostic']) ||
+          _hasContent(procedure['actions_reparation'])) {
+        debugPrint('✅ AiService : fiche avec boutons affichée directement (sans IA)');
         return _buildProcedureResponse(procedure);
       }
 
@@ -161,13 +197,13 @@ class AiService {
       debugPrint('⚠️ AiService : aucune procédure dans Supabase → IA');
     }
 
-    // ✅ VERROUILLAGE DU PROMPT DE SECOURS
+    // ✅ PROMPT DE SECOURS (uniquement quand ta base n'a rien)
     const strictPrompt = """
     CONSIGNES STRICTES DE SÉCURITÉ (MecaGo Premium) :
     1. Tu es un assistant mécanique de confiance pour MecaGo.
     2. Tu NE DOIS JAMAIS inventer une valeur technique (taille de douille, couple de serrage, référence de pièce).
     3. Si tu n'es pas certain à 100% d'une valeur, tu dois écrire : "À vérifier dans le manuel du constructeur".
-    4. Tu NE DOIS JAMAIS conseiller d'aller au garage. Tu es là pour donner la marche à suivre.
+    4. Donne d'abord la marche à suivre pour que la personne puisse agir, sans la renvoyer au garage par réflexe. MAIS si le problème touche la sécurité (freins, direction, pneus, airbags, carburant) ou si la situation est dangereuse (pédale de frein qui s'enfonce ou qui devient dure, direction bloquée, fumée, odeur de brûlé, moteur qui s'emballe), dis clairement d'arrêter de rouler et de faire contrôler le véhicule par un professionnel.
     5. Sois précis, technique et direct.
     """;
 
@@ -347,7 +383,8 @@ class AiService {
         'etapes': etapes,
         'conseil_final': conseil,
         'sources': procedure['sources'] ?? ['MecaGo'],
-        'options_diagnostic': procedure['options_diagnostic'], // ✅ Injection des options
+        'options_diagnostic': procedure['options_diagnostic'],
+        'actions_reparation': procedure['actions_reparation'], // ✅ boutons de réparation
       },
       provider: AiProvider.none,
     );
