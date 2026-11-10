@@ -166,6 +166,7 @@ class AiService {
       final modele = _extractFromContext(vehicleContext, 'Modèle').replaceAll(',', '').trim();
       final moteur = _extractFromContext(vehicleContext, 'Moteur').replaceAll(',', '').trim();
       final carburant = _extractFromContext(vehicleContext, 'Carburant').replaceAll(',', '').trim();
+      final annee = int.tryParse(_extractFromContext(vehicleContext, 'Année'));
 
       procedure = await _procedureService.findProcedure(
         question: question,
@@ -173,6 +174,7 @@ class AiService {
         modele: modele,
         moteur: moteur,
         carburant: carburant,
+        annee: annee,
       );
     } catch (e) {
       debugPrint('⚠️ AiService : Supabase a échoué → $e');
@@ -197,14 +199,21 @@ class AiService {
       debugPrint('⚠️ AiService : aucune procédure dans Supabase → IA');
     }
 
-    // ✅ PROMPT DE SECOURS (uniquement quand ta base n'a rien)
-    const strictPrompt = """
-    CONSIGNES STRICTES DE SÉCURITÉ (MecaGo Premium) :
+        // ✅ PROMPT DE SECOURS (uniquement quand ta base n'a rien)
+    final marque = _extractFromContext(vehicleContext, 'Marque');
+    final modele = _extractFromContext(vehicleContext, 'Modèle');
+    final annee = _extractFromContext(vehicleContext, 'Année');
+    final moteur = _extractFromContext(vehicleContext, 'Moteur');
+    final carburant = _extractFromContext(vehicleContext, 'Carburant');
+
+    final strictPrompt = """
+    CONSIGNES STRICTES DE SÉCURITÉ ET D'ADAPTATION (MecaGo Premium) :
     1. Tu es un assistant mécanique de confiance pour MecaGo.
-    2. Tu NE DOIS JAMAIS inventer une valeur technique (taille de douille, couple de serrage, référence de pièce).
-    3. Si tu n'es pas certain à 100% d'une valeur, tu dois écrire : "À vérifier dans le manuel du constructeur".
-    4. Donne d'abord la marche à suivre pour que la personne puisse agir, sans la renvoyer au garage par réflexe. MAIS si le problème touche la sécurité (freins, direction, pneus, airbags, carburant) ou si la situation est dangereuse (pédale de frein qui s'enfonce ou qui devient dure, direction bloquée, fumée, odeur de brûlé, moteur qui s'emballe), dis clairement d'arrêter de rouler et de faire contrôler le véhicule par un professionnel.
-    5. Sois précis, technique et direct.
+    2. ADAPTE IMPÉRATIVEMENT ta réponse au véhicule concerné : Marque ($marque), Modèle ($modele), Année ($annee), Moteur ($moteur), Carburant ($carburant).
+    3. Tu NE DOIS JAMAIS inventer une valeur technique (taille de douille, couple de serrage, référence de pièce).
+    4. Si tu n'es pas certain à 100% d'une valeur, tu dois écrire : "À vérifier dans le manuel du constructeur".
+    5. Donne d'abord la marche à suivre pour que la personne puisse agir, sans la renvoyer au garage par réflexe. MAIS si le problème touche la sécurité (freins, direction, pneus, airbags, carburant) ou si la situation est dangereuse (pédale de frein qui s'enfonce ou qui devient dure, direction bloquée, fumée, odeur de brûlé, moteur qui s'emballe), dis clairement d'arrêter de rouler et de faire contrôler le véhicule par un professionnel.
+    6. Sois précis, technique et direct.
     """;
 
     return _callAiChat(vehicleContext, "$strictPrompt\n\nQuestion : $question", conversationHistory, procedure);
@@ -385,6 +394,7 @@ class AiService {
         'sources': procedure['sources'] ?? ['MecaGo'],
         'options_diagnostic': procedure['options_diagnostic'],
         'actions_reparation': procedure['actions_reparation'], // ✅ boutons de réparation
+        'pieges_constructeur': procedure['pieges_constructeur'], // ✅ pièges constructeur
       },
       provider: AiProvider.none,
     );

@@ -4011,6 +4011,9 @@
         {
           "name": "A1",
           "trims": [
+            "2023 A1 25 TFSI 95",
+            "2023 A1 35 TFSI 150",
+            "2023 A1 30 TFSI 110",
             "2012 A1 1.2",
             "2012 A1 1.4",
             "2012 A1 1.6 TDi",
@@ -4047,6 +4050,11 @@
         {
           "name": "A3",
           "trims": [
+            "2023 A3 1.9 TDI 105",
+            "2023 A3 1.9 TDI 110",
+            "2023 A3 40 TFSI e 204",
+            "2023 A3 35 TDI 150",
+            "2023 A3 35 TFSI 150",
             "2022 A3 1.8 TFSI Premium 2dr Convertible (1.8L 4cyl Turbo 6AM)",
             "2022 A3 1.8 TFSI Premium 4dr Sedan (1.8L 4cyl Turbo 6AM)",
             "2022 A3 1.8 TFSI Premium Plus 2dr Convertible (1.8L 4cyl Turbo 6AM)",
@@ -4487,6 +4495,9 @@
         {
           "name": "A4",
           "trims": [
+            "2023 A4 35 TFSI 150",
+            "2023 A4 40 TDI 190",
+            "2023 A4 45 TFSI 265",
             "2022 A4 2.0T Premium 4dr Sedan (2.0L 4cyl Turbo CVT)",
             "2022 A4 2.0T Premium Plus 4dr Sedan (2.0L 4cyl Turbo CVT)",
             "2022 A4 2.0T Premium Plus quattro 4dr Sedan AWD (2.0L 4cyl Turbo 6M)",
@@ -5997,6 +6008,9 @@
         {
           "name": "Q3",
           "trims": [
+            "2023 Q3 45 TFSI e 245",
+            "2023 Q3 40 TDI 190",
+            "2023 Q3 35 TFSI 150",
             "2022 Q3 Premium Plus 4dr SUV (2.0L 4cyl Turbo 6A)",
             "2022 Q3 Premium Plus quattro 4dr SUV AWD (2.0L 4cyl Turbo 6A)",
             "2022 Q3 Prestige 4dr SUV (2.0L 4cyl Turbo 6A)",
@@ -6039,6 +6053,9 @@
         {
           "name": "Q5",
           "trims": [
+            "2023 Q5 40 TDI 204",
+            "2023 Q5 50 TFSI e 299",
+            "2023 Q5 45 TFSI 265",
             "2022 Q5 2.0T Premium Plus quattro 4dr SUV AWD (2.0L 4cyl Turbo 8A)",
             "2022 Q5 2.0T Premium quattro 4dr SUV AWD (2.0L 4cyl Turbo 8A)",
             "2022 Q5 2.0T Prestige quattro 4dr SUV AWD (2.0L 4cyl Turbo gas/electric",
@@ -11816,6 +11833,9 @@
         {
           "name": "X1",
           "trims": [
+            "2023 X1 iX1 xDrive30 313",
+            "2023 X1 xDrive20d 163",
+            "2023 X1 sDrive18i 136",
             "2022 X1 sDrive28i 4dr SUV (2.0L 4cyl Turbo 8A)",
             "2022 X1 xDrive28i 4dr SUV AWD (2.0L 4cyl Turbo 8A)",
             "2022 X1 xDrive35i 4dr SUV AWD (3.0L 6cyl Turbo 6A)",
@@ -11855,6 +11875,9 @@
         {
           "name": "X3",
           "trims": [
+            "2023 X3 M50 xDrive 398",
+            "2023 X3 xDrive20d 197",
+            "2023 X3 xDrive20 208",
             "2022 X3 sDrive28i 4dr SUV (2.0L 4cyl Turbo 8A)",
             "2022 X3 xDrive28d 4dr SUV AWD (2.0L 4cyl Turbodiesel 8A)",
             "2022 X3 xDrive28i 4dr SUV AWD (2.0L 4cyl Turbo 8A)",
@@ -11987,6 +12010,8 @@
         {
           "name": "X5",
           "trims": [
+            "2023 X5 xDrive40d 352",
+            "2023 X5 xDrive30d 286",
             "2022 X5 sDrive35i 4dr SUV (3.0L 6cyl Turbo 8A)",
             "2022 X5 xDrive35d 4dr SUV AWD (3.0L 6cyl Turbodiesel 8A)",
             "2022 X5 xDrive35i 4dr SUV AWD (3.0L 6cyl Turbo 8A)",
@@ -12407,6 +12432,30 @@
           "name": "Z9 Gran Turismo Convertible",
           "trims": [
             "2001 Z9 Gran Turismo Convertible"
+          ]
+        },
+        {
+          "name": "Série 1",
+          "trims": [
+            "2023 Série 1 M135i 306",
+            "2023 Série 1 118d 150",
+            "2023 Série 1 118i 136"
+          ]
+        },
+        {
+          "name": "Série 3",
+          "trims": [
+            "2023 Série 3 330e 252",
+            "2023 Série 3 320d 190",
+            "2023 Série 3 320i 184"
+          ]
+        },
+        {
+          "name": "Série 5",
+          "trims": [
+            "2023 Série 5 i5 eDrive40 340",
+            "2023 Série 5 520d 197",
+            "2023 Série 5 520i 208"
           ]
         }
       ]
@@ -22074,6 +22123,10 @@
         {
           "name": "Berlingo",
           "trims": [
+            "2023 Berlingo PureTech 110",
+            "2023 Berlingo BlueHDi 130",
+            "2023 Berlingo BlueHDi 100",
+            "2023 Berlingo Electric 136",
             "2012 Berlingo 1.4 Multispace Exec",
             "2012 Berlingo 1.4i",
             "2012 Berlingo 1.6",
@@ -22278,6 +22331,8 @@
         {
           "name": "C1",
           "trims": [
+            "2023 C1 1.0 VTi 68",
+            "2023 C1 1.0 VTi 72",
             "2012 C1 1.0 Style",
             "2012 C1 1.0 Style Automatic",
             "2012 C1 1.0i",
@@ -22377,6 +22432,13 @@
         {
           "name": "C3",
           "trims": [
+            "2023 C3 1.2 PureTech 83",
+            "2023 C3 Electric 113",
+            "2023 C3 1.2 PureTech 100",
+            "2023 C3 1.5 BlueHDi 100",
+            "2023 C3 1.6 BlueHDi 100",
+            "2023 C3 1.6 HDi 92",
+            "2023 C3 1.4 HDi 70",
             "2012 C3 1.1 Advance",
             "2012 C3 1.4",
             "2012 C3 1.4 Automatic",
@@ -22601,6 +22663,9 @@
         {
           "name": "C4",
           "trims": [
+            "2023 C4 BlueHDi 130",
+            "2023 C4 1.2 PureTech 130",
+            "2023 C4 Electric 156",
             "2012 C4 1.4 Advance",
             "2012 C4 1.6 HDi Advance",
             "2012 C4 1.6 HDi FAP Style",
@@ -23741,6 +23806,30 @@
             "1991 ZX Reflex",
             "1991 ZX Volcane"
           ]
+        },
+        {
+          "name": "C5 Aircross",
+          "trims": [
+            "2023 C5 Aircross Hybrid 225",
+            "2023 C5 Aircross BlueHDi 130",
+            "2023 C5 Aircross 1.2 PureTech 130"
+          ]
+        },
+        {
+          "name": "Jumper",
+          "trims": [
+            "2023 Jumper BlueHDi 120",
+            "2023 Jumper BlueHDi 165",
+            "2023 Jumper BlueHDi 140"
+          ]
+        },
+        {
+          "name": "Jumpy",
+          "trims": [
+            "2023 Jumpy Electric 136",
+            "2023 Jumpy BlueHDi 145",
+            "2023 Jumpy BlueHDi 120"
+          ]
         }
       ]
     },
@@ -23750,6 +23839,9 @@
         {
           "name": "Duster",
           "trims": [
+            "2023 Duster ECO-G 100",
+            "2023 Duster Hybrid 140",
+            "2023 Duster TCe 130",
             "2012 Duster 1.5 dCi",
             "2012 Duster 1.5 dCi AWD",
             "2012 Duster 1.6",
@@ -23767,6 +23859,8 @@
         {
           "name": "Logan",
           "trims": [
+            "2023 Logan TCe 90",
+            "2023 Logan ECO-G 100",
             "2012 Logan 1.5 dCi",
             "2012 Logan 1.6",
             "2012 Logan MCV 1.4",
@@ -23811,6 +23905,9 @@
         {
           "name": "Sandero",
           "trims": [
+            "2023 Sandero TCe 110",
+            "2023 Sandero ECO-G 100",
+            "2023 Sandero TCe 90",
             "2012 Sandero 1.4 MPI",
             "2012 Sandero 1.6 MPI",
             "2011 Sandero 1.4 MPI",
@@ -23829,6 +23926,36 @@
           "name": "Supernova",
           "trims": [
             "2002 Supernova"
+          ]
+        },
+        {
+          "name": "Dokker",
+          "trims": [
+            "2023 Dokker 1.5 dCi 90",
+            "2023 Dokker 1.6 SCe 100"
+          ]
+        },
+        {
+          "name": "Jogger",
+          "trims": [
+            "2023 Jogger ECO-G 100",
+            "2023 Jogger Hybrid 140",
+            "2023 Jogger TCe 110"
+          ]
+        },
+        {
+          "name": "Lodgy",
+          "trims": [
+            "2023 Lodgy 1.5 dCi 90",
+            "2023 Lodgy 1.6 SCe 100"
+          ]
+        },
+        {
+          "name": "Spring",
+          "trims": [
+            "2023 Spring Electric 65",
+            "2023 Spring Electric 45",
+            "2023 Spring Electric 44"
           ]
         }
       ]
@@ -28587,6 +28714,9 @@
         {
           "name": "500",
           "trims": [
+            "2023 500 1.0 Hybrid 70",
+            "2023 500 Electric 118",
+            "2023 500 Electric 95",
             "2022 500 1957 Edition 2dr Hatchback (1.4L 4cyl 5M)",
             "2022 500 Abarth 2dr Hatchback (1.4L 4cyl Turbo 5M)",
             "2022 500 C Abarth 2dr Convertible (1.4L 4cyl Turbo 5M)",
@@ -28775,6 +28905,9 @@
         {
           "name": "500L",
           "trims": [
+            "2023 500L 1.6 MultiJet 120",
+            "2023 500L 1.4 95",
+            "2023 500L 0.9 TwinAir 105",
             "2014 500L Easy 4dr Wagon (1.4L 4cyl Turbo 6AM)",
             "2014 500L Lounge 4dr Wagon (1.4L 4cyl Turbo 6AM)",
             "2014 500L Pop 4dr Wagon (1.4L 4cyl Turbo 6M)",
@@ -29169,6 +29302,9 @@
         {
           "name": "Ducato",
           "trims": [
+            "2023 Ducato MultiJet 180",
+            "2023 Ducato MultiJet 140",
+            "2023 Ducato MultiJet 120",
             "2012 Ducato 2.3 JTD",
             "2011 Ducato 2.3 JTD",
             "2010 Ducato 2.3 JTD",
@@ -29221,6 +29357,9 @@
         {
           "name": "Fiorino",
           "trims": [
+            "2023 Fiorino 1.4 77",
+            "2023 Fiorino 1.3 MultiJet 95",
+            "2023 Fiorino 1.3 MultiJet 80",
             "2012 Fiorino 1.3 Multijet",
             "2012 Fiorino 1.4",
             "2012 Fiorino Qubo 1.3 Multijet",
@@ -29500,6 +29639,9 @@
         {
           "name": "Panda",
           "trims": [
+            "2023 Panda 1.2 69",
+            "2023 Panda 0.9 TwinAir 85",
+            "2023 Panda 1.0 Hybrid 70",
             "2012 Panda 1.1",
             "2012 Panda 1.2",
             "2012 Panda 1.2 4x4",
@@ -30007,6 +30149,9 @@
         {
           "name": "Tipo",
           "trims": [
+            "2023 Tipo 1.6 MultiJet 130",
+            "2023 Tipo 1.0 GSE 100",
+            "2023 Tipo 1.5 Hybrid 130",
             "1991 Tipo 2.0 IE",
             "1988 Tipo",
             "1988 Tipo 1.4 S",
@@ -30155,6 +30300,22 @@
           "trims": [
             "1977 X1-9",
             "1972 X1-9"
+          ]
+        },
+        {
+          "name": "500X",
+          "trims": [
+            "2023 500X 1.5 Hybrid 130",
+            "2023 500X 1.0 FireFly 120",
+            "2023 500X 1.6 MultiJet 120"
+          ]
+        },
+        {
+          "name": "Talento",
+          "trims": [
+            "2023 Talento EcoJet 145",
+            "2023 Talento EcoJet 120",
+            "2023 Talento EcoJet 170"
           ]
         }
       ]
@@ -33408,6 +33569,12 @@
         {
           "name": "Fiesta",
           "trims": [
+            "2023 Fiesta 1.5 EcoBlue 85",
+            "2023 Fiesta 1.0 EcoBoost 125",
+            "2023 Fiesta 1.0 EcoBoost 100",
+            "2023 Fiesta 1.5 TDCi 120",
+            "2023 Fiesta 1.6 TDCi 90",
+            "2023 Fiesta 1.6 TDCi 75",
             "2022 Fiesta S 4dr Hatchback (1.6L 4cyl 5M)",
             "2022 Fiesta S 4dr Sedan (1.6L 4cyl 5M)",
             "2022 Fiesta SE 4dr Hatchback (1.6L 4cyl 5M)",
@@ -33715,6 +33882,9 @@
         {
           "name": "Focus",
           "trims": [
+            "2023 Focus 1.0 EcoBoost 155",
+            "2023 Focus 1.5 EcoBlue 120",
+            "2023 Focus 1.0 EcoBoost 125",
             "2022 Focus Electric 4dr Hatchback (electric DD)",
             "2022 Focus S 4dr Sedan (2.0L 4cyl 5M)",
             "2022 Focus SE 4dr Hatchback (2.0L 4cyl 5M)",
@@ -34602,6 +34772,9 @@
         {
           "name": "Kuga",
           "trims": [
+            "2023 Kuga 1.5 EcoBoost 150",
+            "2023 Kuga 2.5 PHEV 225",
+            "2023 Kuga 2.5 FHEV 190",
             "2012 Kuga 2.0 TDCi",
             "2012 Kuga 2.5 Duratec",
             "2011 Kuga 2.0 TDCi",
@@ -34810,6 +34983,9 @@
         {
           "name": "Mondeo",
           "trims": [
+            "2023 Mondeo 2.0 TDCi 190",
+            "2023 Mondeo 2.0 TDCi 150",
+            "2023 Mondeo 2.0 Hybrid 187",
             "2012 Mondeo 2.0 Ambiente",
             "2012 Mondeo 2.0 Ambiente Automatic",
             "2012 Mondeo 2.0 TDCi",
@@ -35342,6 +35518,9 @@
         {
           "name": "Puma",
           "trims": [
+            "2023 Puma 1.5 EcoBoost 200",
+            "2023 Puma 1.0 EcoBoost 155",
+            "2023 Puma 1.0 EcoBoost 125",
             "2005 Puma",
             "2004 Puma",
             "2003 Puma",
@@ -36704,6 +36883,30 @@
             "1958 Zodiac",
             "1957 Zodiac",
             "1956 Zodiac"
+          ]
+        },
+        {
+          "name": "Connect",
+          "trims": [
+            "2023 Connect EcoBoost 150",
+            "2023 Connect EcoBlue 122",
+            "2023 Connect EcoBlue 102"
+          ]
+        },
+        {
+          "name": "Transit",
+          "trims": [
+            "2023 Transit E-Transit 184",
+            "2023 Transit EcoBlue 170",
+            "2023 Transit EcoBlue 130"
+          ]
+        },
+        {
+          "name": "Transit Custom",
+          "trims": [
+            "2023 Transit Custom E-Transit Custom 136",
+            "2023 Transit Custom EcoBlue 170",
+            "2023 Transit Custom EcoBlue 136"
           ]
         }
       ]
@@ -43851,6 +44054,9 @@
         {
           "name": "i10",
           "trims": [
+            "2023 i10 1.2 84",
+            "2023 i10 1.0 T-GDi 100",
+            "2023 i10 1.0 67",
             "2012 i10 1",
             "2012 i10 1.2",
             "2011 i10 1",
@@ -43866,6 +44072,9 @@
         {
           "name": "i20",
           "trims": [
+            "2023 i20 1.2 84",
+            "2023 i20 1.0 T-GDi 120",
+            "2023 i20 1.0 T-GDi 100",
             "2012 i20 1.2 3 Door",
             "2012 i20 1.2 5 Door",
             "2012 i20 1.4 3 Door",
@@ -43911,6 +44120,9 @@
         {
           "name": "i30",
           "trims": [
+            "2023 i30 1.5 T-GDi 160",
+            "2023 i30 1.6 CRDi 136",
+            "2023 i30 1.0 T-GDi 120",
             "2012 i30 1.6",
             "2012 i30 cw 1.6",
             "2012 i30 cw 1.6 CRDi",
@@ -44710,6 +44922,10 @@
         {
           "name": "Tucson",
           "trims": [
+            "2023 Tucson 1.6 CRDi 136",
+            "2023 Tucson 1.6 T-GDi 150",
+            "2023 Tucson 1.6 PHEV 265",
+            "2023 Tucson 1.6 HEV 230",
             "2022 Tucson GLS 4dr SUV (2.0L 4cyl 6A)",
             "2022 Tucson GLS 4dr SUV AWD (2.0L 4cyl 6A)",
             "2022 Tucson Limited 4dr SUV (2.4L 4cyl 6A)",
@@ -44980,6 +45196,14 @@
             "2004 XG 350",
             "2003 XG 350",
             "2002 XG 350"
+          ]
+        },
+        {
+          "name": "Kona",
+          "trims": [
+            "2023 Kona Electric 156",
+            "2023 Kona 1.0 T-GDi 120",
+            "2023 Kona 1.6 HEV 141"
           ]
         }
       ]
@@ -49367,6 +49591,9 @@
         {
           "name": "Picanto",
           "trims": [
+            "2023 Picanto 1.2 84",
+            "2023 Picanto 1.0 T-GDi 100",
+            "2023 Picanto 1.0 67",
             "2012 Picanto 1.1",
             "2012 Picanto 1.1 EX",
             "2012 Picanto 1.1 EX Automatic",
@@ -49473,6 +49700,9 @@
         {
           "name": "Rio",
           "trims": [
+            "2023 Rio 1.2 84",
+            "2023 Rio 1.0 T-GDi 100",
+            "2023 Rio 1.0 T-GDi 120",
             "2022 Rio EX 4dr Hatchback (1.6L 4cyl 6A)",
             "2022 Rio EX 4dr Sedan (1.6L 4cyl 6A)",
             "2022 Rio LX 4dr Hatchback (1.6L 4cyl 6A)",
@@ -50060,6 +50290,10 @@
         {
           "name": "Sportage",
           "trims": [
+            "2023 Sportage 1.6 HEV 230",
+            "2023 Sportage 1.6 CRDi 136",
+            "2023 Sportage 1.6 PHEV 265",
+            "2023 Sportage 1.6 T-GDi 150",
             "2022 Sportage EX 4dr SUV (2.4L 4cyl 6A)",
             "2022 Sportage EX 4dr SUV AWD (2.4L 4cyl 6A)",
             "2022 Sportage LX 4dr SUV (2.4L 4cyl 6A)",
@@ -50236,6 +50470,22 @@
           "name": "Xedos",
           "trims": [
             "1997 Xedos"
+          ]
+        },
+        {
+          "name": "Ceed",
+          "trims": [
+            "2023 Ceed 1.6 CRDi 136",
+            "2023 Ceed 1.5 T-GDi 160",
+            "2023 Ceed 1.0 T-GDi 120"
+          ]
+        },
+        {
+          "name": "Niro",
+          "trims": [
+            "2023 Niro Electric 204",
+            "2023 Niro 1.6 PHEV 183",
+            "2023 Niro 1.6 HEV 141"
           ]
         }
       ]
@@ -60855,6 +61105,9 @@
         {
           "name": "Sprinter",
           "trims": [
+            "2023 Sprinter eSprinter 136",
+            "2023 Sprinter 315 CDI 150",
+            "2023 Sprinter 319 CDI 190",
             "2011 Sprinter 2500 144 Cargo",
             "2011 Sprinter 2500 144 Crew",
             "2011 Sprinter 2500 144 Passenger",
@@ -61028,6 +61281,9 @@
         {
           "name": "Vito",
           "trims": [
+            "2023 Vito eVito 116",
+            "2023 Vito 114 CDI 136",
+            "2023 Vito 119 CDI 190",
             "2012 Vito 115 CDi",
             "2011 Vito 115 CDi",
             "2010 Vito 115 CDi",
@@ -61087,6 +61343,80 @@
             "1956 W 196 Monoplace",
             "1955 W 196 Monoplace",
             "1955 W 196 R"
+          ]
+        },
+        {
+          "name": "Citan",
+          "trims": [
+            "2023 Citan eCitan 122",
+            "2023 Citan 112 CDI 116",
+            "2023 Citan 110 CDI 95"
+          ]
+        },
+        {
+          "name": "CLA",
+          "trims": [
+            "2023 CLA CLA 200 d",
+            "2023 CLA CLA 220 d"
+          ]
+        },
+        {
+          "name": "Classe A",
+          "trims": [
+            "2023 Classe A A 250 e 218",
+            "2023 Classe A A 200 d 150",
+            "2023 Classe A A 180 136"
+          ]
+        },
+        {
+          "name": "Classe B",
+          "trims": [
+            "2023 Classe B B 220 d 190",
+            "2023 Classe B B 200 d 150"
+          ]
+        },
+        {
+          "name": "Classe C",
+          "trims": [
+            "2023 Classe C C 300 e 313",
+            "2023 Classe C C 200 204",
+            "2023 Classe C C 220 d 200"
+          ]
+        },
+        {
+          "name": "Classe E",
+          "trims": [
+            "2023 Classe E E 300 e 313",
+            "2023 Classe E E 200 204",
+            "2023 Classe E E 220 d 197"
+          ]
+        },
+        {
+          "name": "GLA",
+          "trims": [
+            "2023 GLA GLA 250 e 218",
+            "2023 GLA GLA 200 d 150",
+            "2023 GLA GLA 200 163"
+          ]
+        },
+        {
+          "name": "GLC",
+          "trims": [
+            "2023 GLC GLC 220 d 197",
+            "2023 GLC GLC 200 204",
+            "2023 GLC GLC 300 e 313"
+          ]
+        },
+        {
+          "name": "GLE",
+          "trims": [
+            "2023 GLE GLE 400 d 330"
+          ]
+        },
+        {
+          "name": "GLS",
+          "trims": [
+            "2023 GLS GLS 400 d"
           ]
         }
       ]
@@ -61887,6 +62217,13 @@
             "2003 ZT-T",
             "2002 ZT-T"
           ]
+        },
+        {
+          "name": "MG 4",
+          "trims": [
+            "2023 MG 4 Electric 204 ch",
+            "2023 MG 4 Electric 170 ch"
+          ]
         }
       ]
     },
@@ -61896,6 +62233,9 @@
         {
           "name": "Clubman",
           "trims": [
+            "2023 Clubman John Cooper Works 306",
+            "2023 Clubman Cooper S 178",
+            "2023 Clubman Cooper 136",
             "1982 Clubman Break",
             "1981 Clubman Break",
             "1980 Clubman Break",
@@ -61923,6 +62263,10 @@
         {
           "name": "Cooper",
           "trims": [
+            "2023 Cooper Cooper SE 184",
+            "2023 Cooper Cooper S 178",
+            "2023 Cooper Cooper 136",
+            "2023 Cooper Cooper SD 2.0 170",
             "2022 Cooper 2dr Convertible (1.6L 4cyl 6M)",
             "2022 Cooper 2dr Hatchback (1.5L 3cyl Turbo 6M)",
             "2022 Cooper 4dr Hatchback (1.5L 3cyl Turbo 6M)",
@@ -62249,6 +62593,10 @@
         {
           "name": "Countryman",
           "trims": [
+            "2023 Countryman Cooper D 2.0 150",
+            "2023 Countryman S ALL4 218",
+            "2023 Countryman C 170",
+            "2023 Countryman E 204",
             "2013 Countryman Base",
             "2013 Countryman John CooperWorks",
             "2013 Countryman S",
@@ -62378,6 +62726,14 @@
             "2013 Roadster Cooper",
             "2013 Roadster Cooper S"
           ]
+        },
+        {
+          "name": "Cabrio",
+          "trims": [
+            "2023 Cabrio John Cooper Works 231",
+            "2023 Cabrio Cooper 136",
+            "2023 Cabrio Cooper S 178"
+          ]
         }
       ]
     },
@@ -62485,6 +62841,8 @@
         {
           "name": "Colt",
           "trims": [
+            "2023 Colt 1.6 Hybrid 145",
+            "2023 Colt 1.0 MPI 65",
             "2012 Colt 1.1 3 Door",
             "2012 Colt 1.1 5 Door",
             "2012 Colt 1.3 3 Door",
@@ -66099,6 +66457,9 @@
         {
           "name": "Juke",
           "trims": [
+            "2023 Juke DIG-T 117",
+            "2023 Juke Hybrid 143",
+            "2023 Juke DIG-T 114",
             "2022 Juke NISMO 4dr Hatchback (1.6L 4cyl Turbo 6M)",
             "2022 Juke NISMO 4dr Hatchback AWD (1.6L 4cyl Turbo CVT)",
             "2022 Juke NISMO RS 4dr Hatchback (1.6L 4cyl Turbo 6M)",
@@ -66299,6 +66660,9 @@
         {
           "name": "Leaf",
           "trims": [
+            "2023 Leaf Electric 217",
+            "2023 Leaf Electric 110",
+            "2023 Leaf Electric 150",
             "2022 Leaf S 4dr Hatchback (electric DD)",
             "2022 Leaf SL 4dr Hatchback (electric DD)",
             "2022 Leaf SV 4dr Hatchback (electric DD)",
@@ -66441,6 +66805,9 @@
         {
           "name": "Micra",
           "trims": [
+            "2023 Micra IG-T 92",
+            "2023 Micra IG-T 100",
+            "2023 Micra dCi 90",
             "2012 Micra 1.2",
             "2011 Micra 1.2",
             "2010 Micra 1.4 Tekna",
@@ -67179,6 +67546,9 @@
         {
           "name": "Qashqai",
           "trims": [
+            "2023 Qashqai e-Power 190",
+            "2023 Qashqai Mild Hybrid 158",
+            "2023 Qashqai Mild Hybrid 140",
             "2012 Qashqai 1.6 Acenta",
             "2012 Qashqai 1.6 Visia",
             "2012 Qashqai 2.0 Acenta",
@@ -68159,6 +68529,9 @@
         {
           "name": "X-Trail",
           "trims": [
+            "2023 X-Trail Mild Hybrid 163",
+            "2023 X-Trail e-Power 213",
+            "2023 X-Trail e-Power 204",
             "2012 X-Trail 2.0 Diesel",
             "2012 X-Trail 2.0 Petrol XE",
             "2012 X-Trail 2.5 Petrol 4x4 SE",
@@ -69139,6 +69512,9 @@
         {
           "name": "Astra",
           "trims": [
+            "2023 Astra Hybrid 180",
+            "2023 Astra 1.2 Turbo 130",
+            "2023 Astra Electric 156",
             "2012 Astra 1.4 Essentia",
             "2012 Astra 1.6 Essentia",
             "2012 Astra 1.8 Enjoy M",
@@ -69533,6 +69909,11 @@
         {
           "name": "Corsa",
           "trims": [
+            "2023 Corsa Electric 136",
+            "2023 Corsa 1.5 Diesel 102",
+            "2023 Corsa 1.3 CDTi 95",
+            "2023 Corsa 1.2 Turbo 100",
+            "2023 Corsa 1.2 75",
             "2012 Corsa 1.4 Enjoy Flex-Fix",
             "2012 Corsa Lite",
             "2012 Corsa Lite Sport",
@@ -70807,6 +71188,30 @@
             "1999 Zafira 1.8 Automatic",
             "1999 Zafira 2.0 D"
           ]
+        },
+        {
+          "name": "Crossland",
+          "trims": [
+            "2023 Crossland 1.5 Diesel 110",
+            "2023 Crossland 1.2 Turbo 110",
+            "2023 Crossland 1.2 83"
+          ]
+        },
+        {
+          "name": "Grandland",
+          "trims": [
+            "2023 Grandland 1.5 Diesel 130",
+            "2023 Grandland Hybrid 225",
+            "2023 Grandland 1.2 Turbo 130"
+          ]
+        },
+        {
+          "name": "Mokka",
+          "trims": [
+            "2023 Mokka 1.2 Turbo 130",
+            "2023 Mokka 1.2 Turbo 100",
+            "2023 Mokka Electric 136"
+          ]
         }
       ]
     },
@@ -71364,6 +71769,9 @@
         {
           "name": "3008",
           "trims": [
+            "2023 3008 Hybrid 136",
+            "2023 3008 Electric 230",
+            "2023 3008 Electric 210",
             "2012 3008 1.6 THP",
             "2012 3008 1.6 VTi",
             "2012 3008 HDi 110",
@@ -71604,6 +72012,9 @@
         {
           "name": "308",
           "trims": [
+            "2023 308 1.2 PureTech 130",
+            "2023 308 Hybrid 180",
+            "2023 308 BlueHDi 130",
             "2012 308 CC 1.6",
             "2012 308 CC 2.0 HDi",
             "2012 308 Estate 1.4",
@@ -71952,6 +72363,9 @@
         {
           "name": "5008",
           "trims": [
+            "2023 5008 Hybrid 136",
+            "2023 5008 Electric 230",
+            "2023 5008 Electric 210",
             "2012 5008 1.6 THP",
             "2012 5008 1.6 VTi",
             "2012 5008 HDi 110",
@@ -72267,6 +72681,9 @@
         {
           "name": "Boxer",
           "trims": [
+            "2023 Boxer BlueHDi 140",
+            "2023 Boxer BlueHDi 165",
+            "2023 Boxer BlueHDi 120",
             "2007 Boxer 350 LH 2.8 Panel Van"
           ]
         },
@@ -72279,6 +72696,9 @@
         {
           "name": "Expert",
           "trims": [
+            "2023 Expert Electric 136",
+            "2023 Expert BlueHDi 145",
+            "2023 Expert BlueHDi 120",
             "2000 Expert Combi",
             "1999 Expert Combi",
             "1998 Expert Combi",
@@ -72322,6 +72742,9 @@
         {
           "name": "Partner",
           "trims": [
+            "2023 Partner Electric 136",
+            "2023 Partner BlueHDi 100",
+            "2023 Partner PureTech 110",
             "2009 Partner 1.9 D",
             "2008 Partner 1.9D",
             "2008 Partner Combi 75 Presence",
@@ -72430,6 +72853,27 @@
           "name": "Vroomster",
           "trims": [
             "2001 Vroomster"
+          ]
+        },
+        {
+          "name": "2008",
+          "trims": [
+            "2023 2008 Electric 156",
+            "2023 2008 BlueHDi 130",
+            "2023 2008 1.2 PureTech 100"
+          ]
+        },
+        {
+          "name": "208",
+          "trims": [
+            "2023 208 1.5 HDi 130",
+            "2023 208 1.5 HDi 100",
+            "2023 208 1.2 PureTech 100",
+            "2023 208 Electric 136",
+            "2023 208 1.2 PureTech 75",
+            "2023 208 1.6 BlueHDi 100",
+            "2023 208 1.6 HDi 92",
+            "2023 208 1.5 BlueHDi 100"
           ]
         }
       ]
@@ -75814,6 +76258,14 @@
         {
           "name": "Clio",
           "trims": [
+            "2023 Clio E-Tech 145",
+            "2023 Clio Blue dCi 115",
+            "2023 Clio Blue dCi 85",
+            "2023 Clio dCi 110",
+            "2023 Clio dCi 90",
+            "2023 Clio dCi 75",
+            "2023 Clio 1.0 TCe 90",
+            "2023 Clio 1.0 SCe 65",
             "2012 Clio 1.2 Va Va Voom",
             "2012 Clio 3 1.4 Expression",
             "2012 Clio 3 1.5 dCi Expression",
@@ -76360,6 +76812,9 @@
         {
           "name": "Kangoo",
           "trims": [
+            "2023 Kangoo Electric 122",
+            "2023 Kangoo Blue dCi 95",
+            "2023 Kangoo 1.3 TCe 130",
             "2008 Kangoo 1.2 Authentique",
             "2008 Kangoo 1.4 Expression",
             "2008 Kangoo 1.5 dCi",
@@ -76686,6 +77141,10 @@
         {
           "name": "Megane",
           "trims": [
+            "2023 Megane E-Tech 160",
+            "2023 Megane Blue dCi 115",
+            "2023 Megane 1.3 TCe 140",
+            "2023 Megane 1.5 dCi",
             "2012 Megane 1.6 Authentique",
             "2012 Megane 1.6 Coupe Cabriolet",
             "2012 Megane 1.6 Expression",
@@ -77095,6 +77554,9 @@
         {
           "name": "Scenic",
           "trims": [
+            "2023 Scenic Blue dCi 120",
+            "2023 Scenic 1.3 TCe 140",
+            "2023 Scenic EV60 170",
             "2012 Scenic 1.6 Joie De Vivre",
             "2012 Scenic 1.9 DCi Dynamique",
             "2012 Scenic 1.9 DCi Navigator",
@@ -77321,6 +77783,9 @@
         {
           "name": "Trafic",
           "trims": [
+            "2023 Trafic dCi 110",
+            "2023 Trafic dCi 170",
+            "2023 Trafic dCi 150",
             "2012 Trafic 1.9dCi",
             "2011 Trafic 1.9dCi",
             "2010 Trafic 1.9dCi",
@@ -77333,6 +77798,11 @@
         {
           "name": "Twingo",
           "trims": [
+            "2023 Twingo 1.0 SCe 70 ch",
+            "2023 Twingo 0.9 TCe 90 ch",
+            "2023 Twingo 1.0 SCe 65",
+            "2023 Twingo Electric 82",
+            "2023 Twingo 0.9 TCe 95",
             "2012 Twingo 1.2 Authentique",
             "2012 Twingo 1.2 Dynamique",
             "2012 Twingo 1.2 TCE",
@@ -77456,6 +77926,7 @@
         {
           "name": "Zoe",
           "trims": [
+            "2023 Zoe R110 / R135 (Électrique)",
             "2005 Zoe"
           ]
         },
@@ -77463,6 +77934,29 @@
           "name": "Zoom",
           "trims": [
             "2005 Zoom"
+          ]
+        },
+        {
+          "name": "Arkana",
+          "trims": [
+            "2023 Arkana E-Tech 145",
+            "2023 Arkana 1.3 TCe 140"
+          ]
+        },
+        {
+          "name": "Captur",
+          "trims": [
+            "2023 Captur 1.0 TCe 90",
+            "2023 Captur E-Tech 160",
+            "2023 Captur 1.3 TCe 140"
+          ]
+        },
+        {
+          "name": "Master",
+          "trims": [
+            "2023 Master Electric 143",
+            "2023 Master dCi 150",
+            "2023 Master dCi 105"
           ]
         }
       ]
@@ -79881,6 +80375,10 @@
         {
           "name": "Ibiza",
           "trims": [
+            "2023 Ibiza 1.0 TSI 95",
+            "2023 Ibiza 1.9 TDI 130",
+            "2023 Ibiza 1.0 MPI 80",
+            "2023 Ibiza 1.0 TSI 110",
             "2012 Ibiza 1.4",
             "2012 Ibiza 1.6",
             "2012 Ibiza 1.8T Cupra",
@@ -80001,6 +80499,10 @@
         {
           "name": "Leon",
           "trims": [
+            "2023 Leon e-Hybrid 204",
+            "2023 Leon 1.5 TSI 130",
+            "2023 Leon 1.9 TDI 110",
+            "2023 Leon 2.0 TDI 150",
             "2012 Leon 2.0 FSi",
             "2012 Leon 2.0 TDi",
             "2012 Leon 2.0 TDi DSG",
@@ -80196,6 +80698,30 @@
             "1991 Toledo 1.8 GTi",
             "1991 Toledo 2",
             "1991 Toledo 2.0 GTi"
+          ]
+        },
+        {
+          "name": "Arona",
+          "trims": [
+            "2023 Arona 1.0 TSI 95",
+            "2023 Arona 1.5 TSI 150",
+            "2023 Arona 1.0 TSI 110"
+          ]
+        },
+        {
+          "name": "Ateca",
+          "trims": [
+            "2023 Ateca 1.0 TSI 110",
+            "2023 Ateca 2.0 TDI 150",
+            "2023 Ateca 1.5 TSI 150"
+          ]
+        },
+        {
+          "name": "Tarraco",
+          "trims": [
+            "2023 Tarraco e-Hybrid 245",
+            "2023 Tarraco 2.0 TDI 150",
+            "2023 Tarraco 1.5 TSI 150"
           ]
         }
       ]
@@ -80609,6 +81135,9 @@
         {
           "name": "Fabia",
           "trims": [
+            "2023 Fabia 1.0 TSI 95",
+            "2023 Fabia 1.0 TSI 110",
+            "2023 Fabia 1.0 MPI 80",
             "2008 Fabia 1.2 HTP",
             "2008 Fabia 1.2 HTP Classic",
             "2008 Fabia 1.2 HTP Classic Combi",
@@ -80790,6 +81319,10 @@
         {
           "name": "Octavia",
           "trims": [
+            "2023 Octavia 1.9 TDI 110",
+            "2023 Octavia iV 204",
+            "2023 Octavia 2.0 TDI 150",
+            "2023 Octavia 1.5 TSI 150",
             "2008 Octavia 1.4",
             "2008 Octavia 1.4 Automatic",
             "2008 Octavia 1.4 Tour",
@@ -81076,6 +81609,9 @@
         {
           "name": "Superb",
           "trims": [
+            "2023 Superb iV 218",
+            "2023 Superb 2.0 TSI 190",
+            "2023 Superb 2.0 TDI 150",
             "2008 Superb 1.8 Turbo",
             "2008 Superb 1.9 TDi",
             "2008 Superb 2",
@@ -81135,6 +81671,22 @@
           "trims": [
             "2006 Yeti",
             "2005 Yeti"
+          ]
+        },
+        {
+          "name": "Karoq",
+          "trims": [
+            "2023 Karoq 1.5 TSI 150",
+            "2023 Karoq 2.0 TDI 150",
+            "2023 Karoq 1.0 TSI 110"
+          ]
+        },
+        {
+          "name": "Kodiaq",
+          "trims": [
+            "2023 Kodiaq 1.5 TSI 150",
+            "2023 Kodiaq iV 204",
+            "2023 Kodiaq 2.0 TDI 150"
           ]
         }
       ]
@@ -85136,6 +85688,38 @@
             "2009 Roadster",
             "2008 Roadster"
           ]
+        },
+        {
+          "name": "Model 3",
+          "trims": [
+            "2023 Model 3 Performance 510",
+            "2023 Model 3 Grande Autonomie 498",
+            "2023 Model 3 Propulsion 283"
+          ]
+        },
+        {
+          "name": "Model S",
+          "trims": [
+            "2023 Model S Plaid 1020",
+            "2023 Model S Performance 691",
+            "2023 Model S Grande Autonomie 670"
+          ]
+        },
+        {
+          "name": "Model X",
+          "trims": [
+            "2023 Model X Plaid 1020",
+            "2023 Model X Performance 611",
+            "2023 Model X Grande Autonomie 670"
+          ]
+        },
+        {
+          "name": "Model Y",
+          "trims": [
+            "2023 Model Y Propulsion 300",
+            "2023 Model Y Grande Autonomie 514",
+            "2023 Model Y Performance 534"
+          ]
         }
       ]
     },
@@ -86255,6 +86839,9 @@
         {
           "name": "Corolla",
           "trims": [
+            "2023 Corolla Hybrid 196",
+            "2023 Corolla Hybrid 140",
+            "2023 Corolla 1.2 Turbo 116",
             "2022 Corolla L 4dr Sedan (1.8L 4cyl 4A)",
             "2022 Corolla L 4dr Sedan (1.8L 4cyl 6M)",
             "2022 Corolla LE 4dr Sedan (1.8L 4cyl CVT)",
@@ -88032,6 +88619,9 @@
         {
           "name": "RAV4",
           "trims": [
+            "2023 RAV4 Plug-in 306",
+            "2023 RAV4 Hybrid 222",
+            "2023 RAV4 Hybrid 218",
             "2022 RAV4 LE 4dr SUV (2.5L 4cyl 6A)",
             "2022 RAV4 LE 4dr SUV AWD (2.5L 4cyl 6A)",
             "2022 RAV4 Limited 4dr SUV (2.5L 4cyl 6A)",
@@ -89713,6 +90303,10 @@
         {
           "name": "Yaris",
           "trims": [
+            "2023 Yaris 1.4 D-4D 90",
+            "2023 Yaris Hybrid 116",
+            "2023 Yaris 1.5 VVT-i 125",
+            "2023 Yaris Hybrid 130",
             "2022 Yaris L 2dr Hatchback (1.5L 4cyl 4A)",
             "2022 Yaris L 2dr Hatchback (1.5L 4cyl 5M)",
             "2022 Yaris L 4dr Hatchback (1.5L 4cyl 4A)",
@@ -89896,6 +90490,22 @@
             "1999 Yaris 1.0 Sol",
             "1999 Yaris 1.3",
             "1999 Yaris 1.3 Automatic"
+          ]
+        },
+        {
+          "name": "C-HR",
+          "trims": [
+            "2023 C-HR Plug-in 225",
+            "2023 C-HR Hybrid 200",
+            "2023 C-HR Hybrid 140"
+          ]
+        },
+        {
+          "name": "Yaris Cross",
+          "trims": [
+            "2023 Yaris Cross Hybrid 130",
+            "2023 Yaris Cross Hybrid 116",
+            "2023 Yaris Cross 1.5 VVT-i 125"
           ]
         }
       ]
@@ -92079,6 +92689,9 @@
         {
           "name": "Caddy",
           "trims": [
+            "2023 Caddy 2.0 TDI 122",
+            "2023 Caddy 1.5 TSI 114",
+            "2023 Caddy 2.0 TDI 102",
             "2012 Caddy 1.6i",
             "2012 Caddy 1.6i Life",
             "2012 Caddy 1.9 TDi Life",
@@ -92524,6 +93137,12 @@
         {
           "name": "Golf",
           "trims": [
+            "2023 Golf 2.0 TDI 150",
+            "2023 Golf 1.9 TDI 105",
+            "2023 Golf 1.9 TDI 130",
+            "2023 Golf 1.9 TDI 100",
+            "2023 Golf eHybrid 204",
+            "2023 Golf 1.5 TSI 130",
             "2022 Golf TDI S 4dr Hatchback (2.0L 4cyl Turbodiesel 6AM)",
             "2022 Golf TDI S 4dr Hatchback (2.0L 4cyl Turbodiesel 6M)",
             "2022 Golf TDI SE 4dr Hatchback (2.0L 4cyl Turbodiesel 6AM)",
@@ -94025,6 +94644,9 @@
         {
           "name": "Passat",
           "trims": [
+            "2023 Passat 2.0 TDI 150",
+            "2023 Passat 1.5 eTSI 150",
+            "2023 Passat eHybrid 204",
             "2022 Passat S 4dr Sedan (1.8L 4cyl Turbo 5M)",
             "2022 Passat S 4dr Sedan (1.8L 4cyl Turbo 6A)",
             "2022 Passat S PZEV 4dr Sedan (1.8L 4cyl Turbo 5M)",
@@ -94616,6 +95238,11 @@
         {
           "name": "Polo",
           "trims": [
+            "2023 Polo 1.6 TDI 105",
+            "2023 Polo 1.6 TDI 90",
+            "2023 Polo 1.0 TSI 95",
+            "2023 Polo 1.0 TSI 110",
+            "2023 Polo 1.0 MPI 80",
             "2012 Polo 1.2 60PS",
             "2012 Polo 1.2 70PS",
             "2012 Polo 1.2 TDI 75PS",
@@ -95154,6 +95781,9 @@
         {
           "name": "Tiguan",
           "trims": [
+            "2023 Tiguan 2.0 TDI 150",
+            "2023 Tiguan 1.5 eTSI 150",
+            "2023 Tiguan eHybrid 204",
             "2022 Tiguan R-Line 4dr SUV (2.0L 4cyl Turbo 6A)",
             "2022 Tiguan R-Line 4Motion 4dr SUV AWD (2.0L 4cyl Turbo 6A)",
             "2022 Tiguan S 4dr SUV (2.0L 4cyl Turbo 6A)",
@@ -95474,6 +96104,9 @@
         {
           "name": "Transporter",
           "trims": [
+            "2023 Transporter 2.0 TDI 150",
+            "2023 Transporter 2.0 TDI 110",
+            "2023 Transporter 2.0 TDI 204",
             "2008 Transporter 2.5TDi",
             "2007 Transporter 1.9 TDi",
             "2007 Transporter 1.9 TDi Crew Bus",
@@ -95518,6 +96151,22 @@
             "1999 W12",
             "1997 W12 Concept",
             "1997 W12 Roadster"
+          ]
+        },
+        {
+          "name": "Crafter",
+          "trims": [
+            "2023 Crafter 2.0 TDI 140",
+            "2023 Crafter 2.0 TDI 102",
+            "2023 Crafter 2.0 TDI 177"
+          ]
+        },
+        {
+          "name": "T-Roc",
+          "trims": [
+            "2023 T-Roc 1.0 TSI 110",
+            "2023 T-Roc 2.0 TDI 150",
+            "2023 T-Roc 1.5 TSI 150"
           ]
         }
       ]
@@ -96272,6 +96921,11 @@
         {
           "name": "S60",
           "trims": [
+            "2023 S60 D4 190",
+            "2023 S60 D3 150",
+            "2023 S60 B5 250",
+            "2023 S60 T8 Recharge 455",
+            "2023 S60 B4 197",
             "2022 S60 T5 4dr Sedan AWD (2.5L 5cyl Turbo 6A)",
             "2022 S60 T5 4dr Sedan AWD w/Prod. End 6/14 (2.5L 5cyl Turbo 6A)",
             "2022 S60 T5 Drive-E 4dr Sedan (2.0L 4cyl Turbo 8A)",

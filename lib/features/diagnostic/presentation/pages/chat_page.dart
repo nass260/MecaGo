@@ -30,11 +30,12 @@ class _ChatPageState extends State<ChatPage> {
   final MarqueImageService _marqueService = const MarqueImageService();
   final ImageGeneratorService _imageService = const ImageGeneratorService();
 
-  bool _isLoading = false;
+    bool _isLoading = false;
   String _vehicleContext = '';
   String _brand = 'Peugeot';
   String _model = '308';
   String _fuel = '';
+  String _engine = '';
   int _year = 2020;
 
   @override
@@ -47,12 +48,15 @@ class _ChatPageState extends State<ChatPage> {
         _model = vehicle.model;
         _fuel = vehicle.fuelType.label;
         _year = vehicle.year;
+        _engine = vehicle.engine ?? '';
         _vehicleContext = _aiService.buildVehicleContext(
           brand: _brand,
           model: _model,
           year: _year,
           fuel: _fuel,
+          engine: _engine.isNotEmpty ? _engine : null,
           plate: vehicle.plate,
+          vin: vehicle.vin,
         );
       } else {
         _vehicleContext = widget.vehicleInfo;
@@ -683,6 +687,17 @@ class _ChatPageState extends State<ChatPage> {
                       isLast,
                     );
                   }),
+                  if (procedure.piegesConstructeur.isNotEmpty) ...[
+                    const SizedBox(height: 12),
+                    _buildNoteBox(
+                      icon: Icons.report_problem_rounded,
+                      title: 'Pièges constructeur',
+                      lines: procedure.piegesConstructeur,
+                      bg: const Color(0xFFFEF2F2),
+                      border: const Color(0xFFFECACA),
+                      color: AppColors.danger,
+                    ),
+                  ],
                   if (procedure.pieces.isNotEmpty) ...[
                     const SizedBox(height: 12),
                     _buildPiecesSection(procedure.pieces),
@@ -939,12 +954,16 @@ class _ChatPageState extends State<ChatPage> {
           const SizedBox(height: 8),
           Row(
             children: [
-              _buildInfoChip(Icons.schedule_rounded, p.duree),
-              const SizedBox(width: 8),
-              _buildInfoChip(
-                Icons.signal_cellular_alt_rounded,
-                _difficulteLabel(p.difficulte),
-              ),
+              // On n'affiche pas "Non communiquée" : mieux vaut masquer la pastille
+              if (p.duree.trim().isNotEmpty && p.duree != 'Non communiquée') ...[
+                _buildInfoChip(Icons.schedule_rounded, p.duree),
+                const SizedBox(width: 8),
+              ],
+              if (_difficulteLabel(p.difficulte).isNotEmpty)
+                _buildInfoChip(
+                  Icons.signal_cellular_alt_rounded,
+                  _difficulteLabel(p.difficulte),
+                ),
             ],
           ),
         ],
@@ -976,13 +995,28 @@ class _ChatPageState extends State<ChatPage> {
     );
   }
 
+  /// Accepte les mots (facile, intermediaire...) et les notes de 1 à 5
   String _difficulteLabel(String difficulte) {
-    switch (difficulte.toLowerCase()) {
-      case 'facile': return 'Facile';
-      case 'intermediaire': return 'Intermédiaire';
-      case 'avance': return 'Avancé';
-      case 'expert': return 'Expert';
-      default: return difficulte;
+    switch (difficulte.trim().toLowerCase()) {
+      case 'facile':
+      case '1':
+      case '2':
+        return 'Facile';
+      case 'intermediaire':
+      case 'intermédiaire':
+      case '3':
+        return 'Intermédiaire';
+      case 'avance':
+      case 'avancé':
+      case '4':
+        return 'Avancé';
+      case 'expert':
+      case '5':
+        return 'Expert';
+      case '0':
+        return '';
+      default:
+        return difficulte;
     }
   }
 
@@ -1197,6 +1231,28 @@ class _ChatPageState extends State<ChatPage> {
                       color: AppColors.textSecondary,
                       height: 1.6,
                     )),
+                if (etape.pointsCritiques.isNotEmpty) ...[
+                  const SizedBox(height: 12),
+                  _buildNoteBox(
+                    icon: Icons.priority_high_rounded,
+                    title: 'Point critique',
+                    lines: etape.pointsCritiques,
+                    bg: const Color(0xFFFEF2F2),
+                    border: const Color(0xFFFECACA),
+                    color: AppColors.danger,
+                  ),
+                ],
+                if (etape.astuces.isNotEmpty) ...[
+                  const SizedBox(height: 12),
+                  _buildNoteBox(
+                    icon: Icons.lightbulb_rounded,
+                    title: 'Astuce',
+                    lines: etape.astuces,
+                    bg: const Color(0xFFFFFBEB),
+                    border: const Color(0xFFFDE68A),
+                    color: const Color(0xFFB45309),
+                  ),
+                ],
                 if (etape.couples.isNotEmpty) ...[
                   const SizedBox(height: 12),
                   Container(
@@ -1284,6 +1340,56 @@ class _ChatPageState extends State<ChatPage> {
               ],
             ),
           ),
+        ],
+      ),
+    );
+  }
+
+  /// Encart coloré avec un titre et une ou plusieurs phrases
+  /// (astuces, points critiques, pièges constructeur...)
+  Widget _buildNoteBox({
+    required IconData icon,
+    required String title,
+    required List<String> lines,
+    required Color bg,
+    required Color border,
+    required Color color,
+  }) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: border, width: 1),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(icon, color: color, size: 16),
+              const SizedBox(width: 6),
+              Text(title,
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w800,
+                    color: color,
+                  )),
+            ],
+          ),
+          const SizedBox(height: 6),
+          ...lines.map((l) => Padding(
+                padding: const EdgeInsets.only(bottom: 3),
+                child: Text(
+                  lines.length > 1 ? '• $l' : l,
+                  style: const TextStyle(
+                    fontSize: 13,
+                    color: AppColors.navyBlue,
+                    height: 1.45,
+                  ),
+                ),
+              )),
         ],
       ),
     );
@@ -1912,6 +2018,43 @@ class _ChatPageState extends State<ChatPage> {
 // MODÈLES
 // ============================================
 
+/// Transforme n'importe quel format (texte, liste de textes, liste d'objets,
+/// ou JSON écrit sous forme de texte) en une liste de phrases à afficher.
+List<String> _asTextList(dynamic v) {
+  if (v == null) return [];
+
+  if (v is String) {
+    final t = v.trim();
+    if (t.isEmpty || t == 'null') return [];
+    if (t.startsWith('[') || t.startsWith('{')) {
+      try {
+        return _asTextList(jsonDecode(t));
+      } catch (_) {}
+    }
+    return [t];
+  }
+
+  if (v is List) return v.expand((e) => _asTextList(e)).toList();
+
+  if (v is Map) {
+    final titre =
+        (v['titre'] ?? v['title'] ?? v['nom'] ?? '').toString().trim();
+    final desc = (v['description'] ?? v['detail'] ?? v['texte'] ?? v['text'] ?? '')
+        .toString()
+        .trim();
+    if (titre.isNotEmpty && desc.isNotEmpty) return ['$titre : $desc'];
+    if (titre.isNotEmpty) return [titre];
+    if (desc.isNotEmpty) return [desc];
+    return v.values
+        .map((e) => e.toString().trim())
+        .where((e) => e.isNotEmpty)
+        .toList();
+  }
+
+  final t = v.toString().trim();
+  return t.isEmpty ? [] : [t];
+}
+
 enum MessageType { text, procedure, simpleAnswer, emplacement }
 
 class DiagnosticOption {
@@ -2043,6 +2186,7 @@ class ProcedureData {
   final List<EtapeItem> etapes;
   final String conseilFinal;
   final List<String> sources;
+  final List<String> piegesConstructeur;
 
   const ProcedureData({
     required this.titre,
@@ -2059,6 +2203,7 @@ class ProcedureData {
     required this.etapes,
     required this.conseilFinal,
     required this.sources,
+    this.piegesConstructeur = const [],
   });
 
   factory ProcedureData.fromJson(Map<String, dynamic> json) {
@@ -2086,8 +2231,8 @@ class ProcedureData {
     return ProcedureData(
       titre: json['titre'] as String? ?? 'Procédure MecaGo',
       vehicule: json['vehicule'] as String? ?? '',
-      duree: json['duree_estimee'] as String? ?? 'Non communiquée',
-      difficulte: json['difficulte'] as String? ?? 'intermediaire',
+      duree: json['duree_estimee']?.toString() ?? 'Non communiquée',
+      difficulte: json['difficulte']?.toString() ?? 'intermediaire',
       niveauDanger: json['niveau_danger'] as String? ?? 'faible',
       publicCible: json['public_cible'] as String? ?? 'tous',
       formationRequise: json['formation_requise'] as String? ?? 'Aucune',
@@ -2098,6 +2243,7 @@ class ProcedureData {
       etapes: parsedEtapes,
       conseilFinal: json['conseil_final'] as String? ?? '',
       sources: (json['sources'] as List<dynamic>?)?.map((s) => s.toString()).toList() ?? [],
+      piegesConstructeur: _asTextList(json['pieges_constructeur']),
     );
   }
 }
@@ -2200,6 +2346,8 @@ class EtapeItem {
   final String description;
   final List<String> outils;
   final List<CoupleItem> couples;
+  final List<String> astuces;
+  final List<String> pointsCritiques;
 
   const EtapeItem({
     required this.numero,
@@ -2207,6 +2355,8 @@ class EtapeItem {
     required this.description,
     required this.outils,
     required this.couples,
+    this.astuces = const [],
+    this.pointsCritiques = const [],
   });
 
   factory EtapeItem.fromJson(Map<String, dynamic> json) {
@@ -2223,6 +2373,9 @@ class EtapeItem {
       description: json['description'] as String? ?? '',
       outils: (json['outils'] as List<dynamic>?)?.map((o) => o.toString()).toList() ?? [],
       couples: parsedCouples,
+      astuces: _asTextList(json['astuce'] ?? json['astuces'] ?? json['astuce_pro']),
+      pointsCritiques:
+          _asTextList(json['points_critiques'] ?? json['point_critique']),
     );
   }
 }

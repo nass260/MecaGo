@@ -69,13 +69,16 @@ class Vehicle {
   final double progress;
   final bool isAlert;
   final String imageUrl;
-  
-  // ✅ NOUVEAUX CHAMPS TECHNIQUES
+
+  // ✅ CHAMPS TECHNIQUES
   final String? power;
   final String? fiscalPower;
   final String? engineSize;
   final String? engineCode;
   final String? notes;
+
+  /// ✅ Numéro de série (VIN) — facultatif
+  final String? vin;
 
   const Vehicle({
     required this.id,
@@ -94,6 +97,7 @@ class Vehicle {
     this.engineSize,
     this.engineCode,
     this.notes,
+    this.vin,
   });
 
   bool get isElectric => fuelType == FuelType.electrique;
@@ -105,6 +109,27 @@ class Vehicle {
       fuelType == FuelType.e85;
 
   int get age => DateTime.now().year - year;
+
+  /// ✅ Motorisation lisible, construite avec les champs existants
+  /// (cylindrée + code moteur + puissance). Ex : "1.5 K9K 872 85 ch".
+  /// Vaut null si rien n'est renseigné.
+  String? get engine {
+    String clean(String? s) => (s ?? '').trim();
+
+    final size = clean(engineSize);
+    final code = clean(engineCode);
+    var pw = clean(power);
+
+    // Si la puissance est juste un nombre ("85"), on ajoute l'unité
+    if (pw.isNotEmpty && RegExp(r'^\d+$').hasMatch(pw)) pw = '$pw ch';
+
+    final parts = <String>[
+      if (size.isNotEmpty) size,
+      if (code.isNotEmpty) code,
+      if (pw.isNotEmpty) pw,
+    ];
+    return parts.isEmpty ? null : parts.join(' ');
+  }
 
   Map<String, dynamic> toMap() {
     return {
@@ -124,6 +149,9 @@ class Vehicle {
       'engine_size': engineSize,
       'engine_code': engineCode,
       'notes': notes,
+      // Le VIN n'est écrit que s'il est rempli : tant que la colonne "vin"
+      // n'existe pas dans la base du téléphone, l'enregistrement ne casse pas.
+      if (vin != null && vin!.trim().isNotEmpty) 'vin': vin!.trim(),
     };
   }
 
@@ -147,6 +175,7 @@ class Vehicle {
       engineSize: map['engine_size'] as String?,
       engineCode: map['engine_code'] as String?,
       notes: map['notes'] as String?,
+      vin: map['vin'] as String?,
     );
   }
 
@@ -167,6 +196,7 @@ class Vehicle {
     String? engineSize,
     String? engineCode,
     String? notes,
+    String? vin,
   }) {
     return Vehicle(
       id: id ?? this.id,
@@ -185,6 +215,7 @@ class Vehicle {
       engineSize: engineSize ?? this.engineSize,
       engineCode: engineCode ?? this.engineCode,
       notes: notes ?? this.notes,
+      vin: vin ?? this.vin,
     );
   }
 }
